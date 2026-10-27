@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   BookOpen01Icon,
@@ -14,6 +15,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { NotificationDropdown, type NotificationItem } from './NotificationDropdown';
 import { useAuth } from '../context/AuthContext';
+import { dropdownVariants } from '../animations/motionVariants';
 
 interface NavbarProps {
   activeTab: string;
@@ -165,9 +167,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {item.badge}
                   </span>
                 )}
-                {/* Active Indicator Underline */}
+                {/* Active Indicator Underline (Glides smoothly across tabs) */}
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand rounded-full transition-all duration-300" />
+                  <motion.span
+                    layoutId="navbar-active-indicator"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand rounded-full"
+                    transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+                  />
                 )}
               </button>
             );
@@ -292,8 +298,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
 
                 {/* Profile Dropdown Popover */}
-                {isProfileMenuOpen && (
-                  <div className="absolute right-0 top-full mt-3 w-72 sm:w-80 bg-white rounded-3xl shadow-2xl border border-slate-200/90 py-3 z-50 animate-in fade-in-50 zoom-in-95 duration-150">
+                <AnimatePresence>
+                  {isProfileMenuOpen && (
+                    <motion.div
+                      variants={dropdownVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      className="absolute right-0 top-full mt-3 w-72 sm:w-80 bg-white rounded-3xl shadow-2xl border border-slate-200/90 py-3 z-50 overflow-hidden"
+                    >
                     
                     {/* User Identity Header */}
                     <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-3.5">
@@ -470,8 +483,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </button>
                     </div>
 
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </>
           )}

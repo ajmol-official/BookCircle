@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Add01Icon } from '@hugeicons/core-free-icons';
 
@@ -12,10 +13,13 @@ export const FloatingAddBookButton: React.FC<FloatingAddBookButtonProps> = ({
   isMessagesActive = false,
 }) => {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className={`fixed z-30 transition-all duration-200 group active:scale-95 shadow-lg hover:shadow-2xl hover:scale-105 ${
+      whileHover={{ scale: 1.07, y: -2 }}
+      whileTap={{ scale: 0.94, y: 1 }}
+      transition={{ type: 'spring', stiffness: 450, damping: 20 }}
+      className={`fixed z-30 group shadow-lg hover:shadow-2xl ${
         isMessagesActive
           ? 'hidden sm:flex bottom-7 right-7'
           : 'bottom-20 right-4 sm:bottom-7 sm:right-7 flex'
@@ -29,6 +33,7 @@ export const FloatingAddBookButton: React.FC<FloatingAddBookButtonProps> = ({
       <span className="tracking-tight whitespace-nowrap font-sans font-semibold">
         Add Book
       </span>
-    </button>
+    </motion.button>
   );
 };
+

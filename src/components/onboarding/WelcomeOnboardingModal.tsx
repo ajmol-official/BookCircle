@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   BookOpen01Icon,
@@ -8,6 +9,7 @@ import {
   Cancel01Icon,
   ArrowRight01Icon
 } from '@hugeicons/core-free-icons';
+import { modalBackdropVariants, modalContentVariants } from '../../animations/motionVariants';
 
 interface WelcomeOnboardingModalProps {
   isOpen: boolean;
@@ -22,17 +24,32 @@ export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({
 }) => {
   const [dontShowAgain, setDontShowAgain] = useState(true);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div
-        className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200/90 animate-in zoom-in-95 duration-200 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="onboarding-title"
-      >
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          {/* Backdrop */}
+          <motion.div
+            variants={modalBackdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={() => onExplore(dontShowAgain)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
+          />
+
+          {/* Modal Content Dialog */}
+          <motion.div
+            variants={modalContentVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="onboarding-title"
+            className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200/90 overflow-hidden z-10"
+          >
         {/* Decorative Top Accent */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand via-amber-400 to-brand" />
 
@@ -140,7 +157,9 @@ export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
-  );
+  )}
+</AnimatePresence>
+);
 };

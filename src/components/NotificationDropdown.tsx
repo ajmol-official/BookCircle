@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Clock01Icon,
@@ -7,6 +8,7 @@ import {
   BookOpen01Icon,
   Calendar01Icon
 } from '@hugeicons/core-free-icons';
+import { dropdownVariants } from '../animations/motionVariants';
 
 export interface NotificationItem {
   id: string | number;
@@ -64,8 +66,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   const getTypeIcon = (type: NotificationItem['type']) => {
@@ -83,12 +83,18 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   };
 
   return (
-    <div
-      ref={dropdownRef}
-      className="absolute right-0 top-full mt-3 w-[calc(100vw-2rem)] max-w-[340px] sm:max-w-none sm:w-96 bg-white rounded-3xl shadow-2xl border border-slate-200/90 py-3 z-50 animate-in fade-in-50 zoom-in-95 duration-150 overflow-hidden"
-      role="dialog"
-      aria-label="Notifications"
-    >
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          ref={dropdownRef}
+          variants={dropdownVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="absolute right-0 top-full mt-3 w-[calc(100vw-2rem)] max-w-[340px] sm:max-w-none sm:w-96 bg-white rounded-3xl shadow-2xl border border-slate-200/90 py-3 z-50 overflow-hidden"
+          role="dialog"
+          aria-label="Notifications"
+        >
       {/* Header */}
       <div className="px-5 py-2.5 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -190,6 +196,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           <span>View All Borrow Requests</span>
         </button>
       </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

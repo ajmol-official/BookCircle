@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   BookOpen01Icon,
@@ -14,6 +15,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '../../context/AuthContext';
 import type { PhoneOtpVerification } from '../../types/auth';
+import { modalBackdropVariants, modalContentVariants } from '../../animations/motionVariants';
 
 const COUNTRY_CODES = [
   { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
@@ -70,8 +72,6 @@ export const AuthModal: React.FC = () => {
       setActiveVerification(null);
     }
   }, [isAuthModalOpen]);
-
-  if (!isAuthModalOpen) return null;
 
   const handleClose = () => {
     setIsAuthModalOpen(false);
@@ -192,15 +192,32 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div
-        className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200/90 animate-in zoom-in-95 duration-200 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        {/* Top Gradient Stripe */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand via-amber-400 to-brand" />
+    <AnimatePresence>
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          {/* Backdrop */}
+          <motion.div
+            variants={modalBackdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={handleClose}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
+          />
+
+          {/* Modal Content Dialog */}
+          <motion.div
+            variants={modalContentVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200/90 overflow-hidden z-10"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            {/* Top Gradient Stripe */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand via-amber-400 to-brand" />
 
         {/* Close Button */}
         <button
@@ -482,7 +499,9 @@ export const AuthModal: React.FC = () => {
           <span>By signing in, you agree to BookCircle's community trust guidelines. </span>
           <span className="text-slate-500">Phone numbers and emails remain strictly private.</span>
         </div>
-      </div>
-    </div>
+        </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };
