@@ -1,0 +1,437 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { Navbar } from './components/Navbar';
+import { HeaderSection } from './components/HeaderSection';
+import { CategoryPills } from './components/CategoryPills';
+import { BooksSection } from './components/BooksSection';
+import { ReadersSection } from './components/ReadersSection';
+import { CoffeeModal } from './components/CoffeeModal';
+import { BorrowWizardModal } from './components/borrow/BorrowWizardModal';
+import { AddBookModal } from './components/mybooks/AddBookModal';
+import { FloatingAddBookButton } from './components/FloatingAddBookButton';
+import type { NotificationItem } from './components/NotificationDropdown';
+import { MyBooksPage } from './components/mybooks/MyBooksPage';
+import { BookDetailsPage } from './components/bookdetails/BookDetailsPage';
+import { ProfilePage } from './components/profile/ProfilePage';
+import { InboxPage } from './components/inbox/InboxPage';
+import { SettingsModal } from './components/SettingsModal';
+import { LogoutConfirmDialog } from './components/LogoutConfirmDialog';
+import { MobileNavBar } from './components/MobileNavBar';
+import { WelcomeOnboardingModal } from './components/onboarding/WelcomeOnboardingModal';
+import { AuthModal } from './components/auth/AuthModal';
+import { ProfileSetupModal } from './components/auth/ProfileSetupModal';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { mockBooks, mockReaders } from './data/mockData';
+import type { Book, Reader } from './types';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { BookOpen01Icon, FavouriteIcon } from '@hugeicons/core-free-icons';
+
+const BookCircleMain: React.FC = () => {
+  const {
+    isAuthenticated,
+    requireAuth,
+    isOnboardingOpen,
+    dismissOnboarding,
+    setIsAuthModalOpen,
+    logout,
+  } = useAuth();
+
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      return tab && ['home', 'my-books', 'requests', 'messages', 'profile'].includes(tab) ? tab : 'home';
+    } catch {
+      return 'home';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('tab') !== activeTab) {
+        url.searchParams.set('tab', activeTab);
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {}
+  }, [activeTab]);
+
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedRadius, setSelectedRadius] = useState<string>('Within 5km');
+  const [selectedChatParticipant, setSelectedChatParticipant] = useState<string | null>(null);
+
+  // Modals & Drawers state
+  const [isCoffeeModalOpen, setIsCoffeeModalOpen] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState<boolean>(false);
+  const [viewingBookDetails, setViewingBookDetails] = useState<Book | null>(null);
+  const [selectedBorrowBook, setSelectedBorrowBook] = useState<Book | null>(null);
+  const [isGlobalAddBookOpen, setIsGlobalAddBookOpen] = useState<boolean>(false);
+  const [globalToast, setGlobalToast] = useState<string | null>(null);
+
+  // Notifications State (including message notification)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: 'notif-1',
+      sender: 'Hana Yamada',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
+      action: 'wants to borrow',
+      book: 'Pachinko',
+      time: '3 hours ago',
+      type: 'request',
+      unread: true,
+      targetTab: 'requests',
+    },
+    {
+      id: 'notif-2',
+      sender: 'Diego Ramirez',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+      action: 'sent you a message about',
+      book: 'The Overstory',
+      time: '10:14 AM',
+      type: 'message',
+      unread: true,
+      targetTab: 'messages',
+    },
+    {
+      id: 'notif-3',
+      sender: 'Jonas Meier',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+      action: 'approved your request for',
+      book: 'The Night Circus',
+      time: '1 day ago',
+      type: 'approved',
+      unread: false,
+      targetTab: 'my-books',
+    },
+    {
+      id: 'notif-4',
+      sender: 'Priya Shah',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
+      action: 'confirmed meetup at Riverside Coffee for',
+      book: 'Sapiens',
+      time: '3 days ago',
+      type: 'meetup',
+      unread: false,
+      targetTab: 'requests',
+    },
+  ]);
+
+  const categories = ['All', 'Fiction', 'Non-fiction', 'Science', 'History', 'Poetry'];
+
+  // Filter books based on category and search query
+  const filteredBooks = useMemo(() => {
+    return mockBooks.filter((book) => {
+      const matchesCategory =
+        selectedCategory === 'All' || book.category.toLowerCase() === selectedCategory.toLowerCase();
+
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !query ||
+        book.title.toLowerCase().includes(query) ||
+        book.author.toLowerCase().includes(query) ||
+        book.ownerName.toLowerCase().includes(query);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [selectedCategory, searchQuery]);
+
+  const handleBrowseReader = (reader: Reader) => {
+    setSearchQuery(reader.name);
+    window.scrollTo({ top: 120, behavior: 'smooth' });
+  };
+
+  const handleTabChange = (tab: string) => {
+    if (tab !== 'home' && !isAuthenticated) {
+      requireAuth({
+        title: 'Sign In Required',
+        message: 'Sign in to access your personal shelf, incoming requests, and neighbor conversations.',
+        targetAction: tab as any,
+        onAuthorized: () => {
+          setActiveTab(tab);
+          setViewingBookDetails(null);
+        },
+      });
+      return;
+    }
+    setActiveTab(tab);
+    setViewingBookDetails(null);
+  };
+
+  const handleLogout = async () => {
+    setIsLogoutDialogOpen(false);
+    await logout();
+    setActiveTab('home');
+    setViewingBookDetails(null);
+    setGlobalToast('You have been signed out. You can continue exploring BookCircle as a guest.');
+    setTimeout(() => setGlobalToast(null), 4000);
+  };
+
+  const handleQuickBorrow = (book: Book) => {
+    requireAuth({
+      title: 'Sign In to Borrow',
+      message: `Sign in or join BookCircle to borrow "${book.title}" from ${book.ownerName}.`,
+      targetAction: 'borrow',
+      bookTitle: book.title,
+      ownerName: book.ownerName,
+      onAuthorized: () => setSelectedBorrowBook(book),
+    });
+  };
+
+  const handleDetailsRequestBorrow = (b: Book, owner?: string) => {
+    const ownerName = owner || b.ownerName;
+    requireAuth({
+      title: 'Sign In to Request Book',
+      message: `Connect with ${ownerName} to arrange a friendly community meetup for "${b.title}".`,
+      targetAction: 'borrow',
+      bookTitle: b.title,
+      ownerName,
+      onAuthorized: () => setSelectedBorrowBook(owner ? { ...b, ownerName: owner } : b),
+    });
+  };
+
+  const handleFloatingAddBook = () => {
+    requireAuth({
+      title: 'Sign In to Add Book',
+      message: 'Sign in or join BookCircle to list physical books from your collection to lend or donate.',
+      targetAction: 'add-book',
+      onAuthorized: () => setIsGlobalAddBookOpen(true),
+    });
+  };
+
+  const handleNotificationClick = (item: NotificationItem) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, unread: false } : n))
+    );
+    if (item.type === 'message') {
+      setSelectedChatParticipant(item.sender);
+      setActiveTab('messages');
+    } else if (item.targetTab) {
+      setActiveTab(item.targetTab);
+    }
+    setViewingBookDetails(null);
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  };
+
+  const handleGlobalBookAdded = (newBook: { title: string; author: string }) => {
+    setIsGlobalAddBookOpen(false);
+    setGlobalToast(
+      `“${newBook.title}” was added to your shelf! Reader ratings & reviews are synced with all community copies.`
+    );
+    setTimeout(() => setGlobalToast(null), 5000);
+  };
+
+  const unreadNotificationsCount = isAuthenticated ? notifications.filter((n) => n.unread).length : 0;
+  const isMessagesActive = activeTab === 'messages' && !viewingBookDetails;
+
+  return (
+    <div
+      className={`${
+        isMessagesActive ? 'h-screen md:h-[100dvh] overflow-hidden' : 'min-h-screen'
+      } bg-[#FDF8F2] flex flex-col font-sans selection:bg-brand selection:text-white`}
+    >
+      {/* Top Navbar */}
+      <Navbar
+        activeTab={viewingBookDetails ? '' : activeTab}
+        setActiveTab={handleTabChange}
+        onOpenCoffeeModal={() => setIsCoffeeModalOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onRequestLogout={() => setIsLogoutDialogOpen(true)}
+        notifications={notifications}
+        onNotificationClick={handleNotificationClick}
+        onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
+        unreadCount={unreadNotificationsCount}
+      />
+
+      {/* Global Toast Message */}
+      {globalToast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl bg-slate-900/90 backdrop-blur-md text-white text-xs sm:text-sm font-medium shadow-2xl border border-slate-700/60 animate-in fade-in slide-in-from-top-4 flex items-center gap-2 max-w-md text-center">
+          <span>✨</span>
+          <span>{globalToast}</span>
+        </div>
+      )}
+
+      {/* Main Container */}
+      <main
+        className={`flex-1 max-w-[1248px] w-full mx-auto ${
+          isMessagesActive
+            ? 'min-h-0 flex flex-col overflow-hidden px-0 sm:px-4 md:px-6 pb-16 md:pb-3.5'
+            : 'px-4 sm:px-6 pb-20 md:pb-0'
+        }`}
+      >
+        {viewingBookDetails ? (
+          <BookDetailsPage
+            book={viewingBookDetails}
+            onBack={() => setViewingBookDetails(null)}
+            onRequestBorrow={handleDetailsRequestBorrow}
+          />
+        ) : (
+          <>
+            {activeTab === 'home' && (
+              <>
+                <HeaderSection
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  selectedRadius={selectedRadius}
+                  setSelectedRadius={setSelectedRadius}
+                />
+                <CategoryPills
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onSelectCategory={setSelectedCategory}
+                />
+                <BooksSection
+                  books={filteredBooks}
+                  onSelectBook={(book) => setViewingBookDetails(book)}
+                  onQuickBorrow={handleQuickBorrow}
+                  onSeeAll={() => setSelectedCategory('All')}
+                  selectedRadius={selectedRadius}
+                />
+                <ReadersSection
+                  readers={mockReaders}
+                  onBrowseShelf={handleBrowseReader}
+                  onSeeAll={() => {}}
+                />
+              </>
+            )}
+
+            {activeTab === 'my-books' && (
+              <MyBooksPage
+                key="my-books-shelf"
+                initialSubTab="shelf"
+                onNavigateToMessages={(name) => {
+                  setSelectedChatParticipant(name);
+                  setActiveTab('messages');
+                }}
+              />
+            )}
+
+            {activeTab === 'requests' && (
+              <MyBooksPage
+                key="my-books-requests"
+                initialSubTab="requests"
+                onNavigateToMessages={(name) => {
+                  setSelectedChatParticipant(name);
+                  setActiveTab('messages');
+                }}
+              />
+            )}
+
+            {activeTab === 'messages' && (
+              <InboxPage
+                initialOwnerName={selectedChatParticipant}
+                onSelectBook={(title) => {
+                  const match = mockBooks.find((b) => b.title.toLowerCase() === title.toLowerCase());
+                  if (match) setViewingBookDetails(match);
+                }}
+              />
+            )}
+
+            {activeTab === 'profile' && (
+              <ProfilePage
+                onSelectBook={(book) => setViewingBookDetails(book)}
+                myBooks={mockBooks}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Footer — desktop only, hidden on messages page */}
+      {activeTab !== 'messages' && !viewingBookDetails && (
+        <footer className="hidden md:block border-t border-slate-200/80 bg-white/60 py-10 mt-auto">
+          <div className="max-w-[1248px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-brand flex items-center justify-center text-white">
+                <HugeiconsIcon icon={BookOpen01Icon} size={14} />
+              </div>
+              <span className="font-serif font-semibold text-slate-700 text-sm">BookCircle</span>
+              <span>· Connecting local readers, one book at a time.</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => setIsCoffeeModalOpen(true)}
+                className="hover:text-brand flex items-center gap-1 transition"
+              >
+                <HugeiconsIcon icon={FavouriteIcon} size={13} className="text-red-500 fill-red-500" />
+                <span>Support Community</span>
+              </button>
+              <span className="text-slate-300">|</span>
+              <span>© 2026 BookCircle. All rights reserved.</span>
+            </div>
+          </div>
+        </footer>
+      )}
+
+      {/* Mobile Bottom Navigation */}
+      <MobileNavBar
+        activeTab={viewingBookDetails ? '' : activeTab}
+        setActiveTab={handleTabChange}
+        unreadMessages={isAuthenticated ? 1 : 0}
+        pendingRequests={isAuthenticated ? 1 : 0}
+      />
+
+      {/* First-Visit Dismissible Onboarding Modal */}
+      <WelcomeOnboardingModal
+        isOpen={isOnboardingOpen}
+        onExplore={(dontShowAgain) => dismissOnboarding(dontShowAgain)}
+        onGetStarted={() => {
+          dismissOnboarding(false);
+          setIsAuthModalOpen(true);
+        }}
+      />
+
+      {/* Unified Authentication Modal (Google & WhatsApp Phone OTP) */}
+      <AuthModal />
+
+      {/* First-time Profile Setup Modal */}
+      <ProfileSetupModal />
+
+      {/* Interactive Support / Coffee Modal */}
+      <CoffeeModal isOpen={isCoffeeModalOpen} onClose={() => setIsCoffeeModalOpen(false)} />
+
+      {/* Borrow Handover Wizard Modal */}
+      <BorrowWizardModal
+        isOpen={!!selectedBorrowBook}
+        book={selectedBorrowBook}
+        initialOwnerName={selectedBorrowBook?.ownerName}
+        onClose={() => setSelectedBorrowBook(null)}
+      />
+
+      {/* Floating "+ Add Book" Button (Responsive across mobile, tablet, desktop) */}
+      <FloatingAddBookButton
+        onClick={handleFloatingAddBook}
+        isMessagesActive={isMessagesActive}
+      />
+
+      {/* Global Add Book Modal */}
+      <AddBookModal
+        isOpen={isGlobalAddBookOpen}
+        onClose={() => setIsGlobalAddBookOpen(false)}
+        onBookAdded={handleGlobalBookAdded}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+      {/* Logout Confirmation Dialog */}
+      <LogoutConfirmDialog
+        isOpen={isLogoutDialogOpen}
+        onClose={() => setIsLogoutDialogOpen(false)}
+        onConfirm={handleLogout}
+      />
+    </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <BookCircleMain />
+    </AuthProvider>
+  );
+};
+
+export default App;
