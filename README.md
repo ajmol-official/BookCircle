@@ -57,6 +57,17 @@ Structured borrowing workflow ensuring safety and accountability:
 - **My Shelf & Lent Out:** Manage listed copies, toggle availability, and track who currently has each book.
 - **Profile Popover Menu:** Fast navbar access to Profile, Messages, Pending Requests, Shelves, Settings, and Log Out.
 
+### 6. 🌟 First-Visit Onboarding & Guest Browsing
+- **Hyperlocal Welcome Card:** Compact, dismissible 3-pillar welcome guide introducing neighborhood discovery, borrow confidence, and shelf sharing.
+- **Unrestricted Guest Discovery:** Visitors can search books, filter categories, adjust radius, and explore reviews before creating an account.
+- **Action Guarding & Resumption:** Actions requiring an account (borrowing, listing a book, messaging) prompt a friendly sign-in modal and automatically resume the intended action after login.
+
+### 7. 🔐 Unified Authentication & Session Persistence
+- **Google OAuth:** Fast 1-click authentication detecting returning readers vs new sign-ups.
+- **WhatsApp Phone Verification:** 6-digit OTP entry with international country selector (+44, +1, +880, +91, +49, etc.), resend countdown timer, and WhatsApp Cloud API integration.
+- **Reader Profile Setup:** First-time profile completion for display name, avatar, and neighborhood radius without exposing private contact details.
+- **Session Persistence:** Persistent session storage across page reloads with secure logout confirmation.
+
 ---
 
 ## 📂 Project Architecture
