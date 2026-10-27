@@ -75,27 +75,43 @@ Structured borrowing workflow ensuring safety and accountability:
 ```
 BookCircle/
 ├── src/
+│   ├── assets/                  # Brand vectors & illustrations
 │   ├── components/
-│   │   ├── bookdetails/     # Book details page with multi-owner copies & reviews
-│   │   ├── borrow/          # BorrowWizardModal & ReturnWizardModal
-│   │   ├── inbox/           # Request-gated fixed layout Messages page
-│   │   ├── mybooks/         # AddBookModal, ShelfView, BorrowingView, MyBooksPage
-│   │   ├── profile/         # User Profile view with stats and activity
-│   │   ├── requests/        # Incoming/Outgoing borrow requests coordinator
-│   │   ├── BookCard.tsx     # Book card component with badges & action triggers
-│   │   ├── Footer.tsx       # Global footer (conditionally omitted on Messages)
-│   │   └── Navbar.tsx       # Navigation bar with interactive profile menu
+│   │   ├── auth/                # AuthModal (Google & WhatsApp OTP) & ProfileSetupModal
+│   │   ├── bookdetails/         # BookDetailsPage & ReviewModal
+│   │   ├── borrow/              # BorrowWizardModal & ReturnWizardModal
+│   │   ├── inbox/               # Request-gated fixed-viewport Messages page
+│   │   ├── mybooks/             # AddBookModal, ShelfView, BorrowingView, HistoryView, RequestsView
+│   │   ├── onboarding/          # WelcomeOnboardingModal (3-pillar dismissible intro)
+│   │   ├── profile/             # ProfilePage, EditProfileModal & ReturnReliabilityModal
+│   │   ├── BookCard.tsx         # Book card with cover, badges, distance & quick borrow trigger
+│   │   ├── BooksSection.tsx     # Filtered community book catalog grid
+│   │   ├── CategoryPills.tsx    # Horizontal genre selector chips
+│   │   ├── CoffeeModal.tsx      # Community support dialog
+│   │   ├── FloatingAddBookButton.tsx # Responsive floating "+ Add Book" action button
+│   │   ├── HeaderSection.tsx    # Dynamic greeting, book search & radius dropdown
+│   │   ├── LogoutConfirmDialog.tsx  # Secure sign-out confirmation dialog
+│   │   ├── MobileNavBar.tsx     # Responsive mobile bottom navigation bar
+│   │   ├── Navbar.tsx           # Sticky top navbar with profile menu & notification dropdown
+│   │   ├── NotificationDropdown.tsx # Dropdown notification popover panel
+│   │   └── ReadersSection.tsx   # Nearby community readers showcase
+│   ├── context/
+│   │   └── AuthContext.tsx      # AuthProvider, session lifecycle & action guarding
 │   ├── data/
-│   │   └── mockData.ts      # Canonical catalog books, community listings, users, messages
+│   │   └── mockData.ts          # Canonical catalog books, community listings & readers
+│   ├── services/
+│   │   ├── authService.ts       # Google OAuth & WhatsApp Cloud API OTP logic
+│   │   └── storageService.ts    # Persistent localStorage & session engine
 │   ├── types/
-│   │   └── index.ts         # TypeScript models (Book, CatalogBook, User, Request, Message)
-│   ├── App.tsx              # Main routing & tab layout coordinator
-│   ├── index.css            # Tailwind directives and custom scrollbar styling
-│   └── main.tsx             # Application bootstrap
-├── public/                  # Static assets & icons
-├── tailwind.config.js       # Tailwind palette & theme configuration
-├── tsconfig.json            # Strict TypeScript compiler options
-└── package.json             # Scripts & dependencies
+│   │   ├── auth.ts              # User, AuthSession, PhoneOtpVerification models
+│   │   └── index.ts             # Book, CatalogBook, Reader TypeScript interfaces
+│   ├── App.tsx                  # Root application coordinator with AuthProvider
+│   ├── index.css                # Tailwind directives & design system utilities
+│   └── main.tsx                 # React application bootstrap
+├── public/                      # Static assets & icons
+├── tailwind.config.js           # Tailwind palette & theme configuration
+├── tsconfig.json                # Strict TypeScript compiler options
+└── package.json                 # Scripts & dependencies
 ```
 
 ---
