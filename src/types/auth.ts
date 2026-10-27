@@ -14,6 +14,7 @@ export interface User {
   authProvider: 'google' | 'phone' | 'demo';
   favoriteGenres: string[];
   isProfileComplete: boolean;
+  wishlist?: string[];
   notificationPreferences?: {
     email: boolean;
     push: boolean;

@@ -4,9 +4,11 @@ import {
   StarIcon,
   Location01Icon,
   BookOpen01Icon,
-  GiftIcon
+  GiftIcon,
+  FavouriteIcon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface BookCardProps {
   book: Book;
@@ -21,6 +23,8 @@ export const BookCard: React.FC<BookCardProps> = ({
   onQuickBorrow,
   onSelectOwner
 }) => {
+  const { toggleWishlist, isWishlisted } = useAuth();
+  const isSaved = isWishlisted(book.id);
   const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
 
   return (
@@ -56,6 +60,28 @@ export const BookCard: React.FC<BookCardProps> = ({
               </span>
             )}
           </div>
+
+          {/* Wishlist Heart Button on Top Right */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(book.id);
+            }}
+            className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all active:scale-90 shadow-sm z-10 ${
+              isSaved
+                ? 'bg-rose-500 text-white shadow-rose-500/30'
+                : 'bg-slate-900/60 text-white hover:bg-slate-900/85 hover:text-rose-300'
+            }`}
+            aria-label={isSaved ? 'Remove from wishlist' : 'Save to wishlist'}
+            title={isSaved ? 'In your wishlist' : 'Save to wishlist'}
+          >
+            <HugeiconsIcon
+              icon={FavouriteIcon}
+              size={13}
+              className={isSaved ? 'fill-white text-white' : 'text-white'}
+            />
+          </button>
 
           {/* "X own this" badge */}
           <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-slate-300/60 shadow-sm">

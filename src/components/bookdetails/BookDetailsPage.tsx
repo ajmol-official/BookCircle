@@ -1,28 +1,56 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   ArrowLeft01Icon,
   StarIcon,
   Location01Icon,
   ArrowRight01Icon,
-  BookOpen01Icon
+  BookOpen01Icon,
+  FavouriteIcon,
+  Notification01Icon,
+  CheckmarkCircle02Icon,
+  SparklesIcon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { ReviewModal } from './ReviewModal';
+import { useAuth } from '../../context/AuthContext';
 
 interface BookDetailsPageProps {
   book: Book;
   onBack: () => void;
   onRequestBorrow: (book: Book, ownerName?: string) => void;
   onSelectOwner?: (ownerName: string) => void;
+  onSimulateReturn?: (book: Book) => void;
 }
 
 export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   book,
   onBack,
   onRequestBorrow,
-  onSelectOwner
+  onSelectOwner,
+  onSimulateReturn
 }) => {
+  const { toggleWishlist, isWishlisted } = useAuth();
+  const bookWishlisted = isWishlisted(book.id);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const baseCount = book.wishlistCount || 6;
+  const currentWishlistCount = bookWishlisted ? baseCount + 1 : baseCount;
+
+  const handleToggleWishlist = () => {
+    const added = toggleWishlist(book.id);
+    if (added) {
+      setToastMessage(
+        book.status === 'lent_out'
+          ? '🔔 Added to Wishlist! We will notify you the moment this book is returned.'
+          : '❤️ Saved to your Wishlist!'
+      );
+    } else {
+      setToastMessage('Removed from your Wishlist.');
+    }
+    setTimeout(() => setToastMessage(null), 3500);
+  };
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviews, setReviews] = useState([
     {
@@ -127,6 +155,20 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
 
   return (
     <div className="pt-6 pb-20 animate-in fade-in duration-200">
+      {/* Toast Alert */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-medium shadow-2xl border border-slate-700/80 flex items-center gap-2.5 max-w-md"
+          >
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-emerald-400 flex-shrink-0" />
+            <span>{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Back to Home Button */}
       <button
@@ -141,7 +183,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
         <span>Back to home</span>
       </button>
 
-      {/* Main Book Card Hero matching Figma layout_87873766 */}
+      {/* Main Book Card Hero */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card flex flex-col md:flex-row gap-8 items-start">
         {/* Book Cover */}
         <div className="relative w-full md:w-44 h-64 sm:h-64 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 shadow-md">
@@ -157,15 +199,44 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
         </div>
 
         {/* Book Metadata */}
-        <div className="flex-1 flex flex-col justify-between h-full space-y-4">
+        <div className="flex-1 flex flex-col justify-between h-full space-y-4 w-full">
           <div>
-            <div className="flex items-center gap-2.5 mb-2 flex-wrap">
-              <span className="px-3 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60">
-                Available now
-              </span>
-              <span className="px-3 py-1 rounded-md text-xs font-semibold bg-brand/10 text-brand">
-                {book.category}
-              </span>
+            <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                {book.status === 'lent_out' ? (
+                  <span className="px-3 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/60 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    Currently lent out
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    Available now
+                  </span>
+                )}
+                <span className="px-3 py-1 rounded-md text-xs font-semibold bg-brand/10 text-brand">
+                  {book.category}
+                </span>
+              </div>
+
+              {/* Wishlist Quick Toggle Button */}
+              <button
+                type="button"
+                onClick={handleToggleWishlist}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 ${
+                  bookWishlisted
+                    ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+                    : 'bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-rose-600'
+                }`}
+                title={bookWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+              >
+                <HugeiconsIcon
+                  icon={FavouriteIcon}
+                  size={15}
+                  className={bookWishlisted ? 'fill-rose-500 text-rose-500' : 'text-slate-500'}
+                />
+                <span>{bookWishlisted ? 'Wishlisted' : 'Add to Wishlist'}</span>
+              </button>
             </div>
 
             <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
@@ -192,12 +263,12 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
               {book.rating}
             </span>
             <span className="text-sm text-slate-400">
-              124 community reviews
+              {book.reviewsCount || 124} community reviews
             </span>
           </div>
 
-          {/* Stats Bar row matching Figma */}
-          <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-slate-100 text-xs sm:text-sm text-slate-600">
+          {/* Stats Bar row with Wishlist Counter */}
+          <div className="flex flex-wrap items-center gap-5 pt-4 border-t border-slate-100 text-xs sm:text-sm text-slate-600">
             <div className="flex items-center gap-1.5 font-medium">
               <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand" />
               <span><strong>3</strong> in your area</span>
@@ -207,10 +278,63 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
               <strong className="text-slate-800">1,254</strong> in country
             </div>
             <span className="text-slate-300">|</span>
-            <div>
-              <strong className="text-slate-800">143</strong> reviews
+            <div className="flex items-center gap-1.5 text-rose-600 font-medium">
+              <HugeiconsIcon
+                icon={FavouriteIcon}
+                size={15}
+                className={bookWishlisted ? 'fill-rose-500 text-rose-500' : 'text-rose-500'}
+              />
+              <span>
+                <strong className="text-rose-700 font-bold">{currentWishlistCount}</strong> readers wishlisted
+              </span>
             </div>
           </div>
+
+          {/* Lent-out Alert & Notification CTA Banner */}
+          {book.status === 'lent_out' && (
+            <div className="mt-3 p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <HugeiconsIcon icon={Notification01Icon} size={17} />
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm font-semibold text-amber-950">
+                    Currently lent out by owner
+                  </p>
+                  <p className="text-[11px] sm:text-xs text-amber-800 mt-0.5">
+                    Wishlist this book to receive an immediate alert when it's back on the shelf.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleToggleWishlist}
+                  className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center justify-center gap-1.5 shadow-sm ${
+                    bookWishlisted
+                      ? 'bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200'
+                      : 'bg-brand hover:bg-brand-dark text-white'
+                  }`}
+                >
+                  <HugeiconsIcon icon={FavouriteIcon} size={14} className={bookWishlisted ? 'fill-rose-600' : ''} />
+                  <span>{bookWishlisted ? 'Alert Active (Wishlisted)' : 'Notify When Available'}</span>
+                </button>
+
+                {onSimulateReturn && (
+                  <button
+                    type="button"
+                    onClick={() => onSimulateReturn(book)}
+                    title="Simulate borrower returning this book"
+                    className="px-3 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-xs font-semibold transition active:scale-95 flex items-center gap-1"
+                  >
+                    <HugeiconsIcon icon={SparklesIcon} size={13} className="text-emerald-700" />
+                    <span>Test Return Alert</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -13,6 +13,7 @@ import { MyBooksPage } from './components/mybooks/MyBooksPage';
 import { BookDetailsPage } from './components/bookdetails/BookDetailsPage';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { PublicProfilePage } from './components/profile/PublicProfilePage';
+import { WishlistModal } from './components/profile/WishlistModal';
 import { InboxPage } from './components/inbox/InboxPage';
 import { SettingsModal } from './components/SettingsModal';
 import { LogoutConfirmDialog } from './components/LogoutConfirmDialog';
@@ -34,6 +35,8 @@ const BookCircleMain: React.FC = () => {
     dismissOnboarding,
     setIsAuthModalOpen,
     logout,
+    wishlist,
+    toggleWishlist,
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState<string>(() => {
@@ -63,12 +66,16 @@ const BookCircleMain: React.FC = () => {
   // Modals & Drawers state
   const [isCoffeeModalOpen, setIsCoffeeModalOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isWishlistModalOpen, setIsWishlistModalOpen] = useState<boolean>(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState<boolean>(false);
   const [viewingBookDetails, setViewingBookDetails] = useState<Book | null>(null);
   const [viewingPublicReader, setViewingPublicReader] = useState<Reader | null>(null);
   const [selectedBorrowBook, setSelectedBorrowBook] = useState<Book | null>(null);
   const [isGlobalAddBookOpen, setIsGlobalAddBookOpen] = useState<boolean>(false);
   const [globalToast, setGlobalToast] = useState<string | null>(null);
+
+  // Dynamic books collection with live availability tracking
+  const [booksList, setBooksList] = useState<Book[]>(mockBooks);
 
   // Notifications State (including message notification)
   const [notifications, setNotifications] = useState<NotificationItem[]>([
@@ -122,7 +129,7 @@ const BookCircleMain: React.FC = () => {
 
   // Filter books based on category and search query
   const filteredBooks = useMemo(() => {
-    return mockBooks.filter((book) => {
+    return booksList.filter((book) => {
       const matchesCategory =
         selectedCategory === 'All' || book.category.toLowerCase() === selectedCategory.toLowerCase();
 
@@ -135,7 +142,7 @@ const BookCircleMain: React.FC = () => {
 
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [booksList, selectedCategory, searchQuery]);
 
   const handleBrowseReader = (reader: Reader) => {
     setViewingPublicReader(reader);
@@ -241,6 +248,38 @@ const BookCircleMain: React.FC = () => {
     });
   };
 
+  const handleSimulateReturn = (book: Book) => {
+    // 1. Mark book as available in booksList
+    setBooksList((prev) =>
+      prev.map((b) => (b.id === book.id ? { ...b, status: 'available' } : b))
+    );
+
+    // 2. If user is currently viewing this book details, update it live
+    if (viewingBookDetails?.id === book.id) {
+      setViewingBookDetails((prev) => (prev ? { ...prev, status: 'available' } : null));
+    }
+
+    // 3. Dispatch an urgent notification to the notification bell
+    const newNotif: NotificationItem = {
+      id: `notif-wishlist-${Date.now()}`,
+      sender: book.ownerName,
+      avatar: book.ownerAvatar,
+      action: `returned "${book.title}" to their shelf! It is now available to borrow.`,
+      book: book.title,
+      time: 'Just now',
+      type: 'wishlist_available',
+      unread: true,
+      targetTab: 'book-details',
+      bookId: book.id,
+    };
+
+    setNotifications((prev) => [newNotif, ...prev]);
+
+    // 4. Trigger global celebration toast
+    setGlobalToast(`🎉 Great news! "${book.title}" was returned by ${book.ownerName} and is now ready to borrow.`);
+    setTimeout(() => setGlobalToast(null), 5000);
+  };
+
   const handleNotificationClick = (item: NotificationItem) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === item.id ? { ...n, unread: false } : n))
@@ -248,11 +287,21 @@ const BookCircleMain: React.FC = () => {
     if (item.type === 'message') {
       setSelectedChatParticipant(item.sender);
       setActiveTab('messages');
+      setViewingBookDetails(null);
+      setViewingPublicReader(null);
+    } else if (item.type === 'wishlist_available' || item.targetTab === 'book-details') {
+      const found = booksList.find((b) => b.id === item.bookId || b.title.toLowerCase() === item.book.toLowerCase());
+      if (found) {
+        setViewingBookDetails(found);
+        setViewingPublicReader(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
     } else if (item.targetTab) {
       setActiveTab(item.targetTab);
+      setViewingBookDetails(null);
+      setViewingPublicReader(null);
     }
-    setViewingBookDetails(null);
-    setViewingPublicReader(null);
   };
 
   const handleMarkAllNotificationsRead = () => {
@@ -283,6 +332,7 @@ const BookCircleMain: React.FC = () => {
         onOpenCoffeeModal={() => setIsCoffeeModalOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onRequestLogout={() => setIsLogoutDialogOpen(true)}
+        onOpenWishlistModal={() => setIsWishlistModalOpen(true)}
         notifications={notifications}
         onNotificationClick={handleNotificationClick}
         onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
@@ -308,7 +358,7 @@ const BookCircleMain: React.FC = () => {
         {viewingPublicReader ? (
           <PublicProfilePage
             reader={viewingPublicReader}
-            allBooks={mockBooks}
+            allBooks={booksList}
             onBack={() => setViewingPublicReader(null)}
             onSelectBook={(book) => {
               setViewingBookDetails(book);
@@ -327,6 +377,7 @@ const BookCircleMain: React.FC = () => {
             onBack={() => setViewingBookDetails(null)}
             onRequestBorrow={handleDetailsRequestBorrow}
             onSelectOwner={handleSelectOwner}
+            onSimulateReturn={handleSimulateReturn}
           />
         ) : (
           <>
@@ -477,6 +528,25 @@ const BookCircleMain: React.FC = () => {
 
       {/* Settings Modal */}
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+      {/* Wishlist & Return Alerts Modal */}
+      <WishlistModal
+        isOpen={isWishlistModalOpen}
+        onClose={() => setIsWishlistModalOpen(false)}
+        wishlistBookIds={wishlist}
+        allBooks={booksList}
+        onSelectBook={(book) => {
+          setViewingBookDetails(book);
+          setViewingPublicReader(null);
+        }}
+        onRequestBorrow={(book, ownerName) => {
+          handleDetailsRequestBorrow(book, ownerName);
+        }}
+        onRemoveWishlist={(bookId) => {
+          toggleWishlist(bookId);
+        }}
+        onSimulateReturn={handleSimulateReturn}
+      />
 
       {/* Logout Confirmation Dialog */}
       <LogoutConfirmDialog

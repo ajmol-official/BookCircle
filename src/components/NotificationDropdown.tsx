@@ -6,7 +6,8 @@ import {
   CheckmarkCircle02Icon,
   BubbleChatIcon,
   BookOpen01Icon,
-  Calendar01Icon
+  Calendar01Icon,
+  FavouriteIcon
 } from '@hugeicons/core-free-icons';
 import { dropdownVariants } from '../animations/motionVariants';
 
@@ -17,9 +18,10 @@ export interface NotificationItem {
   action: string;
   book: string;
   time: string;
-  type: 'request' | 'approved' | 'meetup' | 'message';
+  type: 'request' | 'approved' | 'meetup' | 'message' | 'wishlist_available';
   unread: boolean;
-  targetTab?: 'requests' | 'messages' | 'my-books';
+  targetTab?: 'requests' | 'messages' | 'my-books' | 'book-details' | 'wishlist';
+  bookId?: string;
 }
 
 interface NotificationDropdownProps {
@@ -76,6 +78,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         return <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} className="text-emerald-600" />;
       case 'meetup':
         return <HugeiconsIcon icon={Calendar01Icon} size={13} className="text-amber-600" />;
+      case 'wishlist_available':
+        return <HugeiconsIcon icon={FavouriteIcon} size={13} className="text-rose-500" />;
       case 'request':
       default:
         return <HugeiconsIcon icon={BookOpen01Icon} size={13} className="text-brand" />;

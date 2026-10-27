@@ -30,6 +30,9 @@ interface AuthContextType {
     ownerName?: string;
     onAuthorized: () => void;
   }) => boolean;
+  wishlist: string[];
+  toggleWishlist: (bookId: string) => boolean;
+  isWishlisted: (bookId: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -199,6 +202,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsOnboardingOpen(true);
   }, []);
 
+  // --- Wishlist Management ---
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    return storageService.getWishlist();
+  });
+
+  const isWishlisted = useCallback((bookId: string) => {
+    return wishlist.includes(bookId);
+  }, [wishlist]);
+
+  const toggleWishlist = useCallback((bookId: string): boolean => {
+    let added = false;
+    setWishlist((prev) => {
+      let next: string[];
+      if (prev.includes(bookId)) {
+        next = prev.filter((id) => id !== bookId);
+        added = false;
+      } else {
+        next = [...prev, bookId];
+        added = true;
+      }
+      storageService.saveWishlist(next);
+
+      if (currentUser) {
+        const updatedUser: User = { ...currentUser, wishlist: next };
+        storageService.saveOrUpdateUser(updatedUser);
+      }
+      return next;
+    });
+    return added;
+  }, [currentUser]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -221,6 +255,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateProfile,
         logout,
         requireAuth,
+        wishlist,
+        toggleWishlist,
+        isWishlisted,
       }}
     >
       {children}

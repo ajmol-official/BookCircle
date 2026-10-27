@@ -17,6 +17,7 @@ export interface Book {
   condition?: 'Like New' | 'Very Good' | 'Good' | 'Fair';
   availabilityMode?: 'lending' | 'donation';
   bookType?: 'Original Copy' | 'Translated Copy';
+  wishlistCount?: number;
 }
 
 export interface CatalogBook {
@@ -26,6 +27,7 @@ export interface CatalogBook {
   coverImage: string;
   rating: number;
   reviewsCount: number;
+  wishlistCount?: number;
   category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
   synopsis: string;
   existingOwners: {

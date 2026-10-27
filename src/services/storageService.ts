@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
   SESSION: 'bookcircle_auth_session',
   USERS: 'bookcircle_users_db',
   ONBOARDING_DISMISSED: 'bookcircle_onboarding_dismissed',
+  WISHLIST: 'bookcircle_wishlist',
 } as const;
 
 // Default initial accounts for seamless local testing and rich demo data
@@ -181,6 +182,26 @@ class StorageService {
 
   setOnboardingDismissed(dismissed: boolean): void {
     this.setItem(STORAGE_KEYS.ONBOARDING_DISMISSED, dismissed ? 'true' : 'false');
+  }
+
+  // --- Wishlist Management ---
+  getWishlist(): string[] {
+    try {
+      const raw = this.getItem(STORAGE_KEYS.WISHLIST);
+      if (!raw) return ['book-1', 'book-4']; // Default saved books for demo
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : ['book-1', 'book-4'];
+    } catch {
+      return ['book-1', 'book-4'];
+    }
+  }
+
+  saveWishlist(bookIds: string[]): void {
+    try {
+      this.setItem(STORAGE_KEYS.WISHLIST, JSON.stringify(bookIds));
+    } catch (e) {
+      console.error('Failed to save wishlist to storage', e);
+    }
   }
 }
 

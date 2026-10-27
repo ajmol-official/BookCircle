@@ -11,7 +11,8 @@ import {
   Logout01Icon,
   Settings01Icon,
   ArrowDown01Icon,
-  HelpCircleIcon
+  HelpCircleIcon,
+  FavouriteIcon
 } from '@hugeicons/core-free-icons';
 import { NotificationDropdown, type NotificationItem } from './NotificationDropdown';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +24,7 @@ interface NavbarProps {
   onOpenCoffeeModal: () => void;
   onOpenSettings?: () => void;
   onRequestLogout?: () => void;
+  onOpenWishlistModal?: () => void;
   notifications?: NotificationItem[];
   onNotificationClick?: (item: NotificationItem) => void;
   onMarkAllNotificationsRead?: () => void;
@@ -39,6 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCoffeeModal,
   onOpenSettings,
   onRequestLogout,
+  onOpenWishlistModal,
   notifications = [],
   onNotificationClick,
   onMarkAllNotificationsRead,
@@ -50,7 +53,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     isAuthenticated,
     setIsAuthModalOpen,
     reopenOnboarding,
-    requireAuth
+    requireAuth,
+    wishlist
   } = useAuth();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -422,7 +426,32 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                       </button>
 
-                      {/* 5. How It Works Guide */}
+                      {/* 5. Wishlist & Alerts */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          if (onOpenWishlistModal) onOpenWishlistModal();
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-rose-50/70 hover:text-rose-700 transition group/wish"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0 group-hover/wish:bg-rose-100 transition">
+                            <HugeiconsIcon icon={FavouriteIcon} size={18} className="fill-rose-500 text-rose-500" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-800 group-hover/wish:text-rose-900">Wishlist & Alerts</p>
+                            <p className="text-[11px] text-slate-400">Saved books & return notifications</p>
+                          </div>
+                        </div>
+                        {wishlist && wishlist.length > 0 && (
+                          <span className="text-[10px] font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">
+                            {wishlist.length}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* 6. How It Works Guide */}
                       <button
                         type="button"
                         onClick={() => {
