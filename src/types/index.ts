@@ -41,10 +41,19 @@ export interface Reader {
   name: string;
   avatar: string;
   distance: string;
+  location?: string;
   memberSince: string;
   booksAvailable: number;
+  booksForLending?: number;
+  booksForDonation?: number;
+  lentOutCount?: number;
   dueSoon?: number;
   rating: number;
   totalBorrows: number;
+  trustTier?: string;
+  trustScore?: string;
+  bio?: string;
+  favoriteGenres?: string[];
+  verified?: boolean;
 }
 

@@ -12,6 +12,7 @@ import type { NotificationItem } from './components/NotificationDropdown';
 import { MyBooksPage } from './components/mybooks/MyBooksPage';
 import { BookDetailsPage } from './components/bookdetails/BookDetailsPage';
 import { ProfilePage } from './components/profile/ProfilePage';
+import { PublicProfilePage } from './components/profile/PublicProfilePage';
 import { InboxPage } from './components/inbox/InboxPage';
 import { SettingsModal } from './components/SettingsModal';
 import { LogoutConfirmDialog } from './components/LogoutConfirmDialog';
@@ -64,6 +65,7 @@ const BookCircleMain: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState<boolean>(false);
   const [viewingBookDetails, setViewingBookDetails] = useState<Book | null>(null);
+  const [viewingPublicReader, setViewingPublicReader] = useState<Reader | null>(null);
   const [selectedBorrowBook, setSelectedBorrowBook] = useState<Book | null>(null);
   const [isGlobalAddBookOpen, setIsGlobalAddBookOpen] = useState<boolean>(false);
   const [globalToast, setGlobalToast] = useState<string | null>(null);
@@ -136,8 +138,46 @@ const BookCircleMain: React.FC = () => {
   }, [selectedCategory, searchQuery]);
 
   const handleBrowseReader = (reader: Reader) => {
-    setSearchQuery(reader.name);
-    window.scrollTo({ top: 120, behavior: 'smooth' });
+    setViewingPublicReader(reader);
+    setViewingBookDetails(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectOwner = (ownerName: string) => {
+    const match = mockReaders.find(
+      (r) =>
+        r.name.toLowerCase().trim() === ownerName.toLowerCase().trim() ||
+        r.name.toLowerCase().includes(ownerName.toLowerCase().trim()) ||
+        ownerName.toLowerCase().includes(r.name.toLowerCase().trim())
+    );
+
+    if (match) {
+      setViewingPublicReader(match);
+    } else {
+      const ownerBooks = mockBooks.filter((b) => b.ownerName.toLowerCase().includes(ownerName.toLowerCase()));
+      const firstBook = ownerBooks[0];
+      const dynamicReader: Reader = {
+        id: `reader-${ownerName.toLowerCase().replace(/\s+/g, '-')}`,
+        name: ownerName,
+        avatar: firstBook?.ownerAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+        distance: firstBook?.distance || '1.0 km',
+        location: `${firstBook?.distance || '1.0 km'} away in neighborhood`,
+        memberSince: '2024',
+        booksAvailable: ownerBooks.length || 4,
+        booksForLending: ownerBooks.filter((b) => b.availabilityMode === 'lending').length || 3,
+        booksForDonation: ownerBooks.filter((b) => b.availabilityMode === 'donation').length || 1,
+        rating: 4.9,
+        totalBorrows: 24,
+        trustTier: 'Tier 4 · Highly Reliable',
+        trustScore: '100% on schedule · 24/24 on time',
+        bio: `Hi, I am ${ownerName}. I love sharing books with my neighbors in BookCircle! Check out my lending and donation shelf below.`,
+        favoriteGenres: ['All', 'Fiction', 'History', 'Science'],
+        verified: true
+      };
+      setViewingPublicReader(dynamicReader);
+    }
+    setViewingBookDetails(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleTabChange = (tab: string) => {
@@ -149,12 +189,14 @@ const BookCircleMain: React.FC = () => {
         onAuthorized: () => {
           setActiveTab(tab);
           setViewingBookDetails(null);
+          setViewingPublicReader(null);
         },
       });
       return;
     }
     setActiveTab(tab);
     setViewingBookDetails(null);
+    setViewingPublicReader(null);
   };
 
   const handleLogout = async () => {
@@ -162,6 +204,7 @@ const BookCircleMain: React.FC = () => {
     await logout();
     setActiveTab('home');
     setViewingBookDetails(null);
+    setViewingPublicReader(null);
     setGlobalToast('You have been signed out. You can continue exploring BookCircle as a guest.');
     setTimeout(() => setGlobalToast(null), 4000);
   };
@@ -209,6 +252,7 @@ const BookCircleMain: React.FC = () => {
       setActiveTab(item.targetTab);
     }
     setViewingBookDetails(null);
+    setViewingPublicReader(null);
   };
 
   const handleMarkAllNotificationsRead = () => {
@@ -224,7 +268,7 @@ const BookCircleMain: React.FC = () => {
   };
 
   const unreadNotificationsCount = isAuthenticated ? notifications.filter((n) => n.unread).length : 0;
-  const isMessagesActive = activeTab === 'messages' && !viewingBookDetails;
+  const isMessagesActive = activeTab === 'messages' && !viewingBookDetails && !viewingPublicReader;
 
   return (
     <div
@@ -234,7 +278,7 @@ const BookCircleMain: React.FC = () => {
     >
       {/* Top Navbar */}
       <Navbar
-        activeTab={viewingBookDetails ? '' : activeTab}
+        activeTab={viewingBookDetails || viewingPublicReader ? '' : activeTab}
         setActiveTab={handleTabChange}
         onOpenCoffeeModal={() => setIsCoffeeModalOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -261,11 +305,28 @@ const BookCircleMain: React.FC = () => {
             : 'px-4 sm:px-6 pb-20 md:pb-0'
         }`}
       >
-        {viewingBookDetails ? (
+        {viewingPublicReader ? (
+          <PublicProfilePage
+            reader={viewingPublicReader}
+            allBooks={mockBooks}
+            onBack={() => setViewingPublicReader(null)}
+            onSelectBook={(book) => {
+              setViewingBookDetails(book);
+              setViewingPublicReader(null);
+            }}
+            onRequestBorrow={handleDetailsRequestBorrow}
+            onSendMessage={(ownerName) => {
+              setSelectedChatParticipant(ownerName);
+              setActiveTab('messages');
+              setViewingPublicReader(null);
+            }}
+          />
+        ) : viewingBookDetails ? (
           <BookDetailsPage
             book={viewingBookDetails}
             onBack={() => setViewingBookDetails(null)}
             onRequestBorrow={handleDetailsRequestBorrow}
+            onSelectOwner={handleSelectOwner}
           />
         ) : (
           <>
@@ -286,6 +347,7 @@ const BookCircleMain: React.FC = () => {
                   books={filteredBooks}
                   onSelectBook={(book) => setViewingBookDetails(book)}
                   onQuickBorrow={handleQuickBorrow}
+                  onSelectOwner={handleSelectOwner}
                   onSeeAll={() => setSelectedCategory('All')}
                   selectedRadius={selectedRadius}
                 />
@@ -339,8 +401,8 @@ const BookCircleMain: React.FC = () => {
         )}
       </main>
 
-      {/* Footer — desktop only, hidden on messages page */}
-      {activeTab !== 'messages' && !viewingBookDetails && (
+      {/* Footer — desktop only, hidden on messages or full profile views */}
+      {activeTab !== 'messages' && !viewingBookDetails && !viewingPublicReader && (
         <footer className="hidden md:block border-t border-slate-200/80 bg-white/60 py-10 mt-auto">
           <div className="max-w-[1248px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <div className="flex items-center gap-2">
@@ -367,7 +429,7 @@ const BookCircleMain: React.FC = () => {
 
       {/* Mobile Bottom Navigation */}
       <MobileNavBar
-        activeTab={viewingBookDetails ? '' : activeTab}
+        activeTab={viewingBookDetails || viewingPublicReader ? '' : activeTab}
         setActiveTab={handleTabChange}
         unreadMessages={isAuthenticated ? 1 : 0}
         pendingRequests={isAuthenticated ? 1 : 0}

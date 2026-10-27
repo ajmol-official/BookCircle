@@ -1,6 +1,6 @@
 import React from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { BookOpen01Icon, Clock01Icon } from '@hugeicons/core-free-icons';
+import { BookOpen01Icon, Clock01Icon, GiftIcon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import type { Reader } from '../types';
 
 interface ReaderCardProps {
@@ -10,7 +10,10 @@ interface ReaderCardProps {
 
 export const ReaderCard: React.FC<ReaderCardProps> = ({ reader, onBrowseShelf }) => {
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col justify-between group">
+    <div
+      onClick={() => onBrowseShelf(reader)}
+      className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-brand/40 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+    >
       <div>
         {/* Avatar & Header */}
         <div className="flex items-center gap-4">
@@ -18,10 +21,10 @@ export const ReaderCard: React.FC<ReaderCardProps> = ({ reader, onBrowseShelf })
             <img
               src={reader.avatar}
               alt={reader.name}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-4 ring-slate-100 group-hover:ring-brand/20 transition-all duration-300 shadow-sm"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-4 ring-slate-100 group-hover:ring-brand/30 transition-all duration-300 shadow-sm"
               loading="lazy"
             />
-            <span className="absolute bottom-0 right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />
+            <span className="absolute bottom-0 right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full shadow-xs" />
           </div>
 
           <div className="flex flex-col">
@@ -34,13 +37,21 @@ export const ReaderCard: React.FC<ReaderCardProps> = ({ reader, onBrowseShelf })
           </div>
         </div>
 
-        {/* Availability Badges */}
+        {/* Availability Badges (Lending & Donations) */}
         <div className="flex flex-wrap items-center gap-2 mt-5">
-          {/* Books available badge */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-xs font-medium">
-            <HugeiconsIcon icon={BookOpen01Icon} size={14} className="text-emerald-700" />
-            <span>{reader.booksAvailable} books available</span>
+          {/* Books available for lending */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200/60 text-brand text-xs font-semibold">
+            <HugeiconsIcon icon={BookOpen01Icon} size={14} className="text-brand" />
+            <span>{reader.booksForLending || reader.booksAvailable} to lend</span>
           </div>
+
+          {/* Books available for donation */}
+          {reader.booksForDonation && reader.booksForDonation > 0 && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-xs font-semibold">
+              <HugeiconsIcon icon={GiftIcon} size={14} className="text-emerald-700" />
+              <span>{reader.booksForDonation} free gifts</span>
+            </div>
+          )}
 
           {/* Due soon badge if present */}
           {reader.dueSoon && reader.dueSoon > 0 && (
@@ -58,12 +69,17 @@ export const ReaderCard: React.FC<ReaderCardProps> = ({ reader, onBrowseShelf })
           {reader.totalBorrows} successful borrows
         </span>
         <button
-          onClick={() => onBrowseShelf(reader)}
-          className="px-5 py-2 rounded-xl bg-slate-50 hover:bg-brand text-brand hover:text-white border border-slate-200 hover:border-brand text-xs font-semibold tracking-wide transition-all duration-200 shadow-sm active:scale-95"
+          onClick={(e) => {
+            e.stopPropagation();
+            onBrowseShelf(reader);
+          }}
+          className="px-4 py-2 rounded-xl bg-slate-50 group-hover:bg-brand text-brand group-hover:text-white border border-slate-200 group-hover:border-brand text-xs font-semibold tracking-wide transition-all duration-200 shadow-sm active:scale-95 flex items-center gap-1"
         >
-          Browse
+          <span>View Shelf</span>
+          <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
         </button>
       </div>
     </div>
   );
 };
+

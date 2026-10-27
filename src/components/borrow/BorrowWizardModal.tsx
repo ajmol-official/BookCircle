@@ -29,46 +29,68 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Step 1: Owner selection & Note
-  const owners = [
-    {
-      id: 'owner-ethan',
-      name: 'Ethan Vogel',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150',
-      distance: '0.4 km away',
-      memberSince: '2024',
-      lendsCount: 23,
-      trust: '4.8 (Verified)',
-      note: 'Prefers meeting at local cafes'
-    },
-    {
-      id: 'owner-amira',
-      name: 'Amira Khan',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
-      distance: '1.8 km away',
-      memberSince: '2023',
-      lendsCount: 19,
-      trust: '4.7 (Good)',
-      note: 'Available on weekday evenings'
-    },
-    {
-      id: 'owner-diego',
-      name: 'Diego Ramirez',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
-      distance: '2.9 km away',
-      memberSince: '2024',
-      lendsCount: 31,
-      trust: '4.9 (Top Lender)',
-      note: 'Has clean hardcover edition'
-    }
-  ];
+  const isDonation = book?.availabilityMode === 'donation' || book?.status === 'donation';
+  const targetOwnerName = initialOwnerName || book?.ownerName || 'Rahim Chowdhury';
 
-  const [selectedOwner, setSelectedOwner] = useState(
-    owners.find(o => o.name === initialOwnerName) || owners[0]
-  );
+  // Step 1: Owner selection & Note
+  const owners = React.useMemo(() => {
+    const list = [
+      {
+        id: 'owner-target',
+        name: targetOwnerName,
+        avatar: book?.ownerAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150',
+        distance: book?.distance || '0.4 km away',
+        memberSince: '2024',
+        lendsCount: 42,
+        trust: book?.ownerTrust || 'Tier 5 · Verified',
+        note: isDonation ? 'Offering as a free community gift to keep permanently' : 'Prefers meeting at local cafes'
+      },
+      {
+        id: 'owner-amira',
+        name: 'Amira Khan',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+        distance: '1.8 km away',
+        memberSince: '2023',
+        lendsCount: 19,
+        trust: '4.7 (Good)',
+        note: 'Available on weekday evenings'
+      },
+      {
+        id: 'owner-diego',
+        name: 'Diego Ramirez',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
+        distance: '2.9 km away',
+        memberSince: '2024',
+        lendsCount: 31,
+        trust: '4.9 (Top Lender)',
+        note: 'Has clean hardcover edition'
+      }
+    ];
+
+    // Deduplicate by name if targetOwnerName matches another
+    const unique = list.filter((item, index, self) => 
+      index === self.findIndex((t) => t.name.toLowerCase() === item.name.toLowerCase())
+    );
+    return unique;
+  }, [targetOwnerName, book, isDonation]);
+
+  const [selectedOwner, setSelectedOwner] = useState(owners[0]);
   const [borrowNote, setBorrowNote] = useState(
-    'Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.'
+    isDonation
+      ? 'Hi! I would love to claim this generous donation book for my personal collection. Thank you so much for passing it along!'
+      : 'Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.'
   );
+
+  React.useEffect(() => {
+    if (owners[0]) {
+      setSelectedOwner(owners[0]);
+    }
+    setBorrowNote(
+      isDonation
+        ? 'Hi! I would love to claim this generous donation book for my personal collection. Thank you so much for passing it along!'
+        : 'Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.'
+    );
+  }, [book, targetOwnerName, isDonation, owners]);
 
   // Step 2: Date, Time & Meetup Spot
   const dates = [

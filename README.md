@@ -68,6 +68,14 @@ Structured borrowing workflow ensuring safety and accountability:
 - **Reader Profile Setup:** First-time profile completion for display name, avatar, and neighborhood radius without exposing private contact details.
 - **Session Persistence:** Persistent session storage across page reloads with secure logout confirmation.
 
+### 8. 👥 Public Member Profiles & Community Shelves (Lending vs. Donation)
+- **Public Reader Profile Page:** Visitors and members can click on any neighbor (e.g. Rahim Chowdhury, Priya Shah, etc.) to view their basic information, online status, neighborhood radius, member tenure, and reader biography.
+- **Trust Badges & 5-Tier Return Reliability:** Displays return punctuality (e.g., *Tier 5 Verified Master Reader · 100% on schedule*), community rating, and quick access to the 5-tier return reliability system guide.
+- **Lending vs. Donation Inventory Breakdown:** Clear counters and category chips distinguishing books available to **lend** (14–28 day borrow cycle) from books available for **free community donation** (permanent gifts for neighbors to keep).
+- **In-Shelf Search & Genre Filtering:** Real-time search across the reader's shelf, along with mode filters (*All Books*, *Available to Lend 🤝*, *Free to Donate 🎁*, *Currently Lent Out ⏳*) and genre tags.
+- **One-Click Handovers:** Direct "Borrow" and "Claim Free Gift" buttons integrated with the structured meetup handover wizard and action-guarding.
+- **Community Endorsements & Preferred Meetup Spots:** Authentic neighbor feedback and favorite public exchange locations (e.g., *Camden Coffee Roasters*, *Primrose Hill Library*).
+
 ---
 
 ## 📂 Project Architecture
@@ -83,8 +91,8 @@ BookCircle/
 │   │   ├── inbox/               # Request-gated fixed-viewport Messages page
 │   │   ├── mybooks/             # AddBookModal, ShelfView, BorrowingView, HistoryView, RequestsView
 │   │   ├── onboarding/          # WelcomeOnboardingModal (3-pillar dismissible intro)
-│   │   ├── profile/             # ProfilePage, EditProfileModal & ReturnReliabilityModal
-│   │   ├── BookCard.tsx         # Book card with cover, badges, distance & quick borrow trigger
+│   │   ├── profile/             # ProfilePage, PublicProfilePage, EditProfileModal & ReturnReliabilityModal
+│   │   ├── BookCard.tsx         # Book card with cover, badges, distance & quick borrow/claim trigger
 │   │   ├── BooksSection.tsx     # Filtered community book catalog grid
 │   │   ├── CategoryPills.tsx    # Horizontal genre selector chips
 │   │   ├── CoffeeModal.tsx      # Community support dialog
@@ -94,18 +102,19 @@ BookCircle/
 │   │   ├── MobileNavBar.tsx     # Responsive mobile bottom navigation bar
 │   │   ├── Navbar.tsx           # Sticky top navbar with profile menu & notification dropdown
 │   │   ├── NotificationDropdown.tsx # Dropdown notification popover panel
+│   │   ├── ReaderCard.tsx       # Reader card with lending & donation badges, and view shelf CTA
 │   │   └── ReadersSection.tsx   # Nearby community readers showcase
 │   ├── context/
 │   │   └── AuthContext.tsx      # AuthProvider, session lifecycle & action guarding
 │   ├── data/
-│   │   └── mockData.ts          # Canonical catalog books, community listings & readers
+│   │   └── mockData.ts          # Canonical catalog books, community listings (Rahim, Priya, etc.)
 │   ├── services/
 │   │   ├── authService.ts       # Google OAuth & WhatsApp Cloud API OTP logic
 │   │   └── storageService.ts    # Persistent localStorage & session engine
 │   ├── types/
 │   │   ├── auth.ts              # User, AuthSession, PhoneOtpVerification models
 │   │   └── index.ts             # Book, CatalogBook, Reader TypeScript interfaces
-│   ├── App.tsx                  # Root application coordinator with AuthProvider
+│   ├── App.tsx                  # Root application coordinator with AuthProvider & routing
 │   ├── index.css                # Tailwind directives & design system utilities
 │   └── main.tsx                 # React application bootstrap
 ├── public/                      # Static assets & icons

@@ -14,12 +14,14 @@ interface BookDetailsPageProps {
   book: Book;
   onBack: () => void;
   onRequestBorrow: (book: Book, ownerName?: string) => void;
+  onSelectOwner?: (ownerName: string) => void;
 }
 
 export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   book,
   onBack,
-  onRequestBorrow
+  onRequestBorrow,
+  onSelectOwner
 }) => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviews, setReviews] = useState([
@@ -240,15 +242,20 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
               className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card flex flex-col justify-between group hover:shadow-card-hover transition-all"
             >
               <div>
-                <div className="flex items-center gap-3.5 mb-3">
+                <div
+                  onClick={() => onSelectOwner && onSelectOwner(owner.name)}
+                  className="flex items-center gap-3.5 mb-3 cursor-pointer group/owner"
+                  title={`View ${owner.name}'s profile & shelf`}
+                >
                   <img
                     src={owner.avatar}
                     alt={owner.name}
-                    className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-brand/30 transition-all"
+                    className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-100 group-hover/owner:ring-brand/40 group-hover/owner:scale-105 transition-all"
                   />
                   <div>
-                    <h4 className="font-serif text-base font-semibold text-slate-800">
-                      {owner.name}
+                    <h4 className="font-serif text-base font-semibold text-slate-800 group-hover/owner:text-brand transition-colors flex items-center gap-1">
+                      <span>{owner.name}</span>
+                      <span className="text-[10px] text-brand font-sans font-medium">→</span>
                     </h4>
                     <p className="text-xs text-slate-400">
                       {owner.distance} · Member {owner.memberSince}

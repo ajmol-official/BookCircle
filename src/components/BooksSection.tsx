@@ -8,6 +8,7 @@ interface BooksSectionProps {
   books: Book[];
   onSelectBook: (book: Book) => void;
   onQuickBorrow?: (book: Book) => void;
+  onSelectOwner?: (ownerName: string) => void;
   onSeeAll?: () => void;
   selectedRadius: string;
 }
@@ -16,6 +17,7 @@ export const BooksSection: React.FC<BooksSectionProps> = ({
   books,
   onSelectBook,
   onQuickBorrow,
+  onSelectOwner,
   onSeeAll,
   selectedRadius
 }) => {
@@ -54,6 +56,7 @@ export const BooksSection: React.FC<BooksSectionProps> = ({
               book={book}
               onSelectBook={onSelectBook}
               onQuickBorrow={onQuickBorrow}
+              onSelectOwner={onSelectOwner}
             />
           ))}
         </div>

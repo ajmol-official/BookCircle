@@ -3,7 +3,8 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   StarIcon,
   Location01Icon,
-  BookOpen01Icon
+  BookOpen01Icon,
+  GiftIcon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../types';
 
@@ -11,9 +12,17 @@ interface BookCardProps {
   book: Book;
   onSelectBook: (book: Book) => void;
   onQuickBorrow?: (book: Book) => void;
+  onSelectOwner?: (ownerName: string) => void;
 }
 
-export const BookCard: React.FC<BookCardProps> = ({ book, onSelectBook, onQuickBorrow }) => {
+export const BookCard: React.FC<BookCardProps> = ({
+  book,
+  onSelectBook,
+  onQuickBorrow,
+  onSelectOwner
+}) => {
+  const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
+
   return (
     <div 
       onClick={() => onSelectBook(book)}
@@ -31,18 +40,27 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onSelectBook, onQuickB
           {/* Subtle gradient overlay on bottom of image */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
 
+          {/* Availability Mode Tag on Top Left */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5">
+            <div className="px-2.5 py-1 rounded-full bg-slate-900/75 backdrop-blur-md text-white flex items-center gap-1 shadow-sm">
+              <HugeiconsIcon icon={Location01Icon} size={12} className="text-amber-badge" />
+              <span className="text-[11px] font-medium tracking-wide">
+                {book.distance}
+              </span>
+            </div>
+
+            {isDonation && (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold tracking-wide uppercase shadow-sm flex items-center gap-1">
+                <HugeiconsIcon icon={GiftIcon} size={11} />
+                <span>Gift</span>
+              </span>
+            )}
+          </div>
+
           {/* "X own this" badge */}
           <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-slate-300/60 shadow-sm">
             <span className="text-[11px] font-medium text-slate-700">
               {book.ownersCount} own this
-            </span>
-          </div>
-
-          {/* Distance Tag on Top Left */}
-          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/75 backdrop-blur-md text-white flex items-center gap-1 shadow-sm">
-            <HugeiconsIcon icon={Location01Icon} size={12} className="text-amber-badge" />
-            <span className="text-[11px] font-medium tracking-wide">
-              {book.distance}
             </span>
           </div>
         </div>
@@ -55,10 +73,42 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onSelectBook, onQuickB
           <p className="text-xs text-slate-500 font-medium">
             {book.author}
           </p>
+
+          {/* Owner info row */}
+          <div className="flex items-center justify-between gap-2 mt-2 pt-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onSelectOwner) onSelectOwner(book.ownerName);
+              }}
+              className="flex items-center gap-1.5 text-left group/owner hover:opacity-90 transition max-w-[70%]"
+              title={`View ${book.ownerName}'s shelf`}
+            >
+              <img
+                src={book.ownerAvatar}
+                alt={book.ownerName}
+                className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200"
+              />
+              <span className="text-[11px] text-slate-500 group-hover/owner:text-brand font-medium truncate">
+                with {book.ownerName}
+              </span>
+            </button>
+
+            {isDonation ? (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold">
+                Free Gift
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-full bg-purple-50 text-brand text-[10px] font-bold">
+                To Lend
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Ratings & Owner / Action Footer */}
+      {/* Ratings & Action Footer */}
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
         {/* Rating stars */}
         <div className="flex items-center gap-1.5">
@@ -80,23 +130,41 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onSelectBook, onQuickB
           </span>
         </div>
 
-        {/* Quick Borrow Button */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            if (onQuickBorrow) {
-              onQuickBorrow(book);
-            } else {
-              onSelectBook(book);
-            }
-          }}
-          className="px-3 py-1 rounded-lg bg-brand/10 hover:bg-brand text-brand hover:text-white text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center gap-1"
-        >
-          <HugeiconsIcon icon={BookOpen01Icon} size={13} />
-          <span>Borrow</span>
-        </button>
+        {/* Quick Borrow or Claim Button */}
+        {isDonation ? (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onQuickBorrow) {
+                onQuickBorrow(book);
+              } else {
+                onSelectBook(book);
+              }
+            }}
+            className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center gap-1 shadow-2xs"
+          >
+            <HugeiconsIcon icon={GiftIcon} size={13} />
+            <span>Claim</span>
+          </button>
+        ) : (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onQuickBorrow) {
+                onQuickBorrow(book);
+              } else {
+                onSelectBook(book);
+              }
+            }}
+            className="px-3 py-1 rounded-lg bg-brand/10 hover:bg-brand text-brand hover:text-white text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center gap-1"
+          >
+            <HugeiconsIcon icon={BookOpen01Icon} size={13} />
+            <span>Borrow</span>
+          </button>
+        )}
       </div>
 
     </div>
   );
 };
+
