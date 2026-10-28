@@ -224,7 +224,7 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
               <div className="flex items-center gap-1.5 text-xs text-amber-500 mt-1">
                 <HugeiconsIcon icon={StarIcon} size={13} className="fill-amber-400 text-amber-500" />
                 <span className="font-bold text-slate-700">{book.rating}</span>
-                <span className="text-slate-400">({book.reviewsCount} reviews)</span>
+                <span className="text-slate-500">({book.reviewsCount} reviews)</span>
               </div>
             </div>
           </div>
@@ -233,7 +233,7 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
             <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-100 text-emerald-800">
               30-day loan
             </span>
-            <p className="text-[11px] text-slate-400 mt-1">{book.distance} away</p>
+            <p className="text-[11px] text-slate-500 mt-1">{book.distance} away</p>
           </div>
         </div>
 
@@ -505,7 +505,7 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
                 <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 text-xs sm:text-sm">
                   {/* Lender */}
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Lender</span>
+                    <span className="text-slate-500 font-semibold uppercase tracking-wider text-[11px]">Lender</span>
                     <div className="flex items-center gap-2 font-semibold text-slate-800">
                       <img src={selectedOwner.avatar} alt={selectedOwner.name} className="w-5 h-5 rounded-full object-cover" />
                       <span>{selectedOwner.name}</span>
@@ -514,25 +514,25 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
 
                   {/* Date & Time */}
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Proposed Time</span>
+                    <span className="text-slate-500 font-semibold uppercase tracking-wider text-[11px]">Proposed Time</span>
                     <span className="font-semibold text-slate-800">{selectedDate} @ {selectedTime}</span>
                   </div>
 
                   {/* Location */}
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Meetup Location</span>
+                    <span className="text-slate-500 font-semibold uppercase tracking-wider text-[11px]">Meetup Location</span>
                     <span className="font-semibold text-slate-800 text-right max-w-xs">{customSpot || selectedSpot}</span>
                   </div>
 
                   {/* Terms */}
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Borrow Terms</span>
+                    <span className="text-slate-500 font-semibold uppercase tracking-wider text-[11px]">Borrow Terms</span>
                     <span className="font-semibold text-emerald-700">30-day loan period · Free exchange</span>
                   </div>
 
                   {/* Note */}
                   <div>
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Your Note</span>
+                    <span className="text-slate-500 font-semibold uppercase tracking-wider text-[11px]">Your Note</span>
                     <p className="mt-1 text-slate-700 italic bg-white p-3 rounded-xl border border-slate-200/70">
                       “{borrowNote}”
                     </p>

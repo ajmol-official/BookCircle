@@ -180,13 +180,13 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
           size={18}
           className="group-hover:-translate-x-1 transition-transform"
         />
-        <span>Back to home</span>
+        <span>Back</span>
       </button>
 
       {/* Main Book Card Hero */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card flex flex-col md:flex-row gap-8 items-start">
         {/* Book Cover */}
-        <div className="relative w-full md:w-44 h-64 sm:h-64 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 shadow-md">
+        <div className="relative w-full md:w-56 aspect-[2/3] rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 shadow-md">
           <img
             src={book.coverImage}
             alt={book.title}
@@ -321,15 +321,16 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
                   <span>{bookWishlisted ? 'Alert Active (Wishlisted)' : 'Notify When Available'}</span>
                 </button>
 
-                {onSimulateReturn && (
+                {/* Debug-only: Test Return Alert (hidden in production) */}
+                {onSimulateReturn && import.meta.env.DEV && (
                   <button
                     type="button"
                     onClick={() => onSimulateReturn(book)}
-                    title="Simulate borrower returning this book"
-                    className="px-3 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-xs font-semibold transition active:scale-95 flex items-center gap-1"
+                    title="[DEV] Simulate borrower returning this book"
+                    className="px-3 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-xs font-semibold transition active:scale-95 flex items-center gap-1 opacity-70"
                   >
                     <HugeiconsIcon icon={SparklesIcon} size={13} className="text-emerald-700" />
-                    <span>Test Return Alert</span>
+                    <span>Test Return</span>
                   </button>
                 )}
               </div>

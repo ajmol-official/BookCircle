@@ -21,6 +21,9 @@ import { MobileNavBar } from './components/MobileNavBar';
 import { WelcomeOnboardingModal } from './components/onboarding/WelcomeOnboardingModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { ProfileSetupModal } from './components/auth/ProfileSetupModal';
+import { ReadersBrowsePage } from './components/readers/ReadersBrowsePage';
+import { NotFoundPage } from './components/NotFoundPage';
+import { ScrollToTop } from './components/common/ScrollToTop';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { mockBooks, mockReaders } from './data/mockData';
 import type { Book, Reader } from './types';
@@ -42,7 +45,7 @@ const BookCircleMain: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
       const tab = new URLSearchParams(window.location.search).get('tab');
-      return tab && ['home', 'my-books', 'requests', 'messages', 'profile'].includes(tab) ? tab : 'home';
+      return tab || 'home';
     } catch {
       return 'home';
     }
@@ -323,7 +326,7 @@ const BookCircleMain: React.FC = () => {
     <div
       className={`${
         isMessagesActive ? 'h-screen md:h-[100dvh] overflow-hidden' : 'min-h-screen'
-      } bg-[#FDF8F2] flex flex-col font-sans selection:bg-brand selection:text-white`}
+      } bg-cream flex flex-col font-sans selection:bg-brand selection:text-white`}
     >
       {/* Top Navbar */}
       <Navbar
@@ -405,7 +408,7 @@ const BookCircleMain: React.FC = () => {
                 <ReadersSection
                   readers={mockReaders}
                   onBrowseShelf={handleBrowseReader}
-                  onSeeAll={() => {}}
+                  onSeeAll={() => setActiveTab('readers')}
                 />
               </>
             )}
@@ -448,13 +451,28 @@ const BookCircleMain: React.FC = () => {
                 myBooks={mockBooks}
               />
             )}
+
+            {activeTab === 'readers' && (
+              <ReadersBrowsePage
+                readers={mockReaders}
+                onBrowseShelf={handleBrowseReader}
+                onBack={() => setActiveTab('home')}
+              />
+            )}
+
+            {!['home', 'my-books', 'requests', 'messages', 'profile', 'readers'].includes(activeTab) && (
+              <NotFoundPage
+                onGoHome={() => setActiveTab('home')}
+                onGoReaders={() => setActiveTab('readers')}
+              />
+            )}
           </>
         )}
       </main>
 
       {/* Footer — desktop only, hidden on messages or full profile views */}
       {activeTab !== 'messages' && !viewingBookDetails && !viewingPublicReader && (
-        <footer className="hidden md:block border-t border-slate-200/80 bg-white/60 py-10 mt-auto">
+        <footer className="hidden md:block border-t border-slate-200/80 bg-white/60 py-6 mt-auto">
           <div className="max-w-[1248px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-md bg-brand flex items-center justify-center text-white">
@@ -554,6 +572,9 @@ const BookCircleMain: React.FC = () => {
         onClose={() => setIsLogoutDialogOpen(false)}
         onConfirm={handleLogout}
       />
+
+      {/* Scroll To Top Button */}
+      <ScrollToTop />
     </div>
   );
 };

@@ -91,6 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'home', label: 'Home' },
     { id: 'my-books', label: 'My Books' },
     { id: 'requests', label: 'Requests', badge: isAuthenticated ? '1' : undefined },
+    { id: 'messages', label: 'Messages', badge: isAuthenticated ? '1' : undefined },
     { id: 'profile', label: 'Profile' },
   ];
 
@@ -135,7 +136,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FDF8F2]/90 backdrop-blur-md border-b border-slate-200/80 transition-all duration-200">
+    <header className="sticky top-0 z-40 bg-cream/90 backdrop-blur-md border-b border-slate-200/80 transition-all duration-200">
       <div className="max-w-[1248px] mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
         
         {/* Brand Logo */}
@@ -200,7 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Buy Us a Coffee Button */}
           <button
             onClick={onOpenCoffeeModal}
-            className="flex items-center gap-2 px-3 py-2 rounded-full bg-[#FDA412] hover:bg-[#E6930A] active:scale-95 text-slate-800 font-medium text-xs sm:text-sm shadow-sm hover:shadow transition-all duration-200"
+            className="flex items-center gap-2 px-3 py-2 rounded-full bg-amber-badge hover:bg-amber-badgeHover active:scale-95 text-slate-800 font-medium text-xs sm:text-sm shadow-sm hover:shadow transition-all duration-200"
             title="Support BookCircle"
           >
             <HugeiconsIcon icon={Coffee02Icon} size={18} className="text-slate-800" />
@@ -244,7 +245,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <HugeiconsIcon icon={Notification01Icon} size={22} />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-[#FDF8F2] rounded-full animate-pulse" />
+                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-cream rounded-full animate-pulse" />
                   )}
                 </button>
 
@@ -290,12 +291,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                         isProfileMenuOpen ? 'ring-brand' : 'ring-slate-200 group-hover:ring-brand'
                       }`}
                     />
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#FDF8F2] rounded-full" />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-cream rounded-full" />
                   </div>
                   <HugeiconsIcon
                     icon={ArrowDown01Icon}
                     size={14}
-                    className={`text-slate-400 group-hover:text-slate-700 transition-transform duration-200 hidden sm:block ${
+                    className={`text-slate-500 group-hover:text-slate-700 transition-transform duration-200 hidden sm:block ${
                       isProfileMenuOpen ? 'rotate-180 text-brand' : ''
                     }`}
                   />

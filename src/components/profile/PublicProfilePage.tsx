@@ -250,8 +250,8 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
 
         {/* Quick action button for mobile / tablet */}
         <div className="w-full md:w-auto flex md:flex-col gap-2.5 justify-end">
-          <div className="bg-[#F1EFE8] px-4 py-3 rounded-2xl border border-slate-200/80 text-center md:text-right">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Trust Rating</p>
+          <div className="bg-cream-200 px-4 py-3 rounded-2xl border border-slate-200/80 text-center md:text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Trust Rating</p>
             <div className="flex items-center justify-center md:justify-end gap-1.5 mt-0.5">
               <HugeiconsIcon icon={StarIcon} size={16} className="text-amber-500 fill-amber-400" />
               <span className="font-serif text-lg font-bold text-slate-800">{reader.rating || 4.9}</span>
@@ -263,10 +263,10 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
       </div>
 
       {/* 3. Trust & Return Reliability Banner */}
-      <div className="bg-[#F1EFE8] rounded-2xl p-6 border border-slate-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
+      <div className="bg-cream-200 rounded-2xl p-6 border border-slate-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
         <div className="flex items-center gap-6 pr-6 md:border-r border-slate-300">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Return Reliability</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Return Reliability</p>
             <p className="font-serif text-xl sm:text-2xl font-bold text-brand mt-0.5">
               {reader.trustTier || 'Tier 5 · Verified Master'}
             </p>
@@ -682,7 +682,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                 {(reader.favoriteGenres || ['Fiction', 'History', 'Philosophy', 'Science']).map((g) => (
                   <span
                     key={g}
-                    className="px-3 py-1 rounded-lg bg-[#F1EFE8] text-slate-700 text-xs font-medium"
+                    className="px-3 py-1 rounded-lg bg-cream-200 text-slate-700 text-xs font-medium"
                   >
                     {g}
                   </span>

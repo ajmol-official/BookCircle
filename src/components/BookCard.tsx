@@ -24,25 +24,37 @@ export const BookCard: React.FC<BookCardProps> = ({
   onSelectOwner
 }) => {
   const { toggleWishlist, isWishlisted } = useAuth();
+  const [imageLoaded, setImageLoaded] = React.useState(false);
   const isSaved = isWishlisted(book.id);
   const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
 
   return (
     <div 
+      role="button"
+      tabIndex={0}
       onClick={() => onSelectBook(book)}
-      className="group bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-slate-300 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectBook(book); } }}
+      className="group bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-slate-300 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none transition-all duration-300 flex flex-col justify-between cursor-pointer"
     >
       <div>
-        {/* Book Cover Image & Badge */}
-        <div className="relative w-full h-56 rounded-xl overflow-hidden bg-slate-100 mb-4 shadow-inner">
+        {/* Book Cover Image & Badge with Shimmer Skeleton */}
+        <div className="relative w-full h-60 rounded-xl overflow-hidden bg-slate-100 mb-4 shadow-inner">
+          {/* Skeleton Shimmer */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse" />
+          )}
+
           <img
             src={book.coverImage}
-            alt={book.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            alt={`Cover of ${book.title} by ${book.author}`}
+            onLoad={() => setImageLoaded(true)}
+            className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
             loading="lazy"
           />
           {/* Subtle gradient overlay on bottom of image */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 pointer-events-none" />
 
           {/* Availability Mode Tag on Top Left */}
           <div className="absolute top-3 left-3 flex items-center gap-1.5">
@@ -137,7 +149,11 @@ export const BookCard: React.FC<BookCardProps> = ({
       {/* Ratings & Action Footer */}
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
         {/* Rating stars */}
-        <div className="flex items-center gap-1.5">
+        <div
+          className="flex items-center gap-1.5"
+          aria-label={`Rating: ${book.rating} out of 5 stars from ${book.reviewsCount} reviews`}
+          title={`Rating: ${book.rating} (${book.reviewsCount} reviews)`}
+        >
           <div className="flex items-center text-amber-500">
             {[...Array(5)].map((_, i) => (
               <HugeiconsIcon
@@ -151,7 +167,7 @@ export const BookCard: React.FC<BookCardProps> = ({
           <span className="text-xs font-semibold text-slate-700">
             {book.rating}
           </span>
-          <span className="text-[11px] text-slate-400">
+          <span className="text-[11px] text-slate-500">
             ({book.reviewsCount})
           </span>
         </div>

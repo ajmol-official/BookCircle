@@ -10,7 +10,8 @@ import {
   Location01Icon,
   Tick01Icon,
   CheckmarkCircle02Icon,
-  ArrowLeft01Icon
+  ArrowLeft01Icon,
+  BubbleChatIcon
 } from '@hugeicons/core-free-icons';
 
 export interface ChatMessage {
@@ -301,7 +302,7 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
       <div className="flex-1 min-h-0 bg-white rounded-none sm:rounded-2xl lg:rounded-3xl border-0 sm:border border-slate-200/90 shadow-none sm:shadow-card overflow-hidden grid grid-cols-1 lg:grid-cols-12">
         
         {/* LEFT COLUMN: CONVERSATION LIST (Strict 4/12 - 33.33% on lg screens, toggled on mobile) */}
-        <div className={`lg:col-span-4 h-full flex flex-col overflow-hidden border-r border-slate-200 bg-[#FCFAF6]/60 ${
+        <div className={`lg:col-span-4 h-full flex flex-col overflow-hidden border-r border-slate-200 bg-cream/60 ${
           mobileView === 'chat' ? 'hidden lg:flex' : 'flex'
         }`}>
           
@@ -429,8 +430,14 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
                 );
               })
             ) : (
-              <div className="p-8 text-center text-slate-400 text-xs sm:text-sm">
-                No conversations found.
+              <div className="p-8 text-center flex flex-col items-center justify-center my-auto">
+                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+                  <HugeiconsIcon icon={BubbleChatIcon} size={22} />
+                </div>
+                <p className="font-serif text-sm font-semibold text-slate-700">No conversations found</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-[200px] leading-relaxed">
+                  {searchQuery ? 'Try clearing your search query.' : 'Borrow requests and active chats with lenders will appear here.'}
+                </p>
               </div>
             )}
 
@@ -516,7 +523,7 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
           {/* CHAT BODY */}
           {currentConv.status === 'pending' ? (
             /* LOCKED STATE (Fixed scrollable container + docked bar) */
-            <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-[#FCFAF6]/40">
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-cream/40">
               <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 flex flex-col items-center justify-center text-center">
                 <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mb-3.5 ring-8 ring-amber-50 shadow-xs">
                   <HugeiconsIcon icon={LockIcon} size={24} />

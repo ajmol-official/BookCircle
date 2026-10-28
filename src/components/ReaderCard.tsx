@@ -11,8 +11,11 @@ interface ReaderCardProps {
 export const ReaderCard: React.FC<ReaderCardProps> = ({ reader, onBrowseShelf }) => {
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => onBrowseShelf(reader)}
-      className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-brand/40 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBrowseShelf(reader); } }}
+      className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-brand/40 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none transition-all duration-300 flex flex-col justify-between group cursor-pointer"
     >
       <div>
         {/* Avatar & Header */}
@@ -65,7 +68,7 @@ export const ReaderCard: React.FC<ReaderCardProps> = ({ reader, onBrowseShelf })
 
       {/* Action Footer */}
       <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-slate-500 font-medium">
           {reader.totalBorrows} successful borrows
         </span>
         <button

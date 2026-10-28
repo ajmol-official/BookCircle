@@ -289,7 +289,7 @@ export const AuthModal: React.FC = () => {
             </button>
 
             {/* Quick Demo Google Switcher for Returning vs New testing */}
-            <div className="p-3 bg-[#FDF8F2] rounded-2xl border border-slate-200/80 text-[11px] text-slate-600 space-y-1.5">
+            <div className="p-3 bg-cream rounded-2xl border border-slate-200/80 text-[11px] text-slate-600 space-y-1.5">
               <span className="font-semibold text-slate-700 flex items-center gap-1">
                 <HugeiconsIcon icon={ShieldCheckIcon} size={14} className="text-brand" />
                 Quick-test accounts:

@@ -106,13 +106,13 @@ export const ShelfView: React.FC<ShelfViewProps> = ({
     <div className="space-y-10 pb-16">
       
       {/* Overdue Banner Notice */}
-      <div className="bg-[#FAEEDA] border border-[#E8D6B8] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+      <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#EFDFC6] flex items-center justify-center flex-shrink-0 text-[#8D4F0B]">
+          <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-800">
             <HugeiconsIcon icon={Alert01Icon} size={24} />
           </div>
           <div>
-            <h3 className="font-serif text-lg sm:text-xl font-semibold text-[#8D4F0B]">
+            <h3 className="font-serif text-lg sm:text-xl font-semibold text-amber-900">
               The “Karenina” is 4 days overdue
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
@@ -123,7 +123,7 @@ export const ShelfView: React.FC<ShelfViewProps> = ({
 
         <button
           onClick={() => onMessageBorrower('Amira Khan', 'Anna Karenina')}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#8D4F0B]/10 hover:bg-[#8D4F0B]/20 text-[#8D4F0B] font-semibold text-xs sm:text-sm transition-all whitespace-nowrap self-end sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-800/10 hover:bg-amber-800/20 text-amber-900 font-semibold text-xs sm:text-sm transition-all whitespace-nowrap self-end sm:self-auto"
         >
           <span>Message Amira</span>
           <HugeiconsIcon icon={ArrowRight01Icon} size={16} />

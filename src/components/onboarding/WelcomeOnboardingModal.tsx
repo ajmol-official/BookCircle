@@ -83,7 +83,7 @@ export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({
 
         {/* 3 Core Value Pillars */}
         <div className="space-y-3.5 mb-6">
-          <div className="flex items-start gap-3.5 p-3 rounded-2xl bg-[#FDF8F2] border border-amber-100/80">
+          <div className="flex items-start gap-3.5 p-3 rounded-2xl bg-cream border border-amber-100/80">
             <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0 mt-0.5">
               <HugeiconsIcon icon={Search01Icon} size={18} />
             </div>
@@ -97,7 +97,7 @@ export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-start gap-3.5 p-3 rounded-2xl bg-[#FDF8F2] border border-brand/10">
+          <div className="flex items-start gap-3.5 p-3 rounded-2xl bg-cream border border-brand/10">
             <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0 mt-0.5">
               <HugeiconsIcon icon={FavouriteIcon} size={18} />
             </div>
@@ -111,7 +111,7 @@ export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-start gap-3.5 p-3 rounded-2xl bg-[#FDF8F2] border border-emerald-100">
+          <div className="flex items-start gap-3.5 p-3 rounded-2xl bg-cream border border-emerald-100">
             <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
               <HugeiconsIcon icon={UserCircle02Icon} size={18} />
             </div>

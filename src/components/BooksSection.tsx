@@ -22,7 +22,7 @@ export const BooksSection: React.FC<BooksSectionProps> = ({
   selectedRadius
 }) => {
   return (
-    <section className="pt-8 pb-10">
+    <section className="pt-10 pb-12">
       {/* Section Header */}
       <div className="flex items-end justify-between mb-6">
         <div>
@@ -61,9 +61,15 @@ export const BooksSection: React.FC<BooksSectionProps> = ({
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
-          <p className="text-slate-500 text-sm">
-            No books found in this category or search query.
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center flex flex-col items-center gap-3">
+          <div className="w-14 h-14 rounded-full bg-brand/10 text-brand flex items-center justify-center">
+            <HugeiconsIcon icon={ArrowRight01Icon} size={24} />
+          </div>
+          <p className="text-slate-600 text-sm font-medium">
+            No books found matching your search.
+          </p>
+          <p className="text-xs text-slate-400">
+            Try a different category or search term to discover more books.
           </p>
         </div>
       )}

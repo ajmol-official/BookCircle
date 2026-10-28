@@ -138,7 +138,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
       </div>
 
       {/* 2. Trust & Badges Banner matching Figma #48:1818 */}
-      <div className="bg-[#F1EFE8] rounded-2xl p-6 border border-slate-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
+      <div className="bg-cream-200 rounded-2xl p-6 border border-slate-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
         {/* Trust Badge Column */}
         <div className="flex items-center gap-6 pr-6 md:border-r border-slate-300">
           <div>
@@ -280,9 +280,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
                 </p>
               </div>
 
-              <span className="text-xs font-semibold text-brand">
-                View all 14 books →
-              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedGenre('All')}
+                className="text-xs font-semibold text-brand hover:text-brand-dark transition hover:underline"
+              >
+                View all {myBooks.length} books →
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -332,7 +336,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
       {activeSubTab === 'reviews' && (
         <div className="space-y-4">
           <h2 className="font-serif text-xl sm:text-2xl font-semibold text-slate-800">
-            Reviews by Maya ({reviewsWritten.length})
+            Reviews by {profile.name} ({reviewsWritten.length})
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

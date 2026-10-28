@@ -217,7 +217,7 @@ export const ProfileSetupModal: React.FC = () => {
           </div>
 
           {/* Public vs Private Notice */}
-          <div className="p-3 bg-[#FDF8F2] rounded-xl border border-slate-200/80 text-[11px] text-slate-500 leading-relaxed">
+          <div className="p-3 bg-cream rounded-xl border border-slate-200/80 text-[11px] text-slate-500 leading-relaxed">
             <span className="font-semibold text-slate-700">🔒 Privacy Promise: </span>
             Your phone number, email address, and tokens remain strictly private and will never appear on public profiles or book listings.
           </div>

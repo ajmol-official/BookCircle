@@ -82,11 +82,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-lg bg-[#FDF8F2] rounded-3xl shadow-2xl border border-slate-200/80 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-lg bg-cream rounded-3xl shadow-2xl border border-slate-200/80 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-[#FDF8F2]/95 backdrop-blur-md px-6 sm:px-8 pt-6 pb-4 border-b border-slate-200/80">
+        <div className="sticky top-0 z-10 bg-cream/95 backdrop-blur-md px-6 sm:px-8 pt-6 pb-4 border-b border-slate-200/80">
           <div className="flex items-start justify-between">
             <div>
               <h3 className="font-serif text-2xl font-semibold text-slate-800">Settings</h3>
@@ -249,7 +249,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         </div>
 
         {/* Save Button */}
-        <div className="sticky bottom-0 bg-[#FDF8F2]/95 backdrop-blur-md px-6 sm:px-8 pb-6 pt-3 border-t border-slate-200/80">
+        <div className="sticky bottom-0 bg-cream/95 backdrop-blur-md px-6 sm:px-8 pb-6 pt-3 border-t border-slate-200/80">
           <button
             type="button"
             onClick={handleSave}

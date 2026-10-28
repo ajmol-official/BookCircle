@@ -223,7 +223,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                             by <span className="text-slate-700 font-medium">{book.author}</span>
                           </p>
 
-                          <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-1">
+                          <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1">
                             <span className="flex items-center gap-1">
                               <HugeiconsIcon icon={Location01Icon} size={12} className="text-brand" />
                               {book.distance}
@@ -259,8 +259,8 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                               <span>Due back soon</span>
                             </span>
 
-                            {/* Demo Return Simulator for instant testing */}
-                            {onSimulateReturn && (
+                            {/* Demo Return Simulator for development testing */}
+                            {import.meta.env.DEV && onSimulateReturn && (
                               <button
                                 type="button"
                                 onClick={() => onSimulateReturn(book)}
@@ -278,8 +278,9 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                         <button
                           type="button"
                           onClick={() => onRemoveWishlist(book.id)}
+                          aria-label="Remove from wishlist"
                           title="Remove from wishlist"
-                          className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                          className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition"
                         >
                           <HugeiconsIcon icon={Delete02Icon} size={16} />
                         </button>

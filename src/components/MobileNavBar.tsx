@@ -71,7 +71,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
               className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[52px] ${
                 isActive
                   ? 'text-brand'
-                  : 'text-slate-400 hover:text-slate-600'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               {/* Active background pill */}
@@ -94,7 +94,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
 
               <span
                 className={`text-[10px] font-medium leading-tight transition-all ${
-                  isActive ? 'font-semibold text-brand' : 'text-slate-400'
+                  isActive ? 'font-semibold text-brand' : 'text-slate-500'
                 }`}
               >
                 {item.label}

@@ -19,7 +19,8 @@ export const CategoryPills: React.FC<CategoryPillsProps> = ({
           <button
             key={category}
             onClick={() => onSelectCategory(category)}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 whitespace-nowrap active:scale-95 ${
+            aria-pressed={isSelected}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 whitespace-nowrap active:scale-95 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none ${
               isSelected
                 ? 'bg-brand text-white shadow-sm ring-1 ring-brand'
                 : 'bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 border border-slate-300/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)]'

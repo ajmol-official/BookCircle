@@ -156,7 +156,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                   </span>{' '}
                   <span className="font-semibold text-brand">“{n.book}”</span>
                 </p>
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1">
                   <HugeiconsIcon icon={Clock01Icon} size={12} />
                   <span>{n.time}</span>
                 </div>
@@ -180,7 +180,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             <h5 className="font-serif text-sm font-semibold text-slate-800">
               All caught up!
             </h5>
-            <p className="text-xs text-slate-400 mt-1 max-w-[220px] leading-relaxed">
+            <p className="text-xs text-slate-500 mt-1 max-w-[220px] leading-relaxed">
               No new notifications right now. Activity from borrowers and lenders will appear here.
             </p>
           </div>

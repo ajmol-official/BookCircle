@@ -143,7 +143,7 @@ export const RequestsView: React.FC = () => {
                     <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/50">
                       Trust: {activeRequest.trust}
                     </span>
-                    <span className="text-xs text-slate-400 font-medium">
+                    <span className="text-xs text-slate-500 font-medium">
                       {activeRequest.borrowsCount} Successful borrows
                     </span>
                   </div>
@@ -162,7 +162,7 @@ export const RequestsView: React.FC = () => {
                     <HugeiconsIcon icon={Calendar01Icon} size={18} />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Proposed Date</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Proposed Date</p>
                     <p className="text-sm font-semibold text-slate-800">{activeRequest.proposedDate}</p>
                   </div>
                 </div>
@@ -172,7 +172,7 @@ export const RequestsView: React.FC = () => {
                     <HugeiconsIcon icon={Clock01Icon} size={18} />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Proposed Time</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Proposed Time</p>
                     <p className="text-sm font-semibold text-slate-800">{activeRequest.proposedTime}</p>
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export const RequestsView: React.FC = () => {
                     <HugeiconsIcon icon={Location01Icon} size={18} />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Meetup Spot</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Meetup Spot</p>
                     <p className="text-sm font-semibold text-slate-800 truncate">{activeRequest.meetupSpot}</p>
                   </div>
                 </div>
@@ -192,7 +192,7 @@ export const RequestsView: React.FC = () => {
                     <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Return By</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Return By</p>
                     <p className="text-sm font-semibold text-slate-800">{activeRequest.returnBy}</p>
                   </div>
                 </div>

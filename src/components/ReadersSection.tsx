@@ -16,7 +16,7 @@ export const ReadersSection: React.FC<ReadersSectionProps> = ({
   onSeeAll
 }) => {
   return (
-    <section className="pt-4 pb-16">
+    <section className="pt-6 pb-16">
       {/* Section Header */}
       <div className="flex items-end justify-between mb-6">
         <div>
