@@ -3,7 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowUp01Icon } from '@hugeicons/core-free-icons';
 
-export const ScrollToTop: React.FC = () => {
+interface ScrollToTopProps {
+  isMessagesActive?: boolean;
+}
+
+export const ScrollToTop: React.FC<ScrollToTopProps> = ({ isMessagesActive = false }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -37,7 +41,11 @@ export const ScrollToTop: React.FC = () => {
           onClick={scrollToTop}
           aria-label="Scroll to top"
           title="Scroll to top"
-          className="fixed bottom-24 right-5 sm:bottom-8 sm:right-8 z-40 p-3 rounded-full bg-slate-900/85 hover:bg-slate-900 text-white shadow-xl hover:shadow-2xl border border-slate-700/50 backdrop-blur-md active:scale-90 transition-all group"
+          className={`fixed z-30 p-2.5 sm:p-3 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white shadow-lg hover:shadow-xl border border-slate-700/60 backdrop-blur-md active:scale-90 transition-all group ${
+            isMessagesActive
+              ? 'hidden sm:flex sm:bottom-[92px] sm:right-8'
+              : 'bottom-[136px] right-4 sm:bottom-[94px] sm:right-8 flex'
+          }`}
         >
           <HugeiconsIcon
             icon={ArrowUp01Icon}

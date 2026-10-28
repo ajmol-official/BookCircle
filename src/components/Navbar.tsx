@@ -187,17 +187,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Section Actions */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          
-          {/* How It Works (Opens Onboarding Guide) */}
-          <button
-            onClick={reopenOnboarding}
-            className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-full text-slate-600 hover:text-brand hover:bg-slate-200/50 text-xs sm:text-sm font-medium transition"
-            title="How BookCircle Works"
-          >
-            <HugeiconsIcon icon={HelpCircleIcon} size={16} />
-            <span>How it works</span>
-          </button>
-
           {/* Buy Us a Coffee Button */}
           <button
             onClick={onOpenCoffeeModal}

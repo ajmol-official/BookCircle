@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   ArrowLeft01Icon,
   Search01Icon,
   UserGroupIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  Cancel01Icon,
+  ArrowUpDownIcon,
+  GiftIcon
 } from '@hugeicons/core-free-icons';
 import type { Reader } from '../../types';
 import { ReaderCard } from '../ReaderCard';
@@ -15,165 +18,253 @@ interface ReadersBrowsePageProps {
   onBack: () => void;
 }
 
+type ReaderFilter = 'all' | 'verified' | 'nearby' | 'donations';
+type ReaderSort = 'distance-asc' | 'rating-desc' | 'books-desc' | 'borrows-desc';
+
 export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
   readers,
   onBrowseShelf,
   onBack
 }) => {
+  // Always scroll to top when page mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'verified' | 'nearby'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<ReaderFilter>('all');
+  const [sortBy, setSortBy] = useState<ReaderSort>('distance-asc');
 
-  const filteredReaders = readers.filter((reader) => {
-    const readerLocation = reader.location || '';
-    const readerBio = reader.bio || '';
-    const matchesSearch =
-      reader.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      readerLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      readerBio.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter & sort readers
+  const filteredAndSortedReaders = useMemo(() => {
+    return readers
+      .filter((reader) => {
+        // Search text
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const matchesName = reader.name.toLowerCase().includes(q);
+          const matchesLoc = (reader.location || '').toLowerCase().includes(q);
+          const matchesBio = (reader.bio || '').toLowerCase().includes(q);
+          const matchesGenres = (reader.favoriteGenres || []).some((g) =>
+            g.toLowerCase().includes(q)
+          );
+          if (!matchesName && !matchesLoc && !matchesBio && !matchesGenres) return false;
+        }
 
-    if (!matchesSearch) return false;
+        // Selected filter pill
+        if (selectedFilter === 'verified') {
+          return (
+            reader.verified ||
+            (reader.trustTier && reader.trustTier.toLowerCase().includes('tier 5'))
+          );
+        }
+        if (selectedFilter === 'nearby') {
+          const distanceNum = parseFloat(reader.distance);
+          return !isNaN(distanceNum) && distanceNum <= 1.0;
+        }
+        if (selectedFilter === 'donations') {
+          return (reader.booksForDonation || 0) > 0;
+        }
 
-    if (selectedFilter === 'verified') {
-      return reader.verified || (reader.trustTier && reader.trustTier.toLowerCase().includes('tier 5'));
-    }
-    if (selectedFilter === 'nearby') {
-      const distanceNum = parseFloat(reader.distance);
-      return !isNaN(distanceNum) && distanceNum <= 1.0;
-    }
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'distance-asc') {
+          return parseFloat(a.distance) - parseFloat(b.distance);
+        }
+        if (sortBy === 'rating-desc') {
+          return b.rating - a.rating;
+        }
+        if (sortBy === 'books-desc') {
+          return (b.booksAvailable || 0) - (a.booksAvailable || 0);
+        }
+        if (sortBy === 'borrows-desc') {
+          return b.totalBorrows - a.totalBorrows;
+        }
+        return 0;
+      });
+  }, [readers, searchQuery, selectedFilter, sortBy]);
 
-    return true;
-  });
+  // Counts for filter pills
+  const counts = useMemo(() => {
+    const verified = readers.filter(
+      (r) => r.verified || r.trustTier?.toLowerCase().includes('tier 5')
+    ).length;
+    const nearby = readers.filter((r) => parseFloat(r.distance) <= 1.0).length;
+    const donations = readers.filter((r) => (r.booksForDonation || 0) > 0).length;
+    return { verified, nearby, donations };
+  }, [readers]);
 
   return (
-    <div className="pt-6 pb-20 animate-in fade-in duration-200">
-      {/* Top Back Navigation */}
-      <button
-        onClick={onBack}
-        className="group flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-brand transition mb-6"
-      >
-        <HugeiconsIcon
-          icon={ArrowLeft01Icon}
-          size={18}
-          className="group-hover:-translate-x-1 transition-transform"
-        />
-        <span>Back to Discover</span>
-      </button>
+    <div className="pt-4 sm:pt-6 pb-16 animate-in fade-in duration-200">
+      {/* 1. Compact Header Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+        {/* Title & Back Navigation */}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={onBack}
+            className="group inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 hover:text-brand border border-slate-200/90 text-xs font-semibold shadow-xs transition"
+            title="Back to home"
+          >
+            <HugeiconsIcon
+              icon={ArrowLeft01Icon}
+              size={14}
+              className="group-hover:-translate-x-0.5 transition-transform"
+            />
+            <span className="hidden xs:inline">Back</span>
+          </button>
 
-      {/* Header Banner */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand/10 text-brand text-xs font-bold tracking-wide">
-              <HugeiconsIcon icon={UserGroupIcon} size={14} />
-              <span>Neighborhood Directory</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-serif text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight leading-tight">
+                Readers Near You
+              </h1>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-brand/10 text-brand text-xs font-bold">
+                {filteredAndSortedReaders.length}
+              </span>
             </div>
-            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-slate-800 tracking-tight">
-              Community Readers
-            </h1>
-            <p className="text-sm text-slate-500 max-w-xl leading-relaxed">
-              Discover neighbors who have opened their home libraries for lending and donating. Browse their personal shelves, check trust badges, and borrow directly.
+            <p className="text-[11px] sm:text-xs text-slate-500 hidden sm:block">
+              Connect with local neighbors sharing physical libraries within walking or biking distance.
             </p>
-          </div>
-
-          {/* Quick Community Stats */}
-          <div className="flex items-center gap-4 sm:gap-6 bg-cream rounded-2xl p-4 border border-slate-200/80 self-start md:self-auto">
-            <div className="text-center">
-              <p className="font-serif text-2xl font-bold text-slate-900">{readers.length}</p>
-              <p className="text-[11px] text-slate-500 font-medium">Local Readers</p>
-            </div>
-            <div className="w-[1px] h-8 bg-slate-300/80" />
-            <div className="text-center">
-              <p className="font-serif text-2xl font-bold text-brand">
-                {readers.reduce((acc, r) => acc + (r.booksAvailable || 0), 0)}
-              </p>
-              <p className="text-[11px] text-slate-500 font-medium">Books on Shelves</p>
-            </div>
-            <div className="w-[1px] h-8 bg-slate-300/80" />
-            <div className="text-center">
-              <p className="font-serif text-2xl font-bold text-emerald-600">100%</p>
-              <p className="text-[11px] text-slate-500 font-medium">Safe Handovers</p>
-            </div>
           </div>
         </div>
 
-        {/* Search & Filter Controls */}
-        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-4">
+        {/* Compact Search & Sort Toolbar */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* Search Input */}
-          <div className="relative flex-1 w-full">
+          <div className="relative flex-1 sm:w-64">
             <HugeiconsIcon
               icon={Search01Icon}
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by reader name, neighborhood, or favorite genre..."
-              className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition"
+              placeholder="Search readers or locations..."
+              className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand transition shadow-2xs"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} size={12} />
+              </button>
+            )}
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-            <button
-              onClick={() => setSelectedFilter('all')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition ${
-                selectedFilter === 'all'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+          {/* Sort Dropdown */}
+          <div className="relative flex-shrink-0">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as ReaderSort)}
+              className="appearance-none pl-2.5 pr-7 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer shadow-2xs"
             >
-              All Readers ({readers.length})
-            </button>
-            <button
-              onClick={() => setSelectedFilter('verified')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                selectedFilter === 'verified'
-                  ? 'bg-brand text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              <HugeiconsIcon icon={ShieldCheckIcon} size={14} />
-              <span>Verified Only</span>
-            </button>
-            <button
-              onClick={() => setSelectedFilter('nearby')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition ${
-                selectedFilter === 'nearby'
-                  ? 'bg-emerald-700 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Within 1 km
-            </button>
+              <option value="distance-asc">Nearest</option>
+              <option value="rating-desc">Top Rated</option>
+              <option value="books-desc">Most Books</option>
+              <option value="borrows-desc">Most Borrows</option>
+            </select>
+            <HugeiconsIcon
+              icon={ArrowUpDownIcon}
+              size={12}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            />
           </div>
         </div>
       </div>
 
-      {/* Readers Grid */}
-      {filteredReaders.length === 0 ? (
-        <div className="text-center py-16 px-4 bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center">
-          <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
-            <HugeiconsIcon icon={UserGroupIcon} size={24} />
+      {/* 2. Compact Filter Pills Bar */}
+      <div className="flex items-center gap-1.5 flex-wrap mb-4 py-1 text-xs">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-0.5">
+          Filter:
+        </span>
+
+        <button
+          onClick={() => setSelectedFilter('all')}
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+            selectedFilter === 'all'
+              ? 'bg-brand text-white shadow-2xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All ({readers.length})
+        </button>
+
+        <button
+          onClick={() => setSelectedFilter('verified')}
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+            selectedFilter === 'verified'
+              ? 'bg-brand text-white shadow-2xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <HugeiconsIcon icon={ShieldCheckIcon} size={13} />
+          <span>Verified ({counts.verified})</span>
+        </button>
+
+        <button
+          onClick={() => setSelectedFilter('nearby')}
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+            selectedFilter === 'nearby'
+              ? 'bg-brand text-white shadow-2xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          Within 1 km ({counts.nearby})
+        </button>
+
+        <button
+          onClick={() => setSelectedFilter('donations')}
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+            selectedFilter === 'donations'
+              ? 'bg-brand text-white shadow-2xs'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <HugeiconsIcon icon={GiftIcon} size={13} />
+          <span>Has Gifts 🎁 ({counts.donations})</span>
+        </button>
+
+        {(selectedFilter !== 'all' || searchQuery) && (
+          <button
+            onClick={() => {
+              setSelectedFilter('all');
+              setSearchQuery('');
+            }}
+            className="text-[11px] text-brand hover:underline font-semibold ml-auto"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {/* 3. Readers Grid (Renders immediately below the compact toolbar) */}
+      {filteredAndSortedReaders.length === 0 ? (
+        <div className="text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300 flex flex-col items-center shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-2">
+            <HugeiconsIcon icon={UserGroupIcon} size={22} />
           </div>
-          <h3 className="font-serif text-lg font-semibold text-slate-800">No readers found</h3>
-          <p className="text-sm text-slate-500 mt-1 max-w-sm">
-            Try adjusting your search keywords or clearing filters to see more neighbors.
+          <h3 className="font-serif text-base font-semibold text-slate-800">No readers found</h3>
+          <p className="text-xs text-slate-500 mt-0.5 max-w-xs leading-relaxed">
+            Try adjusting your search keywords or clearing your filter to see more neighbors.
           </p>
           <button
             onClick={() => {
               setSearchQuery('');
               setSelectedFilter('all');
             }}
-            className="mt-4 px-4 py-2 rounded-xl bg-brand text-white text-xs font-semibold hover:bg-brand-dark transition"
+            className="mt-3 px-3.5 py-1.5 rounded-lg bg-brand text-white text-xs font-semibold hover:bg-brand-dark transition shadow-2xs"
           >
             Reset Filters
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredReaders.map((reader) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {filteredAndSortedReaders.map((reader) => (
             <ReaderCard
               key={reader.id}
               reader={reader}

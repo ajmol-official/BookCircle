@@ -22,6 +22,7 @@ import { WelcomeOnboardingModal } from './components/onboarding/WelcomeOnboardin
 import { AuthModal } from './components/auth/AuthModal';
 import { ProfileSetupModal } from './components/auth/ProfileSetupModal';
 import { ReadersBrowsePage } from './components/readers/ReadersBrowsePage';
+import { BooksBrowsePage } from './components/books/BooksBrowsePage';
 import { NotFoundPage } from './components/NotFoundPage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -59,6 +60,7 @@ const BookCircleMain: React.FC = () => {
         window.history.replaceState({}, '', url.toString());
       }
     } catch {}
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [activeTab]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -402,7 +404,7 @@ const BookCircleMain: React.FC = () => {
                   onSelectBook={(book) => setViewingBookDetails(book)}
                   onQuickBorrow={handleQuickBorrow}
                   onSelectOwner={handleSelectOwner}
-                  onSeeAll={() => setSelectedCategory('All')}
+                  onSeeAll={() => setActiveTab('books')}
                   selectedRadius={selectedRadius}
                 />
                 <ReadersSection
@@ -411,6 +413,16 @@ const BookCircleMain: React.FC = () => {
                   onSeeAll={() => setActiveTab('readers')}
                 />
               </>
+            )}
+
+            {activeTab === 'books' && (
+              <BooksBrowsePage
+                books={booksList}
+                onSelectBook={(book) => setViewingBookDetails(book)}
+                onQuickBorrow={handleQuickBorrow}
+                onSelectOwner={handleSelectOwner}
+                onBack={() => setActiveTab('home')}
+              />
             )}
 
             {activeTab === 'my-books' && (
@@ -460,7 +472,7 @@ const BookCircleMain: React.FC = () => {
               />
             )}
 
-            {!['home', 'my-books', 'requests', 'messages', 'profile', 'readers'].includes(activeTab) && (
+            {!['home', 'my-books', 'requests', 'messages', 'profile', 'readers', 'books'].includes(activeTab) && (
               <NotFoundPage
                 onGoHome={() => setActiveTab('home')}
                 onGoReaders={() => setActiveTab('readers')}
@@ -507,9 +519,9 @@ const BookCircleMain: React.FC = () => {
       {/* First-Visit Dismissible Onboarding Modal */}
       <WelcomeOnboardingModal
         isOpen={isOnboardingOpen}
-        onExplore={(dontShowAgain) => dismissOnboarding(dontShowAgain)}
+        onExplore={() => dismissOnboarding(true)}
         onGetStarted={() => {
-          dismissOnboarding(false);
+          dismissOnboarding(true);
           setIsAuthModalOpen(true);
         }}
       />
@@ -573,8 +585,8 @@ const BookCircleMain: React.FC = () => {
         onConfirm={handleLogout}
       />
 
-      {/* Scroll To Top Button */}
-      <ScrollToTop />
+      {/* Scroll To Top Button (Positioned above floating Add Book button, never overlapping) */}
+      <ScrollToTop isMessagesActive={isMessagesActive} />
     </div>
   );
 };

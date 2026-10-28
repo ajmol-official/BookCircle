@@ -191,11 +191,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [currentUser]
   );
 
-  const dismissOnboarding = useCallback((neverShowAgain = true) => {
+  const dismissOnboarding = useCallback((_neverShowAgain?: boolean) => {
     setIsOnboardingOpen(false);
-    if (neverShowAgain) {
-      storageService.setOnboardingDismissed(true);
-    }
+    storageService.setOnboardingDismissed(true);
   }, []);
 
   const reopenOnboarding = useCallback(() => {
