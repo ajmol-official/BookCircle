@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  ArrowLeft01Icon,
   StarIcon,
   Location01Icon,
   ArrowRight01Icon,
@@ -20,7 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 
 interface BookDetailsPageProps {
   book: Book;
-  onBack: () => void;
+  onBack?: () => void;
   onRequestBorrow: (book: Book, ownerName?: string) => void;
   onSelectOwner?: (ownerName: string) => void;
   onSimulateReturn?: (book: Book) => void;
@@ -28,7 +27,6 @@ interface BookDetailsPageProps {
 
 export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   book,
-  onBack,
   onRequestBorrow,
   onSelectOwner,
   onSimulateReturn
@@ -176,19 +174,6 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
         )}
       </AnimatePresence>
       
-      {/* Back to Home Button */}
-      <button
-        onClick={onBack}
-        className="group flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-brand transition mb-6"
-      >
-        <HugeiconsIcon
-          icon={ArrowLeft01Icon}
-          size={18}
-          className="group-hover:-translate-x-1 transition-transform"
-        />
-        <span>Back</span>
-      </button>
-
       {/* Main Book Card Hero */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card flex flex-col md:flex-row gap-8 items-start">
         {/* Book Cover */}

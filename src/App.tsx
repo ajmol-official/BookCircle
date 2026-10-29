@@ -86,13 +86,6 @@ const BookDetailsRoute: React.FC<{
   return (
     <BookDetailsPage
       book={book}
-      onBack={() => {
-        if (window.history.length > 1) {
-          navigate(-1);
-        } else {
-          navigate('/books');
-        }
-      }}
       onRequestBorrow={onRequestBorrow}
       onSelectOwner={onSelectOwner}
       onSimulateReturn={onSimulateReturn}
@@ -166,13 +159,6 @@ const ReaderProfileRoute: React.FC<{
     <PublicProfilePage
       reader={reader}
       allBooks={booksList}
-      onBack={() => {
-        if (window.history.length > 1) {
-          navigate(-1);
-        } else {
-          navigate('/readers');
-        }
-      }}
       onSelectBook={onSelectBook}
       onRequestBorrow={onRequestBorrow}
       onSendMessage={onSendMessage}

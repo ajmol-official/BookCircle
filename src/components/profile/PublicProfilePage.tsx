@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  ArrowLeft01Icon,
   Location01Icon,
   ShieldCheckIcon,
   BookOpen01Icon,
@@ -20,7 +19,7 @@ import { ReturnReliabilityModal } from './ReturnReliabilityModal';
 interface PublicProfilePageProps {
   reader: Reader;
   allBooks: Book[];
-  onBack: () => void;
+  onBack?: () => void;
   onSelectBook: (book: Book) => void;
   onRequestBorrow: (book: Book, ownerName?: string) => void;
   onSendMessage?: (ownerName: string) => void;
@@ -29,7 +28,6 @@ interface PublicProfilePageProps {
 export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
   reader,
   allBooks,
-  onBack,
   onSelectBook,
   onRequestBorrow,
   onSendMessage
@@ -163,48 +161,34 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
 
   return (
     <div className="pt-6 pb-24 animate-in fade-in duration-200 space-y-8">
-      {/* 1. Top Breadcrumb & Action Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 1. Top Action Navigation */}
+      <div className="flex items-center justify-end gap-3">
         <button
-          onClick={onBack}
-          className="group inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-brand transition"
+          onClick={handleShareProfile}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200/90 text-slate-700 hover:text-brand hover:border-brand/40 text-xs font-semibold shadow-xs transition"
         >
-          <HugeiconsIcon
-            icon={ArrowLeft01Icon}
-            size={18}
-            className="group-hover:-translate-x-1 transition-transform"
-          />
-          <span>Back to books & readers</span>
+          {copiedLink ? (
+            <>
+              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} className="text-emerald-600" />
+              <span className="text-emerald-600">Profile Link Copied!</span>
+            </>
+          ) : (
+            <>
+              <HugeiconsIcon icon={Share01Icon} size={15} />
+              <span>Share Profile</span>
+            </>
+          )}
         </button>
 
-        <div className="flex items-center gap-3">
+        {onSendMessage && (
           <button
-            onClick={handleShareProfile}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200/90 text-slate-700 hover:text-brand hover:border-brand/40 text-xs font-semibold shadow-xs transition"
+            onClick={() => onSendMessage(reader.name)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-sm transition active:scale-95"
           >
-            {copiedLink ? (
-              <>
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} className="text-emerald-600" />
-                <span className="text-emerald-600">Profile Link Copied!</span>
-              </>
-            ) : (
-              <>
-                <HugeiconsIcon icon={Share01Icon} size={15} />
-                <span>Share Profile</span>
-              </>
-            )}
+            <HugeiconsIcon icon={Message01Icon} size={15} />
+            <span>Message {reader.name.split(' ')[0]}</span>
           </button>
-
-          {onSendMessage && (
-            <button
-              onClick={() => onSendMessage(reader.name)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-sm transition active:scale-95"
-            >
-              <HugeiconsIcon icon={Message01Icon} size={15} />
-              <span>Message {reader.name.split(' ')[0]}</span>
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* 2. Public User Profile Header Card */}
