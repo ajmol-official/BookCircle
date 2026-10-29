@@ -103,3 +103,4 @@ export function getAuthorCountry(authorName: string, explicitCountry?: string): 
 export function getCountryFlag(countryName: string): string {
   return COUNTRY_FLAGS[countryName] || '🌐';
 }
+

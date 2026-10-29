@@ -1,4 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import {
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { HeaderSection } from './components/HeaderSection';
 import { CategoryPills } from './components/CategoryPills';
@@ -33,7 +41,170 @@ import type { Book, Reader } from './types';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { BookOpen01Icon, FavouriteIcon } from '@hugeicons/core-free-icons';
 
+// ─── BOOK DETAILS ROUTE WRAPPER ───────────────────────────────────────
+const BookDetailsRoute: React.FC<{
+  booksList: Book[];
+  onRequestBorrow: (b: Book, owner?: string) => void;
+  onSelectOwner: (ownerName: string) => void;
+  onSimulateReturn: (b: Book) => void;
+}> = ({ booksList, onRequestBorrow, onSelectOwner, onSimulateReturn }) => {
+  const { bookId } = useParams<{ bookId: string }>();
+  const navigate = useNavigate();
+
+  const book = useMemo(() => {
+    if (!bookId) return null;
+    return (
+      booksList.find(
+        (b) =>
+          b.id === bookId ||
+          b.catalogId === bookId ||
+          b.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === bookId.toLowerCase()
+      ) || null
+    );
+  }, [booksList, bookId]);
+
+  if (!book) {
+    return (
+      <div className="py-24 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand mx-auto flex items-center justify-center mb-4">
+          <HugeiconsIcon icon={BookOpen01Icon} size={30} />
+        </div>
+        <h2 className="text-xl font-bold font-serif text-slate-800">Book Not Found</h2>
+        <p className="text-sm text-slate-500 mt-2">
+          The book you are looking for may have been removed or does not exist.
+        </p>
+        <button
+          onClick={() => navigate('/books')}
+          className="mt-6 px-5 py-2.5 bg-brand hover:bg-brand-dark text-white text-xs font-semibold rounded-xl shadow-sm transition active:scale-95"
+        >
+          Explore All Books
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <BookDetailsPage
+      book={book}
+      onBack={() => {
+        if (window.history.length > 1) {
+          navigate(-1);
+        } else {
+          navigate('/books');
+        }
+      }}
+      onRequestBorrow={onRequestBorrow}
+      onSelectOwner={onSelectOwner}
+      onSimulateReturn={onSimulateReturn}
+    />
+  );
+};
+
+// ─── READER PROFILE ROUTE WRAPPER ─────────────────────────────────────
+const ReaderProfileRoute: React.FC<{
+  readersList: Reader[];
+  booksList: Book[];
+  onSelectBook: (book: Book) => void;
+  onRequestBorrow: (b: Book, owner?: string) => void;
+  onSendMessage: (ownerName: string) => void;
+}> = ({ readersList, booksList, onSelectBook, onRequestBorrow, onSendMessage }) => {
+  const { readerId } = useParams<{ readerId: string }>();
+  const navigate = useNavigate();
+
+  const reader = useMemo(() => {
+    if (!readerId) return null;
+    const decoded = decodeURIComponent(readerId).toLowerCase().trim();
+    const match = readersList.find(
+      (r) =>
+        r.id.toLowerCase() === decoded ||
+        r.name.toLowerCase().trim() === decoded
+    );
+    if (match) return match;
+
+    // Dynamic reader fallback if navigated by name
+    return {
+      id: `reader-${decoded.replace(/\s+/g, '-')}`,
+      name: decodeURIComponent(readerId),
+      avatar:
+        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+      distance: '1.2 km away',
+      location: 'Local Neighborhood',
+      memberSince: 'March 2026',
+      booksAvailable: booksList.filter(
+        (b) => b.ownerName.toLowerCase().trim() === decoded
+      ).length,
+      rating: 4.9,
+      totalBorrows: 24,
+      trustTier: 'Tier 4 · Highly Reliable',
+      trustScore: '100% on schedule · 24/24 on time',
+      bio: `Hi, I am ${decodeURIComponent(
+        readerId
+      )}. I love sharing books with my neighbors in BookCircle! Check out my lending and donation shelf below.`,
+      favoriteGenres: ['All', 'Fiction', 'History', 'Science'],
+      verified: true,
+    } as Reader;
+  }, [readersList, booksList, readerId]);
+
+  if (!reader) {
+    return (
+      <div className="py-24 text-center max-w-md mx-auto">
+        <h2 className="text-xl font-bold font-serif text-slate-800">Reader Profile Not Found</h2>
+        <p className="text-sm text-slate-500 mt-2">
+          The reader profile you are looking for does not exist.
+        </p>
+        <button
+          onClick={() => navigate('/readers')}
+          className="mt-6 px-5 py-2.5 bg-brand hover:bg-brand-dark text-white text-xs font-semibold rounded-xl shadow-sm transition active:scale-95"
+        >
+          Explore All Readers
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <PublicProfilePage
+      reader={reader}
+      allBooks={booksList}
+      onBack={() => {
+        if (window.history.length > 1) {
+          navigate(-1);
+        } else {
+          navigate('/readers');
+        }
+      }}
+      onSelectBook={onSelectBook}
+      onRequestBorrow={onRequestBorrow}
+      onSendMessage={onSendMessage}
+    />
+  );
+};
+
+// ─── MESSAGES ROUTE WRAPPER ───────────────────────────────────────────
+const MessagesRoute: React.FC<{
+  booksList: Book[];
+  selectedChatParticipant: string | null;
+  onSelectBook: (book: Book) => void;
+}> = ({ booksList, selectedChatParticipant, onSelectBook }) => {
+  const [searchParams] = useSearchParams();
+  const chatOwner = searchParams.get('chat') || selectedChatParticipant;
+
+  return (
+    <InboxPage
+      initialOwnerName={chatOwner}
+      onSelectBook={(title) => {
+        const match = booksList.find((b) => b.title.toLowerCase() === title.toLowerCase());
+        if (match) onSelectBook(match);
+      }}
+    />
+  );
+};
+
+// ─── MAIN APP CONTAINER ───────────────────────────────────────────────
 const BookCircleMain: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const {
     currentUser,
     isAuthenticated,
@@ -46,25 +217,48 @@ const BookCircleMain: React.FC = () => {
     toggleWishlist,
   } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    try {
-      const tab = new URLSearchParams(window.location.search).get('tab');
-      return tab || 'home';
-    } catch {
-      return 'home';
-    }
-  });
-
+  // Scroll to top upon route change
   useEffect(() => {
-    try {
-      const url = new URL(window.location.href);
-      if (url.searchParams.get('tab') !== activeTab) {
-        url.searchParams.set('tab', activeTab);
-        window.history.replaceState({}, '', url.toString());
-      }
-    } catch {}
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [activeTab]);
+  }, [location.pathname]);
+
+  // Handle legacy ?tab= query parameters and redirect to clean routes
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) {
+      const target =
+        tabParam === 'home'
+          ? '/'
+          : tabParam === 'books'
+          ? '/books'
+          : tabParam === 'my-books'
+          ? '/my-books'
+          : tabParam === 'requests'
+          ? '/requests'
+          : tabParam === 'messages'
+          ? '/messages'
+          : tabParam === 'readers'
+          ? '/readers'
+          : tabParam === 'profile'
+          ? '/profile'
+          : `/${tabParam}`;
+      navigate(target, { replace: true });
+    }
+  }, [navigate]);
+
+  // Active tab derived from route path
+  const activeTab = useMemo(() => {
+    const path = location.pathname;
+    if (path === '/' || path === '') return 'home';
+    if (path === '/books') return 'books';
+    if (path === '/my-books') return 'my-books';
+    if (path === '/requests') return 'requests';
+    if (path === '/messages') return 'messages';
+    if (path === '/profile') return 'profile';
+    if (path === '/readers') return 'readers';
+    return '';
+  }, [location.pathname]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -76,8 +270,6 @@ const BookCircleMain: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isWishlistModalOpen, setIsWishlistModalOpen] = useState<boolean>(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState<boolean>(false);
-  const [viewingBookDetails, setViewingBookDetails] = useState<Book | null>(null);
-  const [viewingPublicReader, setViewingPublicReader] = useState<Reader | null>(null);
   const [selectedBorrowBook, setSelectedBorrowBook] = useState<Book | null>(null);
   const [selectedClaimBook, setSelectedClaimBook] = useState<Book | null>(null);
   const [isGlobalAddBookOpen, setIsGlobalAddBookOpen] = useState<boolean>(false);
@@ -101,7 +293,7 @@ const BookCircleMain: React.FC = () => {
     });
   }, []);
 
-  // Notifications State (including message notification)
+  // Notifications State
   const [notifications, setNotifications] = useState<NotificationItem[]>([
     {
       id: 'notif-1',
@@ -151,7 +343,7 @@ const BookCircleMain: React.FC = () => {
 
   const categories = ['All', 'Fiction', 'Non-fiction', 'Science', 'History', 'Poetry'];
 
-  // Filter books based on category and search query
+  // Filter books based on category and search query for homepage
   const filteredBooks = useMemo(() => {
     return booksList.filter((book) => {
       const matchesCategory =
@@ -168,74 +360,54 @@ const BookCircleMain: React.FC = () => {
     });
   }, [booksList, selectedCategory, searchQuery]);
 
+  const handleSelectBook = (book: Book) => {
+    navigate(`/book/${book.id}`);
+  };
+
   const handleBrowseReader = (reader: Reader) => {
-    setViewingPublicReader(reader);
-    setViewingBookDetails(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate(`/reader/${encodeURIComponent(reader.id || reader.name)}`);
   };
 
   const handleSelectOwner = (ownerName: string) => {
-    const match = readersList.find(
-      (r) =>
-        r.name.toLowerCase().trim() === ownerName.toLowerCase().trim() ||
-        r.name.toLowerCase().includes(ownerName.toLowerCase().trim()) ||
-        ownerName.toLowerCase().includes(r.name.toLowerCase().trim())
-    );
-
-    if (match) {
-      setViewingPublicReader(match);
-    } else {
-      const ownerBooks = booksList.filter((b) => b.ownerName.toLowerCase().includes(ownerName.toLowerCase()));
-      const firstBook = ownerBooks[0];
-      const dynamicReader: Reader = {
-        id: `reader-${ownerName.toLowerCase().replace(/\s+/g, '-')}`,
-        name: ownerName,
-        avatar: firstBook?.ownerAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-        distance: firstBook?.distance || '1.0 km',
-        location: `${firstBook?.distance || '1.0 km'} away in neighborhood`,
-        memberSince: '2024',
-        booksAvailable: ownerBooks.length || 4,
-        booksForLending: ownerBooks.filter((b) => b.availabilityMode === 'lending').length || 3,
-        booksForDonation: ownerBooks.filter((b) => b.availabilityMode === 'donation').length || 1,
-        rating: 4.9,
-        totalBorrows: 24,
-        trustTier: 'Tier 4 · Highly Reliable',
-        trustScore: '100% on schedule · 24/24 on time',
-        bio: `Hi, I am ${ownerName}. I love sharing books with my neighbors in BookCircle! Check out my lending and donation shelf below.`,
-        favoriteGenres: ['All', 'Fiction', 'History', 'Science'],
-        verified: true
-      };
-      setViewingPublicReader(dynamicReader);
-    }
-    setViewingBookDetails(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate(`/reader/${encodeURIComponent(ownerName)}`);
   };
 
   const handleTabChange = (tab: string) => {
-    if (tab !== 'home' && !isAuthenticated) {
+    const targetPath =
+      tab === 'home'
+        ? '/'
+        : tab === 'books'
+        ? '/books'
+        : tab === 'my-books'
+        ? '/my-books'
+        : tab === 'requests'
+        ? '/requests'
+        : tab === 'messages'
+        ? '/messages'
+        : tab === 'profile'
+        ? '/profile'
+        : tab === 'readers'
+        ? '/readers'
+        : `/${tab}`;
+
+    if (tab !== 'home' && tab !== 'books' && tab !== 'readers' && !isAuthenticated) {
       requireAuth({
         title: 'Sign In Required',
         message: 'Sign in to access your personal shelf, incoming requests, and neighbor conversations.',
         targetAction: tab as any,
         onAuthorized: () => {
-          setActiveTab(tab);
-          setViewingBookDetails(null);
-          setViewingPublicReader(null);
+          navigate(targetPath);
         },
       });
       return;
     }
-    setActiveTab(tab);
-    setViewingBookDetails(null);
-    setViewingPublicReader(null);
+    navigate(targetPath);
   };
 
   const handleLogout = async () => {
     setIsLogoutDialogOpen(false);
     await logout();
-    setActiveTab('home');
-    setViewingBookDetails(null);
-    setViewingPublicReader(null);
+    navigate('/');
     setGlobalToast('You have been signed out. You can continue exploring BookCircle as a guest.');
     setTimeout(() => setGlobalToast(null), 4000);
   };
@@ -296,26 +468,23 @@ const BookCircleMain: React.FC = () => {
     );
 
     // 2. Persist to DB if connected
-    dbService.createBorrowRequest({
-      bookId: details.book.id,
-      bookTitle: details.book.title,
-      borrowerId: currentUser?.id,
-      borrowerName: currentUser?.displayName || 'Community Reader',
-      ownerId: details.owner.id,
-      ownerName: details.owner.name,
-      exchangeType: 'gift',
-      meetupDate: details.date,
-      meetupTime: details.time,
-      meetupSpot: details.spot,
-      message: details.note,
-    }).catch(console.error);
+    dbService
+      .createBorrowRequest({
+        bookId: details.book.id,
+        bookTitle: details.book.title,
+        borrowerId: currentUser?.id,
+        borrowerName: currentUser?.displayName || 'Community Reader',
+        ownerId: details.owner.id,
+        ownerName: details.owner.name,
+        exchangeType: 'gift',
+        meetupDate: details.date,
+        meetupTime: details.time,
+        meetupSpot: details.spot,
+        message: details.note,
+      })
+      .catch(console.error);
 
-    // 3. If viewing this book details, update live
-    if (viewingBookDetails?.id === details.book.id) {
-      setViewingBookDetails((prev) => (prev ? { ...prev, status: 'claimed' } : null));
-    }
-
-    // 4. Trigger celebration toast for claiming a free gift
+    // 3. Trigger celebration toast for claiming a free gift
     setGlobalToast(
       `🎁 Free Gift Claimed! Meetup with ${details.owner.name} scheduled for ${details.date} at ${details.time}. It is yours to keep forever!`
     );
@@ -329,71 +498,45 @@ const BookCircleMain: React.FC = () => {
     );
 
     // 2. Persist to DB if connected
-    dbService.createBorrowRequest({
-      bookId: details.book.id,
-      bookTitle: details.book.title,
-      borrowerId: currentUser?.id,
-      borrowerName: currentUser?.displayName || 'Community Reader',
-      ownerId: details.owner.id,
-      ownerName: details.owner.name,
-      exchangeType: 'borrow',
-      meetupDate: details.date,
-      meetupTime: details.time,
-      meetupSpot: details.spot,
-      message: details.note,
-    }).catch(console.error);
+    dbService
+      .createBorrowRequest({
+        bookId: details.book.id,
+        bookTitle: details.book.title,
+        borrowerId: currentUser?.id,
+        borrowerName: currentUser?.displayName || 'Community Reader',
+        ownerId: details.owner.id,
+        ownerName: details.owner.name,
+        exchangeType: 'borrow',
+        meetupDate: details.date,
+        meetupTime: details.time,
+        meetupSpot: details.spot,
+        message: details.note,
+      })
+      .catch(console.error);
 
-    // 3. If viewing this book details, update live
-    if (viewingBookDetails?.id === details.book.id) {
-      setViewingBookDetails((prev) => (prev ? { ...prev, status: 'lent_out' } : null));
-    }
-
-    // 4. Trigger celebration toast for borrowing
+    // 3. Trigger friendly confirmation toast
     setGlobalToast(
-      `📖 Borrow Request Sent! Meetup with ${details.owner.name} scheduled for ${details.date} at ${details.time}.`
+      `🎉 Borrow Request Sent! Meetup scheduled with ${details.owner.name} on ${details.date} at ${details.time}.`
     );
     setTimeout(() => setGlobalToast(null), 5000);
   };
 
-  const handleFloatingAddBook = () => {
-    requireAuth({
-      title: 'Sign In to Add Book',
-      message: 'Sign in or join BookCircle to list physical books from your collection to lend or donate.',
-      targetAction: 'add-book',
-      onAuthorized: () => setIsGlobalAddBookOpen(true),
-    });
-  };
-
   const handleSimulateReturn = (book: Book) => {
-    // 1. Mark book as available in booksList
     setBooksList((prev) =>
       prev.map((b) => (b.id === book.id ? { ...b, status: 'available' } : b))
     );
 
-    // 2. If user is currently viewing this book details, update it live
-    if (viewingBookDetails?.id === book.id) {
-      setViewingBookDetails((prev) => (prev ? { ...prev, status: 'available' } : null));
-    }
+    setGlobalToast(`📖 "${book.title}" was marked as returned! It is now available for new readers.`);
+    setTimeout(() => setGlobalToast(null), 4000);
+  };
 
-    // 3. Dispatch an urgent notification to the notification bell
-    const newNotif: NotificationItem = {
-      id: `notif-wishlist-${Date.now()}`,
-      sender: book.ownerName,
-      avatar: book.ownerAvatar,
-      action: `returned "${book.title}" to their shelf! It is now available to borrow.`,
-      book: book.title,
-      time: 'Just now',
-      type: 'wishlist_available',
-      unread: true,
-      targetTab: 'book-details',
-      bookId: book.id,
-    };
-
-    setNotifications((prev) => [newNotif, ...prev]);
-
-    // 4. Trigger global celebration toast
-    setGlobalToast(`🎉 Great news! "${book.title}" was returned by ${book.ownerName} and is now ready to borrow.`);
-    setTimeout(() => setGlobalToast(null), 5000);
+  const handleFloatingAddBook = () => {
+    requireAuth({
+      title: 'Sign In to Share Books',
+      message: 'Join BookCircle to lend or gift your physical books to neighbors and build community trust.',
+      targetAction: 'add-book',
+      onAuthorized: () => setIsGlobalAddBookOpen(true),
+    });
   };
 
   const handleNotificationClick = (item: NotificationItem) => {
@@ -402,21 +545,17 @@ const BookCircleMain: React.FC = () => {
     );
     if (item.type === 'message') {
       setSelectedChatParticipant(item.sender);
-      setActiveTab('messages');
-      setViewingBookDetails(null);
-      setViewingPublicReader(null);
+      navigate(`/messages?chat=${encodeURIComponent(item.sender)}`);
     } else if (item.type === 'wishlist_available' || item.targetTab === 'book-details') {
-      const found = booksList.find((b) => b.id === item.bookId || b.title.toLowerCase() === item.book.toLowerCase());
+      const found = booksList.find(
+        (b) => b.id === item.bookId || b.title.toLowerCase() === item.book.toLowerCase()
+      );
       if (found) {
-        setViewingBookDetails(found);
-        setViewingPublicReader(null);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        navigate(`/book/${found.id}`);
         return;
       }
     } else if (item.targetTab) {
-      setActiveTab(item.targetTab);
-      setViewingBookDetails(null);
-      setViewingPublicReader(null);
+      handleTabChange(item.targetTab);
     }
   };
 
@@ -431,21 +570,24 @@ const BookCircleMain: React.FC = () => {
         {
           title: newBook.title,
           author: newBook.author,
-          coverImage: newBook.coverImage || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
+          coverImage:
+            newBook.coverImage ||
+            'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
           category: newBook.category || 'Fiction',
-          status: newBook.status || 'available',
-          availabilityMode: newBook.availabilityMode || 'lending',
+          status: newBook.availability === 'donation' ? 'donation' : 'available',
+          availabilityMode: newBook.availability || 'lending',
           condition: newBook.condition || 'Like New',
+          bookType: newBook.bookType || 'Original Copy',
           description: newBook.description || '',
-          distance: '0.1 km away',
-          ownersCount: 1,
-          rating: 5.0,
+          rating: 4.8,
           reviewsCount: 1,
+          distance: '0.1 km',
+          ownersCount: 1,
           ownerName: currentUser?.displayName || 'You',
           ownerAvatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-          ownerTrust: 'Verified Neighbor',
+          ownerTrust: 'Verified Lender',
         },
-        currentUser?.id
+        currentUser?.id || 'demo-user'
       );
       setBooksList((prev) => [added, ...prev]);
     }
@@ -457,7 +599,9 @@ const BookCircleMain: React.FC = () => {
   };
 
   const unreadNotificationsCount = isAuthenticated ? notifications.filter((n) => n.unread).length : 0;
-  const isMessagesActive = activeTab === 'messages' && !viewingBookDetails && !viewingPublicReader;
+  const isMessagesActive = location.pathname === '/messages';
+  const isDetailPage =
+    location.pathname.startsWith('/book/') || location.pathname.startsWith('/reader/');
 
   return (
     <div
@@ -467,7 +611,7 @@ const BookCircleMain: React.FC = () => {
     >
       {/* Top Navbar */}
       <Navbar
-        activeTab={viewingBookDetails || viewingPublicReader ? '' : activeTab}
+        activeTab={activeTab}
         setActiveTab={handleTabChange}
         onOpenCoffeeModal={() => setIsCoffeeModalOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -495,33 +639,10 @@ const BookCircleMain: React.FC = () => {
             : 'px-4 sm:px-6 pb-20 md:pb-0'
         }`}
       >
-        {viewingPublicReader ? (
-          <PublicProfilePage
-            reader={viewingPublicReader}
-            allBooks={booksList}
-            onBack={() => setViewingPublicReader(null)}
-            onSelectBook={(book) => {
-              setViewingBookDetails(book);
-              setViewingPublicReader(null);
-            }}
-            onRequestBorrow={handleDetailsRequestBorrow}
-            onSendMessage={(ownerName) => {
-              setSelectedChatParticipant(ownerName);
-              setActiveTab('messages');
-              setViewingPublicReader(null);
-            }}
-          />
-        ) : viewingBookDetails ? (
-          <BookDetailsPage
-            book={viewingBookDetails}
-            onBack={() => setViewingBookDetails(null)}
-            onRequestBorrow={handleDetailsRequestBorrow}
-            onSelectOwner={handleSelectOwner}
-            onSimulateReturn={handleSimulateReturn}
-          />
-        ) : (
-          <>
-            {activeTab === 'home' && (
+        <Routes>
+          <Route
+            path="/"
+            element={
               <>
                 <HeaderSection
                   searchQuery={searchQuery}
@@ -536,91 +657,138 @@ const BookCircleMain: React.FC = () => {
                 />
                 <BooksSection
                   books={filteredBooks}
-                  onSelectBook={(book) => setViewingBookDetails(book)}
+                  onSelectBook={handleSelectBook}
                   onQuickBorrow={handleQuickBorrow}
                   onSelectOwner={handleSelectOwner}
-                  onSeeAll={() => setActiveTab('books')}
+                  onSeeAll={() => navigate('/books')}
                   selectedRadius={selectedRadius}
                 />
                 <ReadersSection
                   readers={readersList}
                   onBrowseShelf={handleBrowseReader}
-                  onSeeAll={() => setActiveTab('readers')}
+                  onSeeAll={() => navigate('/readers')}
                 />
               </>
-            )}
+            }
+          />
 
-            {activeTab === 'books' && (
+          <Route
+            path="/books"
+            element={
               <BooksBrowsePage
                 books={booksList}
-                onSelectBook={(book) => setViewingBookDetails(book)}
+                onSelectBook={handleSelectBook}
                 onQuickBorrow={handleQuickBorrow}
                 onSelectOwner={handleSelectOwner}
-                onBack={() => setActiveTab('home')}
+                onBack={() => navigate('/')}
               />
-            )}
+            }
+          />
 
-            {activeTab === 'my-books' && (
+          <Route
+            path="/book/:bookId"
+            element={
+              <BookDetailsRoute
+                booksList={booksList}
+                onRequestBorrow={handleDetailsRequestBorrow}
+                onSelectOwner={handleSelectOwner}
+                onSimulateReturn={handleSimulateReturn}
+              />
+            }
+          />
+
+          <Route
+            path="/my-books"
+            element={
               <MyBooksPage
                 key="my-books-shelf"
                 initialSubTab="shelf"
                 onBookAdded={handleGlobalBookAdded}
                 onNavigateToMessages={(name) => {
                   setSelectedChatParticipant(name);
-                  setActiveTab('messages');
+                  navigate(`/messages?chat=${encodeURIComponent(name)}`);
                 }}
               />
-            )}
+            }
+          />
 
-            {activeTab === 'requests' && (
+          <Route
+            path="/requests"
+            element={
               <MyBooksPage
                 key="my-books-requests"
                 initialSubTab="requests"
                 onBookAdded={handleGlobalBookAdded}
                 onNavigateToMessages={(name) => {
                   setSelectedChatParticipant(name);
-                  setActiveTab('messages');
+                  navigate(`/messages?chat=${encodeURIComponent(name)}`);
                 }}
               />
-            )}
+            }
+          />
 
-            {activeTab === 'messages' && (
-              <InboxPage
-                initialOwnerName={selectedChatParticipant}
-                onSelectBook={(title) => {
-                  const match = booksList.find((b) => b.title.toLowerCase() === title.toLowerCase());
-                  if (match) setViewingBookDetails(match);
-                }}
+          <Route
+            path="/messages"
+            element={
+              <MessagesRoute
+                booksList={booksList}
+                selectedChatParticipant={selectedChatParticipant}
+                onSelectBook={handleSelectBook}
               />
-            )}
+            }
+          />
 
-            {activeTab === 'profile' && (
+          <Route
+            path="/profile"
+            element={
               <ProfilePage
-                onSelectBook={(book) => setViewingBookDetails(book)}
+                onSelectBook={handleSelectBook}
                 myBooks={booksList}
               />
-            )}
+            }
+          />
 
-            {activeTab === 'readers' && (
+          <Route
+            path="/readers"
+            element={
               <ReadersBrowsePage
                 readers={readersList}
                 onBrowseShelf={handleBrowseReader}
-                onBack={() => setActiveTab('home')}
+                onBack={() => navigate('/')}
               />
-            )}
+            }
+          />
 
-            {!['home', 'my-books', 'requests', 'messages', 'profile', 'readers', 'books'].includes(activeTab) && (
-              <NotFoundPage
-                onGoHome={() => setActiveTab('home')}
-                onGoReaders={() => setActiveTab('readers')}
+          <Route
+            path="/reader/:readerId"
+            element={
+              <ReaderProfileRoute
+                readersList={readersList}
+                booksList={booksList}
+                onSelectBook={handleSelectBook}
+                onRequestBorrow={handleDetailsRequestBorrow}
+                onSendMessage={(name) => {
+                  setSelectedChatParticipant(name);
+                  navigate(`/messages?chat=${encodeURIComponent(name)}`);
+                }}
               />
-            )}
-          </>
-        )}
+            }
+          />
+
+          <Route
+            path="*"
+            element={
+              <NotFoundPage
+                onGoHome={() => navigate('/')}
+                onGoReaders={() => navigate('/readers')}
+              />
+            }
+          />
+        </Routes>
       </main>
 
-      {/* Footer — desktop only, hidden on messages or full profile views */}
-      {activeTab !== 'messages' && !viewingBookDetails && !viewingPublicReader && (
+      {/* Footer — desktop only, hidden on messages or full detail/profile views */}
+      {!isMessagesActive && !isDetailPage && (
         <footer className="hidden md:block border-t border-slate-200/80 bg-white/60 py-6 mt-auto">
           <div className="max-w-[1248px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <div className="flex items-center gap-2">
@@ -647,7 +815,7 @@ const BookCircleMain: React.FC = () => {
 
       {/* Mobile Bottom Navigation */}
       <MobileNavBar
-        activeTab={viewingBookDetails || viewingPublicReader ? '' : activeTab}
+        activeTab={activeTab}
         setActiveTab={handleTabChange}
         unreadMessages={isAuthenticated ? 1 : 0}
         pendingRequests={isAuthenticated ? 1 : 0}
@@ -713,8 +881,8 @@ const BookCircleMain: React.FC = () => {
         wishlistBookIds={wishlist}
         allBooks={booksList}
         onSelectBook={(book) => {
-          setViewingBookDetails(book);
-          setViewingPublicReader(null);
+          setIsWishlistModalOpen(false);
+          handleSelectBook(book);
         }}
         onRequestBorrow={(book, ownerName) => {
           handleDetailsRequestBorrow(book, ownerName);
