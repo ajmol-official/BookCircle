@@ -737,7 +737,6 @@ const BookCircleMain: React.FC = () => {
                 onSelectBook={handleSelectBook}
                 onQuickBorrow={handleQuickBorrow}
                 onSelectOwner={handleSelectOwner}
-                onBack={() => navigate('/')}
               />
             }
           />
@@ -817,7 +816,6 @@ const BookCircleMain: React.FC = () => {
               <ReadersBrowsePage
                 readers={readersList}
                 onBrowseShelf={handleBrowseReader}
-                onBack={() => navigate('/')}
               />
             }
           />

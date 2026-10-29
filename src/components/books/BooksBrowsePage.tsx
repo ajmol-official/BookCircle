@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  ArrowLeft01Icon,
   Search01Icon,
   FilterHorizontalIcon,
   StarIcon,
@@ -29,7 +28,7 @@ interface BooksBrowsePageProps {
   onSelectBook: (book: Book) => void;
   onQuickBorrow?: (book: Book) => void;
   onSelectOwner?: (ownerName: string) => void;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 type DistanceOption = 'all' | '1km' | '2km' | '5km' | '10km';
@@ -45,7 +44,6 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
   onSelectBook,
   onQuickBorrow,
   onSelectOwner,
-  onBack
 }) => {
   const { toggleWishlist, isWishlisted } = useAuth();
 
@@ -282,35 +280,18 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
       ───────────────────────────────────────────────────────────── */}
       <div className="mb-6 sm:mb-8">
         {/* Navigation & Page Title Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 hover:text-brand border border-slate-200/90 text-xs font-semibold shadow-2xs transition active:scale-95"
-              title="Return to home"
-            >
-              <HugeiconsIcon
-                icon={ArrowLeft01Icon}
-                size={16}
-                className="group-hover:-translate-x-0.5 transition-transform"
-              />
-              <span>Home</span>
-            </button>
-
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight leading-tight">
-                  Find & Explore Books
-                </h1>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-brand/10 text-brand text-xs font-bold">
-                  {filteredAndSortedBooks.length}
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Physical paperbacks and hardcovers shared by neighbors in your circle.
-              </p>
-            </div>
+        <div className="mb-5">
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight leading-tight">
+              Find & Explore Books
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-brand/10 text-brand text-xs font-bold">
+              {filteredAndSortedBooks.length}
+            </span>
           </div>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Physical paperbacks and hardcovers shared by neighbors in your circle.
+          </p>
         </div>
 
         {/* Unified Search Command Container */}

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  ArrowLeft01Icon,
   Search01Icon,
   UserGroupIcon,
   ShieldCheckIcon,
@@ -15,7 +14,7 @@ import { ReaderCard } from '../ReaderCard';
 interface ReadersBrowsePageProps {
   readers: Reader[];
   onBrowseShelf: (reader: Reader) => void;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 type ReaderFilter = 'all' | 'verified' | 'nearby' | 'donations';
@@ -24,7 +23,6 @@ type ReaderSort = 'distance-asc' | 'rating-desc' | 'books-desc' | 'borrows-desc'
 export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
   readers,
   onBrowseShelf,
-  onBack
 }) => {
   // Always scroll to top when page mounts
   useEffect(() => {
@@ -99,34 +97,19 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
     <div className="pt-4 sm:pt-6 pb-16 animate-in fade-in duration-200">
       {/* 1. Compact Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-        {/* Title & Back Navigation */}
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={onBack}
-            className="group inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 hover:text-brand border border-slate-200/90 text-xs font-semibold shadow-xs transition"
-            title="Back to home"
-          >
-            <HugeiconsIcon
-              icon={ArrowLeft01Icon}
-              size={14}
-              className="group-hover:-translate-x-0.5 transition-transform"
-            />
-            <span className="hidden xs:inline">Back</span>
-          </button>
-
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-serif text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight leading-tight">
-                Readers Near You
-              </h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-brand/10 text-brand text-xs font-bold">
-                {filteredAndSortedReaders.length}
-              </span>
-            </div>
-            <p className="text-[11px] sm:text-xs text-slate-500 hidden sm:block">
-              Connect with local neighbors sharing physical libraries within walking or biking distance.
-            </p>
+        {/* Title */}
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="font-serif text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight leading-tight">
+              Readers Near You
+            </h1>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-brand/10 text-brand text-xs font-bold">
+              {filteredAndSortedReaders.length}
+            </span>
           </div>
+          <p className="text-[11px] sm:text-xs text-slate-500 hidden sm:block">
+            Connect with local neighbors sharing physical libraries within walking or biking distance.
+          </p>
         </div>
 
         {/* Compact Search & Sort Toolbar */}
