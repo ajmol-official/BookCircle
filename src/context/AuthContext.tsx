@@ -18,6 +18,9 @@ interface AuthContextType {
   setIsOnboardingOpen: (open: boolean) => void;
   dismissOnboarding: (neverShowAgain?: boolean) => void;
   reopenOnboarding: () => void;
+  loginWithEmail: (email: string, password: string) => Promise<User>;
+  signUpWithEmail: (email: string, password: string, fullName: string) => Promise<{ user: User | null; needsEmailConfirmation?: boolean }>;
+  loginWithDemo: (email: string, displayName?: string) => Promise<User>;
   loginWithGoogle: (options?: { email?: string; displayName?: string }) => Promise<User | null>;
   requestPhoneOtp: (phoneNumber: string, countryCode: string) => Promise<PhoneOtpVerification>;
   verifyPhoneOtp: (verificationId: string, code: string) => Promise<User>;
@@ -109,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initAuth();
 
-    // 3. Supabase Auth State Change Listener (handles Google OAuth redirect callbacks & sign out)
+    // 3. Supabase Auth State Change Listener
     let authSubscription: { unsubscribe: () => void } | null = null;
 
     if (isSupabaseConfigured()) {
@@ -124,7 +127,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { user, isNewUser } = await authService.syncSupabaseSession(session.user);
             handleAuthSuccess(user, isNewUser);
 
-            // Clean up OAuth tokens from URL hash if returning from redirect
             if (window.location.hash && window.location.hash.includes('access_token')) {
               const redirectPath = sessionStorage.getItem('bookcircle_auth_redirect') || window.location.pathname;
               sessionStorage.removeItem('bookcircle_auth_redirect');
@@ -150,19 +152,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [handleAuthSuccess]);
 
+  // Real Email & Password Login
+  const loginWithEmail = useCallback(
+    async (email: string, password: string): Promise<User> => {
+      setIsLoading(true);
+      try {
+        const { user } = await authService.signInWithEmail(email, password);
+        handleAuthSuccess(user, false);
+        return user;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [handleAuthSuccess]
+  );
+
+  // Real Email & Password Sign-Up
+  const signUpWithEmail = useCallback(
+    async (
+      email: string,
+      password: string,
+      fullName: string
+    ): Promise<{ user: User | null; needsEmailConfirmation?: boolean }> => {
+      setIsLoading(true);
+      try {
+        const result = await authService.signUpWithEmail(email, password, fullName);
+        if (result.user) {
+          handleAuthSuccess(result.user, true);
+        }
+        return { user: result.user, needsEmailConfirmation: result.needsEmailConfirmation };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [handleAuthSuccess]
+  );
+
+  // Quick Demo Account Login
+  const loginWithDemo = useCallback(
+    async (email: string, displayName?: string): Promise<User> => {
+      setIsLoading(true);
+      try {
+        const result = await authService.loginWithDemo({ email, displayName });
+        handleAuthSuccess(result.user, result.isNewUser);
+        return result.user;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [handleAuthSuccess]
+  );
+
   // Google Sign-In Handler
   const loginWithGoogle = useCallback(
     async (options?: { email?: string; displayName?: string }): Promise<User | null> => {
       setIsLoading(true);
       try {
         if (options?.email) {
-          // Instant test accounts switcher
-          const result = await authService.loginWithGoogleDemo(options);
+          const result = await authService.loginWithDemo(options);
           handleAuthSuccess(result.user, result.isNewUser);
           return result.user;
         }
 
-        // Real Google OAuth flow
         await authService.signInWithGoogle();
         return null;
       } finally {
@@ -199,7 +250,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updated = await authService.updateProfile(currentUser.id, data);
       setCurrentUser(updated);
 
-      // If completing profile setup, close modal and resume pending action
       if (isProfileSetupOpen) {
         setIsProfileSetupOpen(false);
         if (pendingAuthorizedCallback) {
@@ -241,7 +291,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
 
-      // Guest user: open Auth Modal with action context and queue callback
       setAuthPromptContext({
         title: options.title,
         message: options.message,
@@ -313,6 +362,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsOnboardingOpen,
         dismissOnboarding,
         reopenOnboarding,
+        loginWithEmail,
+        signUpWithEmail,
+        loginWithDemo,
         loginWithGoogle,
         requestPhoneOtp,
         verifyPhoneOtp,

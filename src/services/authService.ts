@@ -28,27 +28,110 @@ export class AuthService {
     return session ? session.user : null;
   }
 
-  // --- Real Supabase Google OAuth Sign-In ---
+  // =========================================================================
+  // Real Supabase Email & Password Authentication
+  // =========================================================================
+
   /**
-   * Initiates real Google OAuth flow with Supabase Auth.
-   * Redirects the user's browser to Google's consent screen.
+   * Real Supabase Email & Password Sign-Up
    */
-  async signInWithGoogle(redirectDestination?: string): Promise<void> {
+  async signUpWithEmail(
+    email: string,
+    password: string,
+    fullName: string
+  ): Promise<{ user: User | null; isNewUser: boolean; session?: AuthSession; needsEmailConfirmation?: boolean }> {
     if (!isSupabaseConfigured()) {
-      throw new Error(
-        'Supabase is not configured yet. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.'
-      );
+      throw new Error('Supabase is not configured yet. Please check environment variables.');
     }
 
-    // Save intended destination route so we can navigate back after Google redirects
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = fullName.trim() || cleanEmail.split('@')[0];
+
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password,
+      options: {
+        data: {
+          full_name: cleanName,
+        },
+      },
+    });
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        throw new Error('An account with this email already exists. Please switch to the Sign In tab.');
+      }
+      if (error.message.includes('Password should be at least')) {
+        throw new Error('Password must be at least 6 characters long.');
+      }
+      throw new Error(error.message);
+    }
+
+    if (data.session?.user) {
+      // Auto-logged in!
+      const syncResult = await this.syncSupabaseSession(data.session.user);
+      return { ...syncResult, needsEmailConfirmation: false };
+    }
+
+    if (data.user) {
+      // User created, but requires email confirmation before session is granted
+      return { user: null, isNewUser: true, needsEmailConfirmation: true };
+    }
+
+    throw new Error('Could not create account. Please try again.');
+  }
+
+  /**
+   * Real Supabase Email & Password Sign-In
+   */
+  async signInWithEmail(
+    email: string,
+    password: string
+  ): Promise<{ user: User; session: AuthSession }> {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase is not configured yet. Please check environment variables.');
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+
+    if (error) {
+      if (error.message?.includes('Email not confirmed')) {
+        throw new Error(
+          'Email not confirmed yet! In your Supabase Dashboard -> Authentication -> Providers -> Email, turn OFF "Confirm email" for instant login, or check your email for the confirmation link.'
+        );
+      }
+      if (error.message?.includes('Invalid login credentials')) {
+        throw new Error('Invalid email or password. Please verify your credentials and try again.');
+      }
+      throw new Error(error.message || 'Failed to sign in.');
+    }
+
+    if (!data.session?.user) {
+      throw new Error('No user session received from Supabase.');
+    }
+
+    const { user, session } = await this.syncSupabaseSession(data.session.user);
+    return { user, session };
+  }
+
+  // =========================================================================
+  // Real Supabase Google OAuth Sign-In (Optional)
+  // =========================================================================
+  async signInWithGoogle(redirectDestination?: string): Promise<void> {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase is not configured yet. Please check environment variables.');
+    }
+
     const destination = redirectDestination || window.location.pathname || '/';
     try {
       sessionStorage.setItem('bookcircle_auth_redirect', destination);
-    } catch {
-      // Ignore storage errors in restricted private browsing
-    }
+    } catch {}
 
-    // Base callback URL
     const redirectTo = `${window.location.origin}/`;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -69,14 +152,13 @@ export class AuthService {
         msg.toLowerCase().includes('unsupported provider')
       ) {
         throw new Error(
-          'Google Sign-In is not yet enabled in your Supabase project. In Supabase Dashboard -> Authentication -> Providers -> Google, toggle it ON and enter your Google OAuth Client ID & Secret.'
+          'Google Sign-In is not yet enabled in your Supabase project. We recommend using Email & Password sign-in instead!'
         );
       }
       throw new Error(msg || 'Failed to initialize Google authentication.');
     }
 
     if (data?.url) {
-      // Browser redirect to Google's authentication page
       window.location.href = data.url;
     }
   }
@@ -108,7 +190,7 @@ export class AuthService {
           .maybeSingle();
 
         if (error) {
-          console.warn('Could not query public.profiles (check RLS or schema):', error.message);
+          console.warn('Could not query public.profiles:', error.message);
         } else if (data) {
           profile = data;
         }
@@ -144,6 +226,8 @@ export class AuthService {
       }
     }
 
+    const provider = supabaseUser.app_metadata?.provider === 'google' ? 'google' : 'email';
+
     // Map to canonical BookCircle User object
     const user: User = {
       id: userId,
@@ -161,7 +245,7 @@ export class AuthService {
       trustScore: 5.0,
       lendsCount: profile?.books_for_lending || 0,
       borrowsCount: profile?.total_borrows || 0,
-      authProvider: 'google',
+      authProvider: provider,
       favoriteGenres: ['Fiction', 'Non-fiction'],
       isProfileComplete: Boolean(profile?.full_name && profile?.location),
       notificationPreferences: {
@@ -186,12 +270,12 @@ export class AuthService {
   }
 
   // --- Quick Demo Accounts (for offline & instant UI review) ---
-  async loginWithGoogleDemo(options?: {
+  async loginWithDemo(options?: {
     email?: string;
     displayName?: string;
     avatar?: string;
   }): Promise<{ user: User; isNewUser: boolean; session: AuthSession }> {
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
     const email = options?.email || 'reader.demo@bookcircle.org';
     const existing = storageService.findUserByEmail(email);
@@ -207,9 +291,8 @@ export class AuthService {
       return { user: existing, isNewUser: false, session };
     }
 
-    // New Google Demo User
     const newUser: User = {
-      id: `user-g-${Date.now().toString(36)}`,
+      id: `user-demo-${Date.now().toString(36)}`,
       email,
       displayName: options?.displayName || email.split('@')[0].replace(/[._-]/g, ' '),
       avatar:
@@ -220,7 +303,7 @@ export class AuthService {
       trustScore: 5.0,
       lendsCount: 0,
       borrowsCount: 0,
-      authProvider: 'google',
+      authProvider: 'demo',
       favoriteGenres: ['Fiction'],
       isProfileComplete: false,
       notificationPreferences: {
@@ -243,16 +326,14 @@ export class AuthService {
     return { user: newUser, isNewUser: true, session };
   }
 
-  // Unified Google Login Dispatcher
   async loginWithGoogle(options?: {
     email?: string;
     displayName?: string;
     avatar?: string;
   }): Promise<{ user: User; isNewUser: boolean; session: AuthSession } | void> {
     if (options?.email) {
-      return this.loginWithGoogleDemo(options);
+      return this.loginWithDemo(options);
     }
-    // Real Supabase OAuth flow
     await this.signInWithGoogle();
   }
 
@@ -269,7 +350,7 @@ export class AuthService {
     const formattedNumber = `${countryCode} ${phoneNumber.trim()}`;
     const verificationId = `v_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+    const expiresAt = Date.now() + 5 * 60 * 1000;
 
     activeVerifications.set(verificationId, {
       code: generatedCode,
@@ -280,46 +361,7 @@ export class AuthService {
       attempts: 0,
     });
 
-    // Check if live WhatsApp Business API is configured
-    const whatsappToken = (import.meta as any).env?.VITE_WHATSAPP_API_TOKEN;
-    const whatsappPhoneId = (import.meta as any).env?.VITE_WHATSAPP_PHONE_NUMBER_ID;
-
-    if (whatsappToken && whatsappPhoneId) {
-      try {
-        await fetch(`https://graph.facebook.com/v21.0/${whatsappPhoneId}/messages`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${whatsappToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: `${countryCode.replace('+', '')}${cleanDigits}`,
-            type: 'template',
-            template: {
-              name: 'bookcircle_verification_code',
-              language: { code: 'en_US' },
-              components: [
-                {
-                  type: 'body',
-                  parameters: [{ type: 'text', text: generatedCode }],
-                },
-                {
-                  type: 'button',
-                  sub_type: 'url',
-                  index: '0',
-                  parameters: [{ type: 'text', text: generatedCode }],
-                },
-              ],
-            },
-          }),
-        });
-      } catch (err) {
-        console.warn('WhatsApp API dispatch failed, falling back to safe local verification:', err);
-      }
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     return {
       verificationId,
@@ -335,7 +377,7 @@ export class AuthService {
     verificationId: string,
     enteredCode: string
   ): Promise<{ user: User; isNewUser: boolean; session: AuthSession }> {
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
     const record = activeVerifications.get(verificationId);
     if (!record) {
@@ -426,7 +468,6 @@ export class AuthService {
 
     const saved = storageService.saveOrUpdateUser(updatedUser);
 
-    // Sync to Supabase public.profiles table if user ID is a valid Supabase UUID
     if (isSupabaseConfigured() && userId && userId.includes('-') && !userId.startsWith('user-')) {
       try {
         await supabase

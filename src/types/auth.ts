@@ -11,7 +11,7 @@ export interface User {
   trustScore: number;
   lendsCount: number;
   borrowsCount: number;
-  authProvider: 'google' | 'phone' | 'demo';
+  authProvider: 'google' | 'phone' | 'demo' | 'email';
   favoriteGenres: string[];
   isProfileComplete: boolean;
   wishlist?: string[];
