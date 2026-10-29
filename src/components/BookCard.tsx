@@ -58,7 +58,7 @@ export const BookCard: React.FC<BookCardProps> = ({
           {/* Subtle gradient overlay on bottom of image */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 pointer-events-none" />
 
-          {/* Availability Mode Tag on Top Left */}
+          {/* Distance Tag on Top Left */}
           <div className="absolute top-3 left-3 flex items-center gap-1.5">
             <div className="px-2.5 py-1 rounded-full bg-slate-900/75 backdrop-blur-md text-white flex items-center gap-1 shadow-sm">
               <HugeiconsIcon icon={Location01Icon} size={12} className="text-amber-badge" />
@@ -67,17 +67,12 @@ export const BookCard: React.FC<BookCardProps> = ({
               </span>
             </div>
 
-            {isClaimed ? (
+            {isClaimed && (
               <span className="px-2 py-0.5 rounded-full bg-slate-900/85 text-white text-[10px] font-bold tracking-wide uppercase shadow-sm flex items-center gap-1">
                 <HugeiconsIcon icon={CheckmarkCircle02Icon} size={11} className="text-emerald-400" />
                 <span>Claimed</span>
               </span>
-            ) : isDonation ? (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold tracking-wide uppercase shadow-sm flex items-center gap-1">
-                <HugeiconsIcon icon={GiftIcon} size={11} />
-                <span>Gift</span>
-              </span>
-            ) : null}
+            )}
           </div>
 
           {/* Wishlist Heart Button on Top Right (36–40px accessible touch target) */}
