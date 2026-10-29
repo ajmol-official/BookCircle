@@ -44,7 +44,7 @@ export const ScrollToTop: React.FC<ScrollToTopProps> = ({ isMessagesActive = fal
           className={`fixed z-30 p-2.5 sm:p-3 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white shadow-lg hover:shadow-xl border border-slate-700/60 backdrop-blur-md active:scale-90 transition-all group ${
             isMessagesActive
               ? 'hidden sm:flex sm:bottom-[92px] sm:right-8'
-              : 'bottom-[136px] right-4 sm:bottom-[94px] sm:right-8 flex'
+              : 'bottom-[138px] right-5 sm:bottom-[94px] sm:right-8 flex'
           }`}
         >
           <HugeiconsIcon
