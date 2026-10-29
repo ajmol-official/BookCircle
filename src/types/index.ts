@@ -3,6 +3,7 @@ export interface Book {
   catalogId?: string; // Canonical Unique Book Title ID for shared reviews and ratings
   title: string;
   author: string;
+  authorCountry?: string;
   coverImage: string;
   rating: number;
   reviewsCount: number;
@@ -24,6 +25,7 @@ export interface CatalogBook {
   id: string; // Unique Book ID (e.g. 'the-god-of-small-things')
   title: string;
   author: string;
+  authorCountry?: string;
   coverImage: string;
   rating: number;
   reviewsCount: number;

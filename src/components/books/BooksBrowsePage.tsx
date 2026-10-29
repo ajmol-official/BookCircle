@@ -16,10 +16,13 @@ import {
   Menu01Icon,
   FavouriteIcon,
   CheckmarkCircle02Icon,
+  ArrowDown01Icon,
+  Globe02Icon,
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { BookCard } from '../BookCard';
 import { useAuth } from '../../context/AuthContext';
+import { getAuthorCountry, getCountryFlag } from '../../utils/countryData';
 
 interface BooksBrowsePageProps {
   books: Book[];
@@ -61,19 +64,9 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
 
   // Granular Filter Drawer State
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-  const [selectedAuthor, setSelectedAuthor] = useState<string>('all');
-  const [authorSearchText, setAuthorSearchText] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('all');
+  const [selectedCondition, setSelectedCondition] = useState<string>('all');
   const [selectedRating, setSelectedRating] = useState<RatingOption>('all');
-  const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
-
-  // Unique authors extraction for filter dropdown
-  const uniqueAuthors = useMemo(() => {
-    const set = new Set<string>();
-    books.forEach((b) => {
-      if (b.author) set.add(b.author.trim());
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [books]);
 
   // Dynamic counts for availability modes
   const availabilityCounts = useMemo(() => {
@@ -101,32 +94,40 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
     };
   }, [books]);
 
-  // Toggle multi-select conditions
-  const toggleCondition = (cond: string) => {
-    setSelectedConditions((prev) =>
-      prev.includes(cond) ? prev.filter((item) => item !== cond) : [...prev, cond]
-    );
-  };
+  // Extract unique author countries from available books with real counts
+  const countryOptions = useMemo(() => {
+    const map = new Map<string, number>();
+    books.forEach((b) => {
+      const country = getAuthorCountry(b.author, b.authorCountry);
+      map.set(country, (map.get(country) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([country, count]) => ({
+        country,
+        count,
+        flag: getCountryFlag(country)
+      }))
+      .sort((a, b) => a.country.localeCompare(b.country));
+  }, [books]);
 
   // Active filter count (excluding default 'All' values)
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (activeAvailabilityTab !== 'all') count++;
     if (selectedCategory !== 'All') count++;
+    if (selectedCountry !== 'all') count++;
     if (selectedDistance !== 'all') count++;
-    if (selectedAuthor !== 'all' || authorSearchText.trim() !== '') count++;
     if (selectedRating !== 'all') count++;
-    if (selectedConditions.length > 0) count += selectedConditions.length;
+    if (selectedCondition !== 'all') count++;
     if (searchQuery.trim() !== '') count++;
     return count;
   }, [
     activeAvailabilityTab,
     selectedCategory,
+    selectedCountry,
     selectedDistance,
-    selectedAuthor,
-    authorSearchText,
     selectedRating,
-    selectedConditions,
+    selectedCondition,
     searchQuery
   ]);
 
@@ -135,30 +136,28 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
     let count = 0;
     if (activeAvailabilityTab !== 'all') count++;
     if (selectedCategory !== 'All') count++;
+    if (selectedCountry !== 'all') count++;
     if (selectedDistance !== 'all') count++;
-    if (selectedAuthor !== 'all' || authorSearchText.trim() !== '') count++;
     if (selectedRating !== 'all') count++;
-    if (selectedConditions.length > 0) count += selectedConditions.length;
+    if (selectedCondition !== 'all') count++;
     return count;
   }, [
     activeAvailabilityTab,
     selectedCategory,
+    selectedCountry,
     selectedDistance,
-    selectedAuthor,
-    authorSearchText,
     selectedRating,
-    selectedConditions
+    selectedCondition
   ]);
 
   const handleResetFilters = () => {
     setSearchQuery('');
     setActiveAvailabilityTab('all');
     setSelectedCategory('All');
+    setSelectedCountry('all');
     setSelectedDistance('all');
-    setSelectedAuthor('all');
-    setAuthorSearchText('');
     setSelectedRating('all');
-    setSelectedConditions([]);
+    setSelectedCondition('all');
     setSortBy('distance-asc');
   };
 
@@ -173,13 +172,14 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
           const matchAuthor = book.author.toLowerCase().includes(q);
           const matchOwner = book.ownerName.toLowerCase().includes(q);
           const matchCategory = book.category.toLowerCase().includes(q);
+          const matchCountry = getAuthorCountry(book.author, book.authorCountry).toLowerCase().includes(q);
           const matchDesc = (book.description || '').toLowerCase().includes(q);
-          if (!matchTitle && !matchAuthor && !matchOwner && !matchCategory && !matchDesc) {
+          if (!matchTitle && !matchAuthor && !matchOwner && !matchCategory && !matchCountry && !matchDesc) {
             return false;
           }
         }
 
-        // 2. Availability Tab Selection
+        // 2. Availability Mode / Tab Selection
         if (activeAvailabilityTab !== 'all') {
           const isLending = book.status === 'available' && book.availabilityMode !== 'donation';
           const isDonation =
@@ -199,7 +199,15 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
           }
         }
 
-        // 4. Distance Radius Filter
+        // 4. Author Country Filter
+        if (selectedCountry !== 'all') {
+          const bookCountry = getAuthorCountry(book.author, book.authorCountry);
+          if (bookCountry.toLowerCase() !== selectedCountry.toLowerCase()) {
+            return false;
+          }
+        }
+
+        // 5. Distance Radius Filter
         if (selectedDistance !== 'all') {
           const distNum = parseFloat(book.distance);
           if (!isNaN(distNum)) {
@@ -215,26 +223,15 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
           }
         }
 
-        // 5. Author Filter
-        if (selectedAuthor !== 'all') {
-          if (book.author.toLowerCase().trim() !== selectedAuthor.toLowerCase().trim()) {
-            return false;
-          }
-        } else if (authorSearchText.trim()) {
-          if (!book.author.toLowerCase().includes(authorSearchText.toLowerCase().trim())) {
-            return false;
-          }
-        }
-
         // 6. Minimum Rating Filter
         if (selectedRating !== 'all') {
           const minRating = parseFloat(selectedRating);
           if (book.rating < minRating) return false;
         }
 
-        // 7. Condition Filter
-        if (selectedConditions.length > 0) {
-          if (!book.condition || !selectedConditions.includes(book.condition)) {
+        // 7. Physical Condition Filter
+        if (selectedCondition !== 'all') {
+          if (!book.condition || book.condition.toLowerCase() !== selectedCondition.toLowerCase()) {
             return false;
           }
         }
@@ -261,11 +258,10 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
     searchQuery,
     activeAvailabilityTab,
     selectedCategory,
+    selectedCountry,
     selectedDistance,
-    selectedAuthor,
-    authorSearchText,
     selectedRating,
-    selectedConditions,
+    selectedCondition,
     sortBy
   ]);
 
@@ -318,7 +314,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by book title, author, neighbor name, or synopsis..."
+              placeholder="Search by book title, author, author country, neighbor, or description..."
               className="w-full text-sm sm:text-base text-slate-800 placeholder-slate-400 bg-transparent outline-none font-sans"
             />
             {searchQuery && (
@@ -343,7 +339,8 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
               { label: 'Free Gifts', action: () => setActiveAvailabilityTab('donation') },
               { label: 'Fiction', action: () => setSelectedCategory('Fiction') },
               { label: 'Within 1km', action: () => setSelectedDistance('1km') },
-              { label: 'Like New Condition', action: () => setSelectedConditions(['Like New']) },
+              { label: 'Like New', action: () => setSelectedCondition('Like New') },
+              { label: 'USA Authors', action: () => setSelectedCountry('United States') },
             ].map((shortcut) => (
               <button
                 key={shortcut.label}
@@ -359,7 +356,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 2: TOOLBAR (FEEDBACK, FILTERS DRAWER, SORT & VIEW)
+          SECTION 2: TOOLBAR (FEEDBACK, ACTIVE CHIPS, SORT & VIEW)
       ───────────────────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 mb-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Results Contextual Feedback & Active Badges */}
@@ -377,6 +374,9 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
             {selectedCategory !== 'All' && (
               <span className="text-slate-400">· in {selectedCategory}</span>
             )}
+            {selectedCountry !== 'all' && (
+              <span className="text-slate-400">· from {selectedCountry}</span>
+            )}
             {selectedDistance !== 'all' && (
               <span className="text-slate-400">· within {selectedDistance}</span>
             )}
@@ -392,7 +392,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                     : activeAvailabilityTab === 'donation'
                     ? 'Free Gifts 🎁'
                     : 'Lent Out ⏳'}
-                  <button onClick={() => setActiveAvailabilityTab('all')}>
+                  <button onClick={() => setActiveAvailabilityTab('all')} title="Clear availability filter">
                     <HugeiconsIcon icon={Cancel01Icon} size={10} />
                   </button>
                 </span>
@@ -401,7 +401,17 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
               {selectedCategory !== 'All' && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-brand/10 text-brand text-[11px] font-semibold border border-brand/20">
                   {selectedCategory}
-                  <button onClick={() => setSelectedCategory('All')}>
+                  <button onClick={() => setSelectedCategory('All')} title="Clear category filter">
+                    <HugeiconsIcon icon={Cancel01Icon} size={10} />
+                  </button>
+                </span>
+              )}
+
+              {selectedCountry !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-800 text-[11px] font-semibold border border-blue-200">
+                  <HugeiconsIcon icon={Globe02Icon} size={11} className="text-blue-600" />
+                  <span>{getCountryFlag(selectedCountry)} {selectedCountry}</span>
+                  <button onClick={() => setSelectedCountry('all')} title="Clear country filter">
                     <HugeiconsIcon icon={Cancel01Icon} size={10} />
                   </button>
                 </span>
@@ -411,7 +421,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-brand/10 text-brand text-[11px] font-semibold border border-brand/20">
                   <HugeiconsIcon icon={Location01Icon} size={11} />
                   Within {selectedDistance}
-                  <button onClick={() => setSelectedDistance('all')}>
+                  <button onClick={() => setSelectedDistance('all')} title="Clear distance filter">
                     <HugeiconsIcon icon={Cancel01Icon} size={10} />
                   </button>
                 </span>
@@ -421,23 +431,20 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
                   <HugeiconsIcon icon={StarIcon} size={11} className="fill-amber-500 text-amber-500" />
                   {selectedRating}+ Stars
-                  <button onClick={() => setSelectedRating('all')}>
+                  <button onClick={() => setSelectedRating('all')} title="Clear rating filter">
                     <HugeiconsIcon icon={Cancel01Icon} size={10} />
                   </button>
                 </span>
               )}
 
-              {selectedConditions.map((cond) => (
-                <span
-                  key={cond}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-medium border border-slate-200"
-                >
-                  {cond}
-                  <button onClick={() => toggleCondition(cond)}>
+              {selectedCondition !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-medium border border-slate-200">
+                  {selectedCondition}
+                  <button onClick={() => setSelectedCondition('all')} title="Clear condition filter">
                     <HugeiconsIcon icon={Cancel01Icon} size={10} />
                   </button>
                 </span>
-              ))}
+              )}
 
               <button
                 type="button"
@@ -576,6 +583,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
               const isClaimed = book.status === 'claimed';
               const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
               const isSaved = isWishlisted(book.id);
+              const authorCountry = getAuthorCountry(book.author, book.authorCountry);
 
               return (
                 <div
@@ -609,7 +617,9 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">by {book.author}</p>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">
+                        by {book.author} <span className="text-slate-400">({getCountryFlag(authorCountry)} {authorCountry})</span>
+                      </p>
                       
                       {/* Secondary Metadata Row */}
                       <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
@@ -733,6 +743,15 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                 Clear Search Term
               </button>
             )}
+            {selectedCountry !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setSelectedCountry('all')}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+              >
+                Reset Country Filter
+              </button>
+            )}
             {selectedDistance !== 'all' && (
               <button
                 type="button"
@@ -787,7 +806,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                       <h3 className="font-serif text-lg font-semibold text-slate-900">
                         Filter & Refine Books
                       </h3>
-                      <p className="text-xs text-slate-500">Refine by availability, genre, distance, and more</p>
+                      <p className="text-xs text-slate-500">Refine by mode, country, condition, distance & rating</p>
                     </div>
                   </div>
                   <button
@@ -798,12 +817,12 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                   </button>
                 </div>
 
-                {/* 1. AVAILABILITY / ACQUISITION MODE (Moved into Drawer) */}
+                {/* 1. AVAILABILITY MODE / BOOK (Dropdown) */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                       <HugeiconsIcon icon={CheckmarkBadge01Icon} size={14} className="text-amber-500" />
-                      <span>Availability Mode</span>
+                      <span>Available Mode / Book</span>
                     </label>
                     {activeAvailabilityTab !== 'all' && (
                       <button
@@ -815,59 +834,24 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      {
-                        id: 'all' as AvailabilityTab,
-                        label: 'All Books',
-                        desc: 'Show everything',
-                        count: availabilityCounts.all
-                      },
-                      {
-                        id: 'lending' as AvailabilityTab,
-                        label: 'Available to Lend',
-                        desc: 'Borrow & return',
-                        count: availabilityCounts.lending
-                      },
-                      {
-                        id: 'donation' as AvailabilityTab,
-                        label: 'Free Gifts to Keep',
-                        desc: 'Yours to keep permanently',
-                        count: availabilityCounts.donation
-                      },
-                      {
-                        id: 'lent_out' as AvailabilityTab,
-                        label: 'Currently Lent Out',
-                        desc: 'Join waiting list',
-                        count: availabilityCounts.lent_out
-                      }
-                    ].map((tab) => {
-                      const isSelected = activeAvailabilityTab === tab.id;
-                      return (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => setActiveAvailabilityTab(tab.id)}
-                          className={`p-3 rounded-xl border text-left transition ${
-                            isSelected
-                              ? 'border-brand bg-brand/5 text-brand ring-1 ring-brand font-semibold shadow-2xs'
-                              : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs">{tab.label}</span>
-                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600">
-                              {tab.count}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-slate-400 mt-0.5">{tab.desc}</p>
-                        </button>
-                      );
-                    })}
+                  <div className="relative">
+                    <select
+                      value={activeAvailabilityTab}
+                      onChange={(e) => setActiveAvailabilityTab(e.target.value as AvailabilityTab)}
+                      className="w-full appearance-none pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand cursor-pointer shadow-2xs transition"
+                    >
+                      <option value="all">All Books ({availabilityCounts.all})</option>
+                      <option value="lending">Available to Lend ({availabilityCounts.lending})</option>
+                      <option value="donation">Free Gifts to Keep ({availabilityCounts.donation})</option>
+                      <option value="lent_out">Currently Lent Out ({availabilityCounts.lent_out})</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <HugeiconsIcon icon={ArrowDown01Icon} size={16} />
+                    </div>
                   </div>
                 </div>
 
-                {/* 2. GENRE / CATEGORY PILLS (Moved into Drawer) */}
+                {/* 2. GENRE / CATEGORY PILLS */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -905,7 +889,78 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                   </div>
                 </div>
 
-                {/* 3. Distance Radius Selector */}
+                {/* 3. AUTHOR COUNTRY SECTION (Dropdown) */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={Globe02Icon} size={14} className="text-blue-500" />
+                      <span>Country (Author Origin)</span>
+                    </label>
+                    {selectedCountry !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCountry('all')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={selectedCountry}
+                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      className="w-full appearance-none pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand cursor-pointer shadow-2xs transition"
+                    >
+                      <option value="all">All Countries ({books.length})</option>
+                      {countryOptions.map(({ country, count, flag }) => (
+                        <option key={country} value={country}>
+                          {flag} {country} ({count})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <HugeiconsIcon icon={ArrowDown01Icon} size={16} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. PHYSICAL CONDITION (Dropdown) */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Physical Condition
+                    </label>
+                    {selectedCondition !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCondition('all')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={selectedCondition}
+                      onChange={(e) => setSelectedCondition(e.target.value)}
+                      className="w-full appearance-none pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand cursor-pointer shadow-2xs transition"
+                    >
+                      <option value="all">All Conditions</option>
+                      {CONDITIONS.map((cond) => (
+                        <option key={cond} value={cond}>
+                          {cond}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <HugeiconsIcon icon={ArrowDown01Icon} size={16} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. DISTANCE RADIUS PILLS */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -946,7 +1001,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                   </div>
                 </div>
 
-                {/* 4. Minimum Community Rating */}
+                {/* 6. MINIMUM COMMUNITY RATING PILLS */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -986,101 +1041,6 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                   </div>
                 </div>
 
-                {/* 5. Physical Book Condition */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Physical Condition
-                    </label>
-                    {selectedConditions.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedConditions([])}
-                        className="text-[11px] text-brand hover:underline font-semibold"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {CONDITIONS.map((cond) => {
-                      const isChecked = selectedConditions.includes(cond);
-                      return (
-                        <button
-                          key={cond}
-                          type="button"
-                          onClick={() => toggleCondition(cond)}
-                          className={`p-3 rounded-xl border text-left transition flex items-center justify-between ${
-                            isChecked
-                              ? 'border-brand bg-brand/5 text-brand ring-1 ring-brand font-semibold'
-                              : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                          }`}
-                        >
-                          <span className="text-xs">{cond}</span>
-                          {isChecked && (
-                            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="text-brand" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 6. Filter by Author */}
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                    Filter by Author
-                  </label>
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={authorSearchText}
-                      onChange={(e) => {
-                        setAuthorSearchText(e.target.value);
-                        setSelectedAuthor('all');
-                      }}
-                      placeholder="Search author name..."
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand"
-                    />
-
-                    <div className="max-h-36 overflow-y-auto space-y-1 pr-1 border border-slate-100 p-2 rounded-xl">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedAuthor('all');
-                          setAuthorSearchText('');
-                        }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition ${
-                          selectedAuthor === 'all' && !authorSearchText
-                            ? 'bg-brand/10 text-brand font-semibold'
-                            : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        All Authors
-                      </button>
-                      {uniqueAuthors.map((author) => {
-                        const isSelected = selectedAuthor.toLowerCase() === author.toLowerCase();
-                        return (
-                          <button
-                            key={author}
-                            type="button"
-                            onClick={() => {
-                              setSelectedAuthor(isSelected ? 'all' : author);
-                              setAuthorSearchText('');
-                            }}
-                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs truncate transition ${
-                              isSelected
-                                ? 'bg-brand/10 text-brand font-semibold'
-                                : 'text-slate-600 hover:bg-slate-50'
-                            }`}
-                          >
-                            {author}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Drawer Footer Actions */}
