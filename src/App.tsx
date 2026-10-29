@@ -298,7 +298,11 @@ const BookCircleMain: React.FC = () => {
     // 2. Persist to DB if connected
     dbService.createBorrowRequest({
       bookId: details.book.id,
+      bookTitle: details.book.title,
       borrowerId: currentUser?.id,
+      borrowerName: currentUser?.displayName || 'Community Reader',
+      ownerId: details.owner.id,
+      ownerName: details.owner.name,
       exchangeType: 'gift',
       meetupDate: details.date,
       meetupTime: details.time,
@@ -327,7 +331,11 @@ const BookCircleMain: React.FC = () => {
     // 2. Persist to DB if connected
     dbService.createBorrowRequest({
       bookId: details.book.id,
+      bookTitle: details.book.title,
       borrowerId: currentUser?.id,
+      borrowerName: currentUser?.displayName || 'Community Reader',
+      ownerId: details.owner.id,
+      ownerName: details.owner.name,
       exchangeType: 'borrow',
       meetupDate: details.date,
       meetupTime: details.time,

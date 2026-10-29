@@ -144,8 +144,11 @@ export const dbService = {
    */
   async createBorrowRequest(params: {
     bookId: string;
+    bookTitle?: string;
     borrowerId?: string;
+    borrowerName?: string;
     ownerId?: string;
+    ownerName?: string;
     exchangeType: 'borrow' | 'gift';
     meetupDate: string;
     meetupTime: string;
@@ -160,8 +163,11 @@ export const dbService = {
       .from('borrow_requests')
       .insert({
         book_id: params.bookId,
-        borrower_id: params.borrowerId,
-        owner_id: params.ownerId,
+        book_title: params.bookTitle,
+        borrower_id: params.borrowerId || null,
+        borrower_name: params.borrowerName || 'Community Reader',
+        owner_id: params.ownerId || null,
+        owner_name: params.ownerName || 'Book Owner',
         exchange_type: params.exchangeType,
         meetup_date: params.meetupDate,
         meetup_time: params.meetupTime,
@@ -173,6 +179,7 @@ export const dbService = {
 
     if (error) {
       console.error('Error creating borrow request:', error);
+      throw error;
     }
     return data;
   }

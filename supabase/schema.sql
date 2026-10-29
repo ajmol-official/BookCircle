@@ -37,7 +37,7 @@ create table if not exists public.books (
   description text,
   distance text default 'Nearby',
   owners_count integer default 1,
-  owner_id uuid references public.profiles(id) on delete set null,
+  owner_id text,
   owner_name text not null,
   owner_avatar text,
   created_at timestamptz default now()
@@ -46,9 +46,12 @@ create table if not exists public.books (
 -- 3. Create BORROW_REQUESTS Table
 create table if not exists public.borrow_requests (
   id uuid default gen_random_uuid() primary key,
-  book_id uuid references public.books(id) on delete cascade not null,
-  borrower_id uuid references public.profiles(id) on delete cascade not null,
-  owner_id uuid references public.profiles(id) on delete cascade not null,
+  book_id text,
+  book_title text,
+  borrower_id text,
+  borrower_name text,
+  owner_id text,
+  owner_name text,
   exchange_type text default 'borrow' check (exchange_type in ('borrow', 'gift')),
   status text default 'pending' check (status in ('pending', 'accepted', 'handed_over', 'returned', 'cancelled', 'claimed')),
   meetup_date text,
@@ -120,18 +123,15 @@ alter table public.wishlists enable row level security;
 create policy "Public profiles are viewable by everyone" on public.profiles for select using (true);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
 
--- Books: Anyone can view; authenticated users can add or edit their own
+-- Books: Anyone can view and add books
 create policy "Books are viewable by everyone" on public.books for select using (true);
-create policy "Authenticated users can add books" on public.books for insert with check (auth.role() = 'authenticated');
-create policy "Users can update own books" on public.books for update using (auth.uid() = owner_id);
+create policy "Anyone can add books" on public.books for insert with check (true);
+create policy "Users can update own books" on public.books for update using (true);
 
--- Borrow Requests: Involved users can view and update
-create policy "Users can view requests they are involved in" on public.borrow_requests
-  for select using (auth.uid() = borrower_id or auth.uid() = owner_id);
-create policy "Authenticated users can create borrow requests" on public.borrow_requests
-  for insert with check (auth.uid() = borrower_id);
-create policy "Involved users can update borrow requests" on public.borrow_requests
-  for update using (auth.uid() = borrower_id or auth.uid() = owner_id);
+-- Borrow Requests: Anyone can view, create, and update
+create policy "Anyone can view borrow requests" on public.borrow_requests for select using (true);
+create policy "Anyone can create borrow requests" on public.borrow_requests for insert with check (true);
+create policy "Anyone can update borrow requests" on public.borrow_requests for update using (true);
 
 -- Messages: Sender or receiver can view
 create policy "Users can view their own messages" on public.messages
