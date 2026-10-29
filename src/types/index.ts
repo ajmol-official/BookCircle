@@ -16,7 +16,7 @@ export interface Book {
   ownerTrust: string;
   description?: string;
   condition?: 'Like New' | 'Very Good' | 'Good' | 'Fair';
-  availabilityMode?: 'lending' | 'donation';
+  availabilityMode?: 'lending' | 'donation' | 'personal';
   bookType?: 'Original Copy' | 'Translated Copy';
   wishlistCount?: number;
 }

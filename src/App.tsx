@@ -592,11 +592,68 @@ const BookCircleMain: React.FC = () => {
       setBooksList((prev) => [added, ...prev]);
     }
 
+    const statusLabel =
+      newBook.availability === 'personal'
+        ? 'Private Collection'
+        : newBook.availability === 'donation'
+        ? 'For Donation'
+        : 'For Lending';
+
     setGlobalToast(
-      `“${newBook.title}” was added to your shelf! Reader ratings & reviews are synced with all community copies.`
+      `“${newBook.title}” was added to your shelf as ${statusLabel}!`
     );
     setTimeout(() => setGlobalToast(null), 5000);
   };
+
+  const handleUpdateBookStatus = async (
+    bookId: string,
+    newMode: 'lending' | 'donation' | 'personal'
+  ) => {
+    // 1. Optimistically update local booksList state
+    setBooksList((prev) =>
+      prev.map((b) =>
+        b.id === bookId
+          ? {
+              ...b,
+              availabilityMode: newMode,
+              status: newMode === 'donation' ? 'donation' : 'available',
+            }
+          : b
+      )
+    );
+
+    // 2. Persist to Supabase if configured
+    try {
+      await dbService.updateBookStatus(bookId, newMode);
+    } catch (e) {
+      console.warn('Could not update book status in database:', e);
+    }
+  };
+
+  const handleDeleteBook = async (bookId: string) => {
+    // 1. Optimistically remove from local booksList state
+    setBooksList((prev) => prev.filter((b) => b.id !== bookId));
+
+    // 2. Delete from Supabase if configured
+    try {
+      await dbService.deleteBook(bookId);
+    } catch (e) {
+      console.warn('Could not delete book from database:', e);
+    }
+  };
+
+  // Derive current user's personal shelf books
+  const currentUserShelfBooks = useMemo(() => {
+    const list = booksList.filter((b) => {
+      if (currentUser?.displayName) {
+        if (b.ownerName.toLowerCase().trim() === currentUser.displayName.toLowerCase().trim()) {
+          return true;
+        }
+      }
+      return b.ownerName === 'You' || b.ownerName === 'Maya Lin';
+    });
+    return list.length > 0 ? list : booksList.slice(0, 4);
+  }, [booksList, currentUser]);
 
   const unreadNotificationsCount = isAuthenticated ? notifications.filter((n) => n.unread).length : 0;
   const isMessagesActive = location.pathname === '/messages';
@@ -703,6 +760,9 @@ const BookCircleMain: React.FC = () => {
               <MyBooksPage
                 key="my-books-shelf"
                 initialSubTab="shelf"
+                myBooks={currentUserShelfBooks}
+                onUpdateBookStatus={handleUpdateBookStatus}
+                onDeleteBook={handleDeleteBook}
                 onBookAdded={handleGlobalBookAdded}
                 onNavigateToMessages={(name) => {
                   setSelectedChatParticipant(name);
@@ -718,6 +778,9 @@ const BookCircleMain: React.FC = () => {
               <MyBooksPage
                 key="my-books-requests"
                 initialSubTab="requests"
+                myBooks={currentUserShelfBooks}
+                onUpdateBookStatus={handleUpdateBookStatus}
+                onDeleteBook={handleDeleteBook}
                 onBookAdded={handleGlobalBookAdded}
                 onNavigateToMessages={(name) => {
                   setSelectedChatParticipant(name);
@@ -743,7 +806,7 @@ const BookCircleMain: React.FC = () => {
             element={
               <ProfilePage
                 onSelectBook={handleSelectBook}
-                myBooks={booksList}
+                myBooks={currentUserShelfBooks}
               />
             }
           />

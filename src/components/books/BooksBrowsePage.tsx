@@ -75,6 +75,9 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
     let lentOutCount = 0;
 
     books.forEach((b) => {
+      // Private Collection books never appear in community discovery or counts
+      if (b.availabilityMode === 'personal') return;
+
       if (b.status === 'claimed') {
         // Claimed gifts are archived
       } else if (b.availabilityMode === 'donation' || b.status === 'donation') {
@@ -98,6 +101,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
   const countryOptions = useMemo(() => {
     const map = new Map<string, number>();
     books.forEach((b) => {
+      if (b.availabilityMode === 'personal') return;
       const country = getAuthorCountry(b.author, b.authorCountry);
       map.set(country, (map.get(country) || 0) + 1);
     });
@@ -165,6 +169,11 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
   const filteredAndSortedBooks = useMemo(() => {
     return books
       .filter((book) => {
+        // 0. Private Collection Isolation: Never show in global discovery or search
+        if (book.availabilityMode === 'personal') {
+          return false;
+        }
+
         // 1. Text Search Query
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();

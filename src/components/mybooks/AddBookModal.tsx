@@ -5,6 +5,7 @@ import {
   BookOpen01Icon,
   BookOpen02Icon,
   GiftIcon,
+  Bookmark02Icon,
   CheckmarkCircle02Icon,
   Search01Icon,
   ArrowDown01Icon,
@@ -26,7 +27,7 @@ interface AddBookModalProps {
     author: string;
     catalogId: string;
     condition: string;
-    availability: 'lending' | 'donation';
+    availability: 'lending' | 'donation' | 'personal';
     coverImage: string;
     bookType: 'Original Copy' | 'Translated Copy';
     category?: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
@@ -52,6 +53,12 @@ const AVAILABILITY_OPTIONS = [
     label: 'For Donation',
     desc: 'Free to loving readers',
     icon: GiftIcon
+  },
+  {
+    id: 'personal' as const,
+    label: 'Private Collection',
+    desc: 'Personal library (hidden from search)',
+    icon: Bookmark02Icon
   }
 ] as const;
 
@@ -103,7 +110,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
   const [coverUrl, setCoverUrl] = useState('');
   const [isCustomUploaded, setIsCustomUploaded] = useState(false);
   const [condition, setCondition] = useState<string>('Like New');
-  const [availability, setAvailability] = useState<'lending' | 'donation'>('lending');
+  const [availability, setAvailability] = useState<'lending' | 'donation' | 'personal'>('lending');
 
   // Drag & drop state
   const [isDragging, setIsDragging] = useState(false);

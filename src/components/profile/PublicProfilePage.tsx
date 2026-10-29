@@ -11,6 +11,7 @@ import {
   Clock01Icon,
   CheckmarkCircle02Icon,
   GiftIcon,
+  Bookmark02Icon,
   Search01Icon
 } from '@hugeicons/core-free-icons';
 import type { Book, Reader } from '../../types';
@@ -34,7 +35,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
   onSendMessage
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'shelf' | 'reviews' | 'about'>('shelf');
-  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'lending' | 'donation' | 'lent_out'>('all');
+  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'lending' | 'donation' | 'personal' | 'lent_out'>('all');
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isReliabilityModalOpen, setIsReliabilityModalOpen] = useState(false);
@@ -61,7 +62,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
         ownerName: reader.name,
         ownerAvatar: reader.avatar,
         distance: reader.distance,
-        availabilityMode: (idx % 2 === 0 ? 'lending' : 'donation') as 'lending' | 'donation',
+        availabilityMode: (idx === 2 ? 'personal' : idx % 2 === 0 ? 'lending' : 'donation') as 'lending' | 'donation' | 'personal',
         status: (idx === 3 ? 'lent_out' : idx % 2 === 0 ? 'available' : 'donation') as 'available' | 'lent_out' | 'donation'
       }));
     }
@@ -71,6 +72,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
   // Derived counts
   const lendingCount = readerBooks.filter((b) => b.availabilityMode === 'lending' && b.status === 'available').length;
   const donationCount = readerBooks.filter((b) => b.availabilityMode === 'donation' || b.status === 'donation').length;
+  const personalCount = readerBooks.filter((b) => b.availabilityMode === 'personal').length;
   const lentOutCount = readerBooks.filter((b) => b.status === 'lent_out').length;
   const totalBooksCount = readerBooks.length;
 
@@ -82,6 +84,8 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
         if (book.availabilityMode !== 'lending' || book.status === 'lent_out') return false;
       } else if (availabilityFilter === 'donation') {
         if (book.availabilityMode !== 'donation' && book.status !== 'donation') return false;
+      } else if (availabilityFilter === 'personal') {
+        if (book.availabilityMode !== 'personal') return false;
       } else if (availabilityFilter === 'lent_out') {
         if (book.status !== 'lent_out') return false;
       }
@@ -421,6 +425,20 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                 <span>Free to Donate ({donationCount})</span>
               </button>
 
+              {personalCount > 0 && (
+                <button
+                  onClick={() => setAvailabilityFilter('personal')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
+                    availabilityFilter === 'personal'
+                      ? 'bg-slate-700 text-white shadow-xs'
+                      : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <HugeiconsIcon icon={Bookmark02Icon} size={14} />
+                  <span>Private Collection ({personalCount})</span>
+                </button>
+              )}
+
               {lentOutCount > 0 && (
                 <button
                   onClick={() => setAvailabilityFilter('lent_out')}
@@ -508,6 +526,11 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                               <HugeiconsIcon icon={Clock01Icon} size={12} />
                               <span>Lent Out</span>
                             </span>
+                          ) : book.availabilityMode === 'personal' ? (
+                            <span className="px-2.5 py-1 rounded-full bg-slate-700 text-white text-[10px] font-bold tracking-wide uppercase shadow-md flex items-center gap-1">
+                              <HugeiconsIcon icon={Bookmark02Icon} size={12} />
+                              <span>Private</span>
+                            </span>
                           ) : (
                             <span className="px-2.5 py-1 rounded-full bg-brand text-white text-[10px] font-bold tracking-wide uppercase shadow-md flex items-center gap-1">
                               <HugeiconsIcon icon={BookOpen01Icon} size={12} />
@@ -551,6 +574,11 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                         <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold flex items-center gap-1">
                           <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} className="text-emerald-600" />
                           <span>Claimed</span>
+                        </span>
+                      ) : book.availabilityMode === 'personal' ? (
+                        <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold flex items-center gap-1 border border-slate-200" title="This book is in the reader's private library">
+                          <HugeiconsIcon icon={Bookmark02Icon} size={13} className="text-slate-500" />
+                          <span>Private</span>
                         </span>
                       ) : isDonation ? (
                         <button

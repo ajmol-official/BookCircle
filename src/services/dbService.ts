@@ -43,7 +43,7 @@ export const dbService = {
         ownerTrust: 'Verified Neighbor',
         description: item.description,
         condition: item.condition || 'Like New',
-        availabilityMode: item.availability_mode || 'lending',
+        availabilityMode: (item.availability_mode || 'lending') as 'lending' | 'donation' | 'personal',
       }));
     } catch (err) {
       console.warn('Network error accessing Supabase, using mock fallback:', err);
@@ -136,6 +136,49 @@ export const dbService = {
         ...book,
         id: `book-${Date.now()}`
       };
+    }
+  },
+
+  /**
+   * Update a book's availability status (For Lending, For Donation, Private Collection)
+   */
+  async updateBookStatus(
+    bookId: string,
+    newMode: 'lending' | 'donation' | 'personal'
+  ): Promise<void> {
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+
+    try {
+      const newStatus = newMode === 'donation' ? 'donation' : 'available';
+      await supabase
+        .from('books')
+        .update({
+          availability_mode: newMode,
+          status: newStatus,
+        })
+        .eq('id', bookId);
+    } catch (err) {
+      console.warn('Could not update book status in Supabase:', err);
+    }
+  },
+
+  /**
+   * Permanently delete a book listing
+   */
+  async deleteBook(bookId: string): Promise<void> {
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+
+    try {
+      await supabase
+        .from('books')
+        .delete()
+        .eq('id', bookId);
+    } catch (err) {
+      console.warn('Could not delete book from Supabase:', err);
     }
   },
 

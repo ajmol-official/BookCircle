@@ -32,7 +32,7 @@ create table if not exists public.books (
   reviews_count integer default 1,
   category text default 'Fiction',
   status text default 'available' check (status in ('available', 'lent_out', 'donation', 'claimed')),
-  availability_mode text default 'lending' check (availability_mode in ('lending', 'donation')),
+  availability_mode text default 'lending' check (availability_mode in ('lending', 'donation', 'personal')),
   condition text default 'Like New' check (condition in ('Like New', 'Very Good', 'Good', 'Fair')),
   description text,
   distance text default 'Nearby',

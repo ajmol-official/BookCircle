@@ -11,7 +11,8 @@ import {
   Notification01Icon,
   CheckmarkCircle02Icon,
   SparklesIcon,
-  GiftIcon
+  GiftIcon,
+  Bookmark02Icon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { ReviewModal } from './ReviewModal';
@@ -37,6 +38,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
+  const isPersonal = book.availabilityMode === 'personal';
   const isClaimed = book.status === 'claimed';
 
   const baseCount = book.wishlistCount || 6;
@@ -417,11 +419,11 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
               </div>
 
               <button
-                disabled={!owner.isAvailable || isClaimed}
+                disabled={!owner.isAvailable || isClaimed || isPersonal}
                 onClick={() => onRequestBorrow(book, owner.name)}
                 className={`w-full py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 ${
-                  isClaimed
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                  isClaimed || isPersonal
+                    ? 'bg-slate-100 text-slate-500 cursor-not-allowed shadow-none border border-slate-200'
                     : isDonation
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                     : owner.isAvailable
@@ -431,6 +433,11 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
               >
                 {isClaimed ? (
                   <span>Claimed</span>
+                ) : isPersonal ? (
+                  <>
+                    <HugeiconsIcon icon={Bookmark02Icon} size={15} />
+                    <span>In Reader's Private Collection</span>
+                  </>
                 ) : isDonation ? (
                   <>
                     <HugeiconsIcon icon={GiftIcon} size={15} />

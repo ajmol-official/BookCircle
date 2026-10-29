@@ -6,7 +6,9 @@ import {
   StarIcon,
   BookOpen01Icon,
   ShieldCheckIcon,
-  Camera01Icon
+  Camera01Icon,
+  GiftIcon,
+  Bookmark02Icon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { EditProfileModal } from './EditProfileModal';
@@ -338,10 +340,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
                   </div>
 
                   <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-brand/10 text-brand">
-                      <HugeiconsIcon icon={BookOpen01Icon} size={12} />
-                      <span>For Lending</span>
-                    </span>
+                    {book.availabilityMode === 'donation' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
+                        <HugeiconsIcon icon={GiftIcon} size={12} />
+                        <span>For Donation</span>
+                      </span>
+                    ) : book.availabilityMode === 'personal' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                        <HugeiconsIcon icon={Bookmark02Icon} size={12} />
+                        <span>Private Collection</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-brand/10 text-brand border border-brand/20">
+                        <HugeiconsIcon icon={BookOpen01Icon} size={12} />
+                        <span>For Lending</span>
+                      </span>
+                    )}
 
                     <div className="flex items-center text-amber-500 text-xs font-bold gap-1">
                       <HugeiconsIcon icon={StarIcon} size={13} className="fill-amber-400 text-amber-500" />
