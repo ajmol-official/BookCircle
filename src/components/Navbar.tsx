@@ -199,22 +199,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Conditional Rendering: Unauthenticated Guest vs Authenticated User */}
           {!isAuthenticated ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsAuthModalOpen(true)}
-                className="px-3.5 py-2 rounded-full border border-slate-300 hover:border-brand hover:text-brand bg-white/70 text-slate-700 font-semibold text-xs sm:text-sm transition active:scale-95 shadow-sm"
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsAuthModalOpen(true)}
-                className="hidden sm:inline-flex items-center gap-1 px-4 py-2 rounded-full bg-brand hover:bg-brand-dark text-white font-semibold text-xs sm:text-sm transition active:scale-95 shadow-sm"
-              >
-                <span>Get Started</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsAuthModalOpen(true)}
+              className="px-4 py-2 rounded-full bg-brand hover:bg-brand-dark text-white font-semibold text-xs sm:text-sm transition active:scale-95 shadow-sm"
+            >
+              Sign In
+            </button>
           ) : (
             <>
               {/* Notifications Button with Dropdown Panel */}
