@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { User, PhoneOtpVerification, AuthPromptContext } from '../types/auth';
 import { authService } from '../services/authService';
 import { storageService } from '../services/storageService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -17,7 +18,7 @@ interface AuthContextType {
   setIsOnboardingOpen: (open: boolean) => void;
   dismissOnboarding: (neverShowAgain?: boolean) => void;
   reopenOnboarding: () => void;
-  loginWithGoogle: (options?: { email?: string; displayName?: string }) => Promise<User>;
+  loginWithGoogle: (options?: { email?: string; displayName?: string }) => Promise<User | null>;
   requestPhoneOtp: (phoneNumber: string, countryCode: string) => Promise<PhoneOtpVerification>;
   verifyPhoneOtp: (verificationId: string, code: string) => Promise<User>;
   updateProfile: (data: Partial<User>) => Promise<User>;
@@ -48,41 +49,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Pending callback after authentication succeeds
   const [pendingAuthorizedCallback, setPendingAuthorizedCallback] = useState<(() => void) | null>(null);
 
-  // Restore authenticated session on initial load
-  useEffect(() => {
-    try {
-      const session = authService.getCurrentSession();
-      if (session && session.user) {
-        setCurrentUser(session.user);
-      } else {
-        // If unauthenticated guest and onboarding was never dismissed, open onboarding
-        const dismissed = storageService.isOnboardingDismissed();
-        if (!dismissed) {
-          setIsOnboardingOpen(true);
-        }
-      }
-    } catch (e) {
-      console.error('Session restoration error:', e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   const handleAuthSuccess = useCallback(
     (user: User, isNewUser: boolean) => {
       setCurrentUser(user);
       setIsAuthModalOpen(false);
 
       if (isNewUser || !user.isProfileComplete) {
-        // Take to short profile setup
         setIsProfileSetupOpen(true);
       } else {
-        // Resume pending user action if one was queued
         if (pendingAuthorizedCallback) {
           const cb = pendingAuthorizedCallback;
           setPendingAuthorizedCallback(null);
           setAuthPromptContext(null);
-          // Execute callback in next frame
           setTimeout(() => cb(), 100);
         } else {
           setAuthPromptContext(null);
@@ -92,13 +70,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [pendingAuthorizedCallback]
   );
 
-  const loginWithGoogle = useCallback(
-    async (options?: { email?: string; displayName?: string }) => {
+  // Restore authenticated session on initial load and listen to Supabase auth events
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initAuth() {
       setIsLoading(true);
       try {
-        const result = await authService.loginWithGoogle(options);
-        handleAuthSuccess(result.user, result.isNewUser);
-        return result.user;
+        // 1. Check if Supabase client has an active authenticated session
+        if (isSupabaseConfigured()) {
+          const { data, error } = await supabase.auth.getSession();
+          if (!error && data?.session?.user && isMounted) {
+            const { user } = await authService.syncSupabaseSession(data.session.user);
+            setCurrentUser(user);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // 2. Fallback to cached local session (for demo accounts or offline preview)
+        const localSession = authService.getCurrentSession();
+        if (localSession?.user && isMounted) {
+          setCurrentUser(localSession.user);
+        } else if (isMounted) {
+          const dismissed = storageService.isOnboardingDismissed();
+          if (!dismissed) {
+            setIsOnboardingOpen(true);
+          }
+        }
+      } catch (e) {
+        console.error('Session restoration error:', e);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    initAuth();
+
+    // 3. Supabase Auth State Change Listener (handles Google OAuth redirect callbacks & sign out)
+    let authSubscription: { unsubscribe: () => void } | null = null;
+
+    if (isSupabaseConfigured()) {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (!isMounted) return;
+
+        if (
+          session?.user &&
+          (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')
+        ) {
+          try {
+            const { user, isNewUser } = await authService.syncSupabaseSession(session.user);
+            handleAuthSuccess(user, isNewUser);
+
+            // Clean up OAuth tokens from URL hash if returning from redirect
+            if (window.location.hash && window.location.hash.includes('access_token')) {
+              const redirectPath = sessionStorage.getItem('bookcircle_auth_redirect') || window.location.pathname;
+              sessionStorage.removeItem('bookcircle_auth_redirect');
+              window.history.replaceState(null, '', redirectPath);
+            }
+          } catch (syncErr) {
+            console.error('Failed to sync Supabase user session:', syncErr);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setCurrentUser(null);
+          storageService.clearSession();
+        }
+      });
+
+      authSubscription = data?.subscription;
+    }
+
+    return () => {
+      isMounted = false;
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+    };
+  }, [handleAuthSuccess]);
+
+  // Google Sign-In Handler
+  const loginWithGoogle = useCallback(
+    async (options?: { email?: string; displayName?: string }): Promise<User | null> => {
+      setIsLoading(true);
+      try {
+        if (options?.email) {
+          // Instant test accounts switcher
+          const result = await authService.loginWithGoogleDemo(options);
+          handleAuthSuccess(result.user, result.isNewUser);
+          return result.user;
+        }
+
+        // Real Google OAuth flow
+        await authService.signInWithGoogle();
+        return null;
       } finally {
         setIsLoading(false);
       }

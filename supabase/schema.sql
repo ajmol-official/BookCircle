@@ -121,6 +121,7 @@ alter table public.wishlists enable row level security;
 
 -- Profiles: Anyone can view; users can edit their own
 create policy "Public profiles are viewable by everyone" on public.profiles for select using (true);
+create policy "Users can insert own profile" on public.profiles for insert with check (true);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
 
 -- Books: Anyone can view and add books
