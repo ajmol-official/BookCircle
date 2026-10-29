@@ -15,7 +15,7 @@ import {
   Grid02Icon,
   Menu01Icon,
   FavouriteIcon,
-  CheckmarkCircle02Icon
+  CheckmarkCircle02Icon,
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { BookCard } from '../BookCard';
@@ -59,7 +59,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
   const [sortBy, setSortBy] = useState<SortOption>('distance-asc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Secondary Granular Filter Drawer States
+  // Granular Filter Drawer State
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState<string>('all');
   const [authorSearchText, setAuthorSearchText] = useState<string>('');
@@ -75,7 +75,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [books]);
 
-  // Dynamic counts for availability tabs
+  // Dynamic counts for availability modes
   const availabilityCounts = useMemo(() => {
     let lendingCount = 0;
     let donationCount = 0;
@@ -128,6 +128,26 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
     selectedRating,
     selectedConditions,
     searchQuery
+  ]);
+
+  // Filter drawer active badge count
+  const drawerFiltersCount = useMemo(() => {
+    let count = 0;
+    if (activeAvailabilityTab !== 'all') count++;
+    if (selectedCategory !== 'All') count++;
+    if (selectedDistance !== 'all') count++;
+    if (selectedAuthor !== 'all' || authorSearchText.trim() !== '') count++;
+    if (selectedRating !== 'all') count++;
+    if (selectedConditions.length > 0) count += selectedConditions.length;
+    return count;
+  }, [
+    activeAvailabilityTab,
+    selectedCategory,
+    selectedDistance,
+    selectedAuthor,
+    authorSearchText,
+    selectedRating,
+    selectedConditions
   ]);
 
   const handleResetFilters = () => {
@@ -339,97 +359,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 2: DUAL QUICK-BAR (AVAILABILITY TABS + GENRE PILLS)
-      ───────────────────────────────────────────────────────────── */}
-      <div className="space-y-3.5 mb-6">
-        
-        {/* A. Availability Segmented Intent Bar */}
-        <div className="bg-slate-100/80 p-1.5 rounded-2xl flex items-center gap-1 overflow-x-auto scrollbar-none border border-slate-200/60 shadow-2xs">
-          {[
-            {
-              id: 'all' as AvailabilityTab,
-              label: 'All Books',
-              count: availabilityCounts.all
-            },
-            {
-              id: 'lending' as AvailabilityTab,
-              label: 'Available to Lend',
-              icon: BookOpen01Icon,
-              count: availabilityCounts.lending
-            },
-            {
-              id: 'donation' as AvailabilityTab,
-              label: 'Free Gifts to Keep',
-              icon: GiftIcon,
-              count: availabilityCounts.donation
-            },
-            {
-              id: 'lent_out' as AvailabilityTab,
-              label: 'Currently Lent Out',
-              icon: CheckmarkBadge01Icon,
-              count: availabilityCounts.lent_out
-            }
-          ].map((tab) => {
-            const isSelected = activeAvailabilityTab === tab.id;
-            const IconComponent = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveAvailabilityTab(tab.id)}
-                className={`flex-1 min-w-[130px] sm:min-w-0 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95 ${
-                  isSelected
-                    ? 'bg-white text-brand shadow-xs font-bold ring-1 ring-slate-200/80'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                }`}
-              >
-                {IconComponent && (
-                  <HugeiconsIcon
-                    icon={IconComponent}
-                    size={16}
-                    className={isSelected ? 'text-brand' : 'text-slate-400'}
-                  />
-                )}
-                <span>{tab.label}</span>
-                <span
-                  className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono ${
-                    isSelected ? 'bg-brand/10 text-brand' : 'bg-slate-200/70 text-slate-500'
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* B. Category & Genre Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {CATEGORIES.map((cat) => {
-            const isSelected = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-150 whitespace-nowrap active:scale-95 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-brand text-white shadow-sm ring-1 ring-brand font-semibold'
-                    : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200/90 shadow-2xs'
-                }`}
-              >
-                <span>{cat}</span>
-                {isSelected && cat !== 'All' && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 3: TOOLBAR (FEEDBACK, FILTERS DRAWER, SORT & VIEW)
+          SECTION 2: TOOLBAR (FEEDBACK, FILTERS DRAWER, SORT & VIEW)
       ───────────────────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 mb-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Results Contextual Feedback & Active Badges */}
@@ -439,17 +369,44 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
               {filteredAndSortedBooks.length}
             </span>
             <span>books found</span>
-            {selectedDistance !== 'all' && (
-              <span className="text-slate-400">· within {selectedDistance}</span>
+            {activeAvailabilityTab !== 'all' && (
+              <span className="text-slate-400">
+                · {activeAvailabilityTab === 'lending' ? 'To Lend' : activeAvailabilityTab === 'donation' ? 'Free Gifts' : 'Lent Out'}
+              </span>
             )}
             {selectedCategory !== 'All' && (
               <span className="text-slate-400">· in {selectedCategory}</span>
+            )}
+            {selectedDistance !== 'all' && (
+              <span className="text-slate-400">· within {selectedDistance}</span>
             )}
           </div>
 
           {/* Active Filter Chips */}
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap ml-1">
+              {activeAvailabilityTab !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-200">
+                  {activeAvailabilityTab === 'lending'
+                    ? 'To Lend 🤝'
+                    : activeAvailabilityTab === 'donation'
+                    ? 'Free Gifts 🎁'
+                    : 'Lent Out ⏳'}
+                  <button onClick={() => setActiveAvailabilityTab('all')}>
+                    <HugeiconsIcon icon={Cancel01Icon} size={10} />
+                  </button>
+                </span>
+              )}
+
+              {selectedCategory !== 'All' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-brand/10 text-brand text-[11px] font-semibold border border-brand/20">
+                  {selectedCategory}
+                  <button onClick={() => setSelectedCategory('All')}>
+                    <HugeiconsIcon icon={Cancel01Icon} size={10} />
+                  </button>
+                </span>
+              )}
+
               {selectedDistance !== 'all' && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-brand/10 text-brand text-[11px] font-semibold border border-brand/20">
                   <HugeiconsIcon icon={Location01Icon} size={11} />
@@ -545,23 +502,21 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
             />
           </div>
 
-          {/* Deep Filters Drawer Trigger */}
+          {/* More Filters Drawer Trigger */}
           <button
             type="button"
             onClick={() => setIsFilterDrawerOpen(true)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-2xs transition active:scale-95 ${
-              selectedConditions.length > 0 || selectedRating !== 'all' || selectedAuthor !== 'all'
-                ? 'border-brand bg-brand/10 text-brand'
+              drawerFiltersCount > 0
+                ? 'border-brand bg-brand/10 text-brand ring-1 ring-brand/30'
                 : 'border-slate-200/90 bg-white text-slate-700 hover:bg-slate-50'
             }`}
           >
             <HugeiconsIcon icon={FilterHorizontalIcon} size={14} className="text-brand" />
             <span>More Filters</span>
-            {(selectedConditions.length > 0 || selectedRating !== 'all' || selectedAuthor !== 'all') && (
+            {drawerFiltersCount > 0 && (
               <span className="w-4 h-4 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center">
-                {(selectedConditions.length > 0 ? selectedConditions.length : 0) +
-                  (selectedRating !== 'all' ? 1 : 0) +
-                  (selectedAuthor !== 'all' ? 1 : 0)}
+                {drawerFiltersCount}
               </span>
             )}
           </button>
@@ -598,7 +553,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 4: RESULTS DISPLAY (GRID OR COMPACT LIST VIEW)
+          SECTION 3: RESULTS DISPLAY (GRID OR COMPACT LIST VIEW)
       ───────────────────────────────────────────────────────────── */}
       {filteredAndSortedBooks.length > 0 ? (
         viewMode === 'grid' ? (
@@ -754,7 +709,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
         )
       ) : (
         /* ─────────────────────────────────────────────────────────────
-            SECTION 5: DELIGHTFUL ZERO-MATCH RECOVERY STATE
+            SECTION 4: DELIGHTFUL ZERO-MATCH RECOVERY STATE
         ───────────────────────────────────────────────────────────── */
         <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-8 sm:p-14 text-center max-w-xl mx-auto shadow-2xs">
           <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand mx-auto flex items-center justify-center mb-4">
@@ -764,7 +719,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
             No matching books found
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mx-auto mb-6">
-            We couldn't find any books matching your specific filters. Try widening your search radius, selecting a different genre, or clearing your search term.
+            We couldn't find any books matching your specific filters. Try opening More Filters to adjust your criteria, widening your search radius, or clearing your search query.
           </p>
 
           {/* Quick Actionable Recovery Buttons */}
@@ -799,7 +754,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 6: GRANULAR FILTER SLIDE-OVER DRAWER MODAL
+          SECTION 5: GRANULAR FILTER SLIDE-OVER DRAWER MODAL
       ───────────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {isFilterDrawerOpen && (
@@ -830,9 +785,9 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                     </div>
                     <div>
                       <h3 className="font-serif text-lg font-semibold text-slate-900">
-                        Filter Books
+                        Filter & Refine Books
                       </h3>
-                      <p className="text-xs text-slate-500">Refine by rating, condition, or author</p>
+                      <p className="text-xs text-slate-500">Refine by availability, genre, distance, and more</p>
                     </div>
                   </div>
                   <button
@@ -843,11 +798,171 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                   </button>
                 </div>
 
-                {/* 1. Minimum Community Rating */}
+                {/* 1. AVAILABILITY / ACQUISITION MODE (Moved into Drawer) */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                    Minimum Rating
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={CheckmarkBadge01Icon} size={14} className="text-amber-500" />
+                      <span>Availability Mode</span>
+                    </label>
+                    {activeAvailabilityTab !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveAvailabilityTab('all')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      {
+                        id: 'all' as AvailabilityTab,
+                        label: 'All Books',
+                        desc: 'Show everything',
+                        count: availabilityCounts.all
+                      },
+                      {
+                        id: 'lending' as AvailabilityTab,
+                        label: 'Available to Lend',
+                        desc: 'Borrow & return',
+                        count: availabilityCounts.lending
+                      },
+                      {
+                        id: 'donation' as AvailabilityTab,
+                        label: 'Free Gifts to Keep',
+                        desc: 'Yours to keep permanently',
+                        count: availabilityCounts.donation
+                      },
+                      {
+                        id: 'lent_out' as AvailabilityTab,
+                        label: 'Currently Lent Out',
+                        desc: 'Join waiting list',
+                        count: availabilityCounts.lent_out
+                      }
+                    ].map((tab) => {
+                      const isSelected = activeAvailabilityTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveAvailabilityTab(tab.id)}
+                          className={`p-3 rounded-xl border text-left transition ${
+                            isSelected
+                              ? 'border-brand bg-brand/5 text-brand ring-1 ring-brand font-semibold shadow-2xs'
+                              : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs">{tab.label}</span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600">
+                              {tab.count}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{tab.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. GENRE / CATEGORY PILLS (Moved into Drawer) */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={BookOpen01Icon} size={14} className="text-brand" />
+                      <span>Genre / Category</span>
+                    </label>
+                    {selectedCategory !== 'All' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategory('All')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {CATEGORIES.map((cat) => {
+                      const isSelected = selectedCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition ${
+                            isSelected
+                              ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Distance Radius Selector */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={Location01Icon} size={14} className="text-brand" />
+                      <span>Distance Radius</span>
+                    </label>
+                    {selectedDistance !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDistance('all')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[
+                      { id: 'all' as DistanceOption, label: 'Any' },
+                      { id: '1km' as DistanceOption, label: '< 1km' },
+                      { id: '2km' as DistanceOption, label: '< 2km' },
+                      { id: '5km' as DistanceOption, label: '< 5km' },
+                      { id: '10km' as DistanceOption, label: '< 10km' }
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setSelectedDistance(opt.id)}
+                        className={`py-2 text-[11px] font-semibold rounded-xl border text-center transition ${
+                          selectedDistance === opt.id
+                            ? 'bg-brand text-white border-brand shadow-xs'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Minimum Community Rating */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={StarIcon} size={14} className="text-amber-500 fill-amber-500" />
+                      <span>Minimum Rating</span>
+                    </label>
+                    {selectedRating !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRating('all')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-4 gap-2">
                     {[
                       { id: 'all' as RatingOption, label: 'Any' },
@@ -871,11 +986,22 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                   </div>
                 </div>
 
-                {/* 2. Physical Book Condition */}
+                {/* 5. Physical Book Condition */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                    Physical Condition
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Physical Condition
+                    </label>
+                    {selectedConditions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedConditions([])}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     {CONDITIONS.map((cond) => {
                       const isChecked = selectedConditions.includes(cond);
@@ -900,7 +1026,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                   </div>
                 </div>
 
-                {/* 3. Filter by Author */}
+                {/* 6. Filter by Author */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
                     Filter by Author
@@ -917,7 +1043,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                       className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand"
                     />
 
-                    <div className="max-h-40 overflow-y-auto space-y-1 pr-1 border border-slate-100 p-2 rounded-xl">
+                    <div className="max-h-36 overflow-y-auto space-y-1 pr-1 border border-slate-100 p-2 rounded-xl">
                       <button
                         type="button"
                         onClick={() => {
