@@ -11,7 +11,8 @@ import {
   CheckmarkCircle02Icon,
   GiftIcon,
   Bookmark02Icon,
-  Search01Icon
+  Search01Icon,
+  LockIcon
 } from '@hugeicons/core-free-icons';
 import type { Book, Reader } from '../../types';
 import { ReturnReliabilityModal } from './ReturnReliabilityModal';
@@ -485,52 +486,27 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                   <div
                     key={book.id}
                     onClick={() => onSelectBook(book)}
-                    className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-slate-300 transition-all cursor-pointer flex flex-col justify-between group"
+                    className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-brand/40 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
                   >
                     <div>
-                      {/* Book Cover Image & Badges */}
-                      <div className="relative w-full h-56 rounded-xl overflow-hidden bg-slate-100 mb-4 shadow-inner">
+                      {/* Book Cover Image & Condition Badge */}
+                      <div className="relative w-full h-56 rounded-xl overflow-hidden bg-slate-100 mb-3.5 shadow-inner">
                         <img
                           src={book.coverImage}
                           alt={book.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
-
-                        {/* Top Left: Availability Mode Tag */}
-                        <div className="absolute top-3 left-3">
-                          {isDonation ? (
-                            <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold tracking-wide uppercase shadow-md flex items-center gap-1">
-                              <HugeiconsIcon icon={GiftIcon} size={12} />
-                              <span>Free Gift</span>
-                            </span>
-                          ) : isLentOut ? (
-                            <span className="px-2.5 py-1 rounded-full bg-amber-600 text-white text-[10px] font-bold tracking-wide uppercase shadow-md flex items-center gap-1">
-                              <HugeiconsIcon icon={Clock01Icon} size={12} />
-                              <span>Lent Out</span>
-                            </span>
-                          ) : book.availabilityMode === 'personal' ? (
-                            <span className="px-2.5 py-1 rounded-full bg-slate-700 text-white text-[10px] font-bold tracking-wide uppercase shadow-md flex items-center gap-1">
-                              <HugeiconsIcon icon={Bookmark02Icon} size={12} />
-                              <span>Private</span>
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-1 rounded-full bg-brand text-white text-[10px] font-bold tracking-wide uppercase shadow-md flex items-center gap-1">
-                              <HugeiconsIcon icon={BookOpen01Icon} size={12} />
-                              <span>To Lend</span>
-                            </span>
-                          )}
-                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 pointer-events-none" />
 
                         {/* Bottom Right: Condition Badge */}
-                        <div className="absolute bottom-3 right-3 px-2.5 py-0.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-[11px] font-medium text-slate-700 shadow-xs">
+                        <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/80 text-[11px] font-medium text-slate-700 shadow-xs">
                           {book.condition || 'Very Good'}
                         </div>
                       </div>
 
                       {/* Title & Author */}
-                      <h3 className="font-serif text-lg font-semibold text-slate-800 line-clamp-1 group-hover:text-brand transition-colors">
+                      <h3 className="font-serif text-base sm:text-lg font-semibold text-slate-800 line-clamp-1 group-hover:text-brand transition-colors">
                         {book.title}
                       </h3>
                       <p className="text-xs text-slate-500 font-medium mt-0.5">
@@ -539,15 +515,15 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
 
                       {/* Brief description / owner note */}
                       {book.description && (
-                        <p className="text-xs text-slate-600 line-clamp-2 mt-2 leading-relaxed bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <p className="text-xs text-slate-600 line-clamp-2 mt-2 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                           {book.description}
                         </p>
                       )}
                     </div>
 
                     {/* Footer Row: Ratings & Action Button */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1 text-xs font-semibold text-slate-700">
+                    <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
                         <HugeiconsIcon icon={StarIcon} size={14} className="text-amber-500 fill-amber-400" />
                         <span>{book.rating}</span>
                         <span className="text-[11px] text-slate-400 font-normal">({book.reviewsCount})</span>
@@ -555,50 +531,57 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
 
                       {/* Action Button depending on mode */}
                       {book.status === 'claimed' ? (
-                        <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold flex items-center gap-1">
-                          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} className="text-emerald-600" />
+                        <span className="h-10 sm:h-11 px-3.5 sm:px-4 rounded-xl bg-slate-100 text-slate-500 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 border border-slate-200/80 shadow-2xs flex-shrink-0 select-none">
+                          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} className="text-emerald-600" />
                           <span>Claimed</span>
                         </span>
                       ) : book.availabilityMode === 'personal' ? (
-                        <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold flex items-center gap-1 border border-slate-200" title="This book is in the reader's private library">
-                          <HugeiconsIcon icon={Bookmark02Icon} size={13} className="text-slate-500" />
+                        <span
+                          className="h-10 sm:h-11 px-3.5 sm:px-4 rounded-xl bg-slate-100/90 text-slate-600 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 border border-slate-200/80 shadow-2xs flex-shrink-0 select-none"
+                          title="This book is in the reader's private library"
+                        >
+                          <HugeiconsIcon icon={LockIcon} size={14} className="text-slate-500" />
                           <span>Private</span>
                         </span>
                       ) : isDonation ? (
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             onRequestBorrow(book, reader.name);
                           }}
-                          className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all active:scale-95 flex items-center gap-1"
+                          className="h-10 sm:h-11 px-4 sm:px-4.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:outline-none"
                         >
-                          <HugeiconsIcon icon={GiftIcon} size={13} />
+                          <HugeiconsIcon icon={GiftIcon} size={15} />
                           <span>Claim Gift</span>
                         </button>
                       ) : isLentOut ? (
                         <button
+                          type="button"
                           disabled={isNotified}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleNotifyReturn(book.id);
                           }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                          className={`h-10 sm:h-11 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 flex-shrink-0 shadow-2xs ${
                             isNotified
                               ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-default'
-                              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 active:scale-95'
+                              : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 active:scale-95'
                           }`}
                         >
-                          {isNotified ? 'Waitlist Set ✓' : 'Notify Return'}
+                          <HugeiconsIcon icon={Clock01Icon} size={14} className={isNotified ? 'text-slate-400' : 'text-amber-700'} />
+                          <span>{isNotified ? 'Waitlist Set ✓' : 'Notify Return'}</span>
                         </button>
                       ) : (
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             onRequestBorrow(book, reader.name);
                           }}
-                          className="px-3.5 py-1.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition-all active:scale-95 flex items-center gap-1"
+                          className="h-10 sm:h-11 px-4 sm:px-4.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
                         >
-                          <HugeiconsIcon icon={BookOpen01Icon} size={13} />
+                          <HugeiconsIcon icon={BookOpen01Icon} size={15} />
                           <span>Borrow</span>
                         </button>
                       )}
