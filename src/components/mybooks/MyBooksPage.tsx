@@ -9,11 +9,13 @@ import { AddBookModal } from './AddBookModal';
 interface MyBooksPageProps {
   initialSubTab?: 'shelf' | 'borrowing' | 'requests' | 'history';
   onNavigateToMessages?: (ownerName: string, bookTitle: string) => void;
+  onBookAdded?: (newBook: any) => void;
 }
 
 export const MyBooksPage: React.FC<MyBooksPageProps> = ({
   initialSubTab = 'shelf',
-  onNavigateToMessages
+  onNavigateToMessages,
+  onBookAdded
 }) => {
   const [currentTab, setCurrentTab] = useState<'shelf' | 'borrowing' | 'requests' | 'history'>(initialSubTab);
   const [isAddBookOpen, setIsAddBookOpen] = useState(false);
@@ -159,6 +161,7 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
             pendingRequests: 0
           };
           setAvailableBooks((prev) => [newShelfItem, ...prev]);
+          onBookAdded?.(newBook);
           setToastMessage(
             `“${newBook.title}” was added to your shelf! Reader ratings & reviews are synced with all community copies.`
           );

@@ -17,6 +17,13 @@ interface BorrowingViewProps {
   onMessageOwner: (owner: string, bookTitle: string) => void;
 }
 
+const getRelativeDate = (daysOffset: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[d.getMonth()]} ${d.getDate()}`;
+};
+
 export const BorrowingView: React.FC<BorrowingViewProps> = ({ onMessageOwner }) => {
   const [borrowedBooks, setBorrowedBooks] = useState<BorrowedBookItem[]>([
     {
@@ -27,8 +34,8 @@ export const BorrowingView: React.FC<BorrowingViewProps> = ({ onMessageOwner }) 
       cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=200',
       owner: 'Diego Ramirez',
       ownerAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
-      collectedDate: 'Apr 3',
-      dueDate: 'May 3',
+      collectedDate: getRelativeDate(-12),
+      dueDate: getRelativeDate(18),
       daysUsed: 12,
       totalDays: 30,
       daysLeft: 18,
@@ -42,8 +49,8 @@ export const BorrowingView: React.FC<BorrowingViewProps> = ({ onMessageOwner }) 
       cover: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&q=80&w=200',
       owner: 'Hana Yamada',
       ownerAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150',
-      collectedDate: 'Mar 25',
-      dueDate: 'Apr 24',
+      collectedDate: getRelativeDate(-22),
+      dueDate: getRelativeDate(8),
       daysUsed: 22,
       totalDays: 30,
       daysLeft: 8,

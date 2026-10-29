@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { getUpcomingHandoverDates } from '../../utils/dateUtils';
 import {
   Calendar01Icon,
   Clock01Icon,
@@ -26,22 +27,25 @@ export const RequestsView: React.FC = () => {
     meetupSpot: string;
     returnBy: string;
     note: string;
-  } | null>({
-    id: 'req-1',
-    borrower: 'Hana Yamada',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-    distance: '0.6 km',
-    memberSince: 'March 2025',
-    trust: 'Fair',
-    borrowsCount: 23,
-    book: 'Pachinko',
-    author: 'Min Jin Lee',
-    cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=200',
-    proposedDate: 'Sat, 23 Apr',
-    proposedTime: '11:00 AM',
-    meetupSpot: 'Riverside Coffee, Rampura',
-    returnBy: '26 May (30 days after collection)',
-    note: '“Hi maya, - I’ve been wanting to read Pachinko for months. I just finished Kim Jiyoung, and I think I’m ready for this one. I’d take great care of it and return it on time.”'
+  } | null>(() => {
+    const dates = getUpcomingHandoverDates();
+    return {
+      id: 'req-1',
+      borrower: 'Hana Yamada',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
+      distance: '0.6 km',
+      memberSince: '2024',
+      trust: 'Fair',
+      borrowsCount: 23,
+      book: 'Pachinko',
+      author: 'Min Jin Lee',
+      cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=200',
+      proposedDate: `${dates[2]?.val || 'Upcoming Saturday'}`,
+      proposedTime: '11:00 AM',
+      meetupSpot: 'Riverside Coffee, Rampura',
+      returnBy: '30 days after collection',
+      note: '“Hi! - I’ve been wanting to read Pachinko for months. I just finished Kim Jiyoung, and I think I’m ready for this one. I’d take great care of it and return it on time.”'
+    };
   });
 
   const [decisionNotice, setDecisionNotice] = useState<string | null>(null);

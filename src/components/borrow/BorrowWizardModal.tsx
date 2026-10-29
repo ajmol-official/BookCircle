@@ -11,6 +11,7 @@ import {
   SentIcon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
+import { getUpcomingHandoverDates } from '../../utils/dateUtils';
 
 export interface BorrowHandoverDetails {
   book: Book;
@@ -102,16 +103,9 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
     setIsSuccess(false);
   }, [book, targetOwnerName, owners]);
 
-  // Step 2: Date, Time & Meetup Spot
-  const dates = [
-    { day: 'Thu', date: '24 Apr' },
-    { day: 'Fri', date: '25 Apr' },
-    { day: 'Sat', date: '26 Apr' },
-    { day: 'Sun', date: '27 Apr' },
-    { day: 'Mon', date: '28 Apr' },
-    { day: 'Tue', date: '30 Apr' },
-  ];
-  const [selectedDate, setSelectedDate] = useState('Fri 25 Apr');
+  // Step 2: Date, Time & Meetup Spot (Dynamically generated, never backdated)
+  const dates = React.useMemo(() => getUpcomingHandoverDates(), []);
+  const [selectedDate, setSelectedDate] = useState(() => dates[1]?.val || dates[0]?.val || 'Tomorrow');
 
   const timeSlots = ['9:00 AM', '10:00 AM', '11:30 AM', '2:00 PM', '5:30 PM'];
   const [selectedTime, setSelectedTime] = useState('10:00 AM');

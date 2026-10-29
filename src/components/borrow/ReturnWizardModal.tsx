@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getUpcomingHandoverDates } from '../../utils/dateUtils';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Cancel01Icon,
@@ -58,16 +59,9 @@ export const ReturnWizardModal: React.FC<ReturnWizardModalProps> = ({
   // 2-step flow mirroring borrowing wizard: 1 (Set Meetup), 2 (Review & Confirm)
   const [step, setStep] = useState<1 | 2>(1);
 
-  // Date selection
-  const dates = [
-    { day: 'Thu', date: '24 Apr' },
-    { day: 'Fri', date: '25 Apr' },
-    { day: 'Sat', date: '26 Apr' },
-    { day: 'Sun', date: '27 Apr' },
-    { day: 'Mon', date: '28 Apr' },
-    { day: 'Tue', date: '30 Apr' },
-  ];
-  const [selectedDate, setSelectedDate] = useState('Fri 25 Apr');
+  // Date selection (Dynamically generated, never backdated)
+  const dates = React.useMemo(() => getUpcomingHandoverDates(), []);
+  const [selectedDate, setSelectedDate] = useState(() => dates[1]?.val || dates[0]?.val || 'Tomorrow');
 
   // Time selection
   const timeSlots = ['9:00 AM', '10:00 AM', '11:30 AM', '2:00 PM', '5:30 PM'];

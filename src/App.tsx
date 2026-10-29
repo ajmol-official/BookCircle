@@ -564,6 +564,7 @@ const BookCircleMain: React.FC = () => {
               <MyBooksPage
                 key="my-books-shelf"
                 initialSubTab="shelf"
+                onBookAdded={handleGlobalBookAdded}
                 onNavigateToMessages={(name) => {
                   setSelectedChatParticipant(name);
                   setActiveTab('messages');
@@ -575,6 +576,7 @@ const BookCircleMain: React.FC = () => {
               <MyBooksPage
                 key="my-books-requests"
                 initialSubTab="requests"
+                onBookAdded={handleGlobalBookAdded}
                 onNavigateToMessages={(name) => {
                   setSelectedChatParticipant(name);
                   setActiveTab('messages');
