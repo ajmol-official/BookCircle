@@ -227,6 +227,7 @@ export class AuthService {
     }
 
     const provider = supabaseUser.app_metadata?.provider === 'google' ? 'google' : 'email';
+    const localUser = storageService.findUserById(userId);
 
     // Map to canonical BookCircle User object
     const user: User = {
@@ -246,7 +247,9 @@ export class AuthService {
       lendsCount: profile?.books_for_lending || 0,
       borrowsCount: profile?.total_borrows || 0,
       authProvider: provider,
-      favoriteGenres: ['Fiction', 'Non-fiction'],
+      favoriteGenres: localUser?.favoriteGenres?.length
+        ? localUser.favoriteGenres
+        : ['Fiction', 'Non-fiction'],
       isProfileComplete: Boolean(profile?.full_name && profile?.location),
       notificationPreferences: {
         email: true,

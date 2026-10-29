@@ -53,21 +53,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [pendingAuthorizedCallback, setPendingAuthorizedCallback] = useState<(() => void) | null>(null);
 
   const handleAuthSuccess = useCallback(
-    (user: User, isNewUser: boolean) => {
+    (user: User, _isNewUser: boolean) => {
       setCurrentUser(user);
       setIsAuthModalOpen(false);
 
-      if (isNewUser || !user.isProfileComplete) {
-        setIsProfileSetupOpen(true);
+      // Do NOT interrupt the user with the profile setup modal immediately after login/signup
+      if (pendingAuthorizedCallback) {
+        const cb = pendingAuthorizedCallback;
+        setPendingAuthorizedCallback(null);
+        setAuthPromptContext(null);
+        setTimeout(() => cb(), 100);
       } else {
-        if (pendingAuthorizedCallback) {
-          const cb = pendingAuthorizedCallback;
-          setPendingAuthorizedCallback(null);
-          setAuthPromptContext(null);
-          setTimeout(() => cb(), 100);
-        } else {
-          setAuthPromptContext(null);
-        }
+        setAuthPromptContext(null);
       }
     },
     [pendingAuthorizedCallback]

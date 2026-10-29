@@ -5,7 +5,8 @@ import {
   PencilEdit02Icon,
   StarIcon,
   BookOpen01Icon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  Camera01Icon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { EditProfileModal } from './EditProfileModal';
@@ -22,7 +23,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
 
   const [profile, setProfile] = useState({
     name: currentUser?.displayName || 'Maya Lin',
-    location: currentUser?.location ? `${currentUser.location} - Member since ${currentUser.memberSince}` : 'Elm Park, North London - Member since February 2024',
+    location: currentUser?.location || 'Elm Park, North London',
     bio: currentUser?.bio || 'Slow reader. Love novels that feel like long walks. Currently working through the Neapolitan quartet for a second time.',
     avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
     favoriteGenres: currentUser?.favoriteGenres || ['All', 'Fiction', 'Non-fiction', 'Science', 'History', 'Poetry']
@@ -33,9 +34,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
     if (currentUser) {
       setProfile({
         name: currentUser.displayName,
-        location: `${currentUser.location || 'Local Neighborhood'} - Member since ${currentUser.memberSince || '2024'}`,
+        location: currentUser.location || 'Elm Park, North London',
         bio: currentUser.bio || 'Book enthusiast and community reader.',
-        avatar: currentUser.avatar,
+        avatar: currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
         favoriteGenres: currentUser.favoriteGenres || ['All', 'Fiction', 'Non-fiction', 'Science']
       });
     }
@@ -109,18 +110,30 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
       {/* 1. User Profile Header Card matching Figma #47:1711 */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <img
-            src={profile.avatar}
-            alt={profile.name}
-            className="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover ring-4 ring-slate-100 shadow-md flex-shrink-0"
-          />
+          <div className="relative group flex-shrink-0">
+            <img
+              src={profile.avatar}
+              alt={profile.name}
+              className="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover ring-4 ring-slate-100 shadow-md"
+            />
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(true)}
+              className="absolute bottom-1 right-1 p-2.5 rounded-full bg-brand text-white shadow-md hover:bg-brand-dark transition transform group-hover:scale-110 active:scale-95"
+              title="Change profile picture"
+            >
+              <HugeiconsIcon icon={Camera01Icon} size={16} />
+            </button>
+          </div>
           <div className="space-y-2">
             <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-slate-800 tracking-tight">
               {profile.name}
             </h1>
             <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500">
               <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand flex-shrink-0" />
-              <span>{profile.location}</span>
+              <span>
+                {profile.location} · Member since {currentUser?.memberSince || 'February 2024'}
+              </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed pt-1 font-sans">
               {profile.bio}
@@ -248,9 +261,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
         <div className="space-y-6">
           {/* Favorite Genres filter chips */}
           <div>
-            <h3 className="font-serif text-base font-semibold text-slate-700 mb-2">
-              Favorite Genres
-            </h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-serif text-base font-semibold text-slate-700">
+                Favorite Genres
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:text-brand-dark hover:underline transition"
+              >
+                <HugeiconsIcon icon={PencilEdit02Icon} size={13} />
+                <span>Edit Preferences</span>
+              </button>
+            </div>
             <div className="flex flex-wrap gap-2">
               {profile.favoriteGenres.map((genre) => (
                 <button
@@ -436,15 +459,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
           name: profile.name,
           location: profile.location,
           bio: profile.bio,
-          favoriteGenres: profile.favoriteGenres
+          avatar: profile.avatar,
+          favoriteGenres: profile.favoriteGenres,
         }}
         onSave={async (updated) => {
-          setProfile(prev => ({ ...prev, ...updated }));
+          setProfile((prev) => ({ ...prev, ...updated }));
           try {
             await updateProfile({
               displayName: updated.name,
+              avatar: updated.avatar,
               location: updated.location,
-              bio: updated.bio
+              bio: updated.bio,
+              favoriteGenres: updated.favoriteGenres,
+              isProfileComplete: true,
             });
           } catch (e) {
             console.error('Failed to update persistent profile:', e);
