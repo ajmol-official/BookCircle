@@ -10,7 +10,8 @@ import {
   FavouriteIcon,
   Notification01Icon,
   CheckmarkCircle02Icon,
-  SparklesIcon
+  SparklesIcon,
+  GiftIcon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { ReviewModal } from './ReviewModal';
@@ -34,6 +35,9 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   const { toggleWishlist, isWishlisted } = useAuth();
   const bookWishlisted = isWishlisted(book.id);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
+  const isClaimed = book.status === 'claimed';
 
   const baseCount = book.wishlistCount || 6;
   const currentWishlistCount = bookWishlisted ? baseCount + 1 : baseCount;
@@ -203,7 +207,17 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
           <div>
             <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
               <div className="flex items-center gap-2">
-                {book.status === 'lent_out' ? (
+                {isClaimed ? (
+                  <span className="px-3 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                    Claimed by Neighbor
+                  </span>
+                ) : isDonation ? (
+                  <span className="px-3 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60 flex items-center gap-1.5">
+                    <HugeiconsIcon icon={GiftIcon} size={13} className="text-emerald-700" />
+                    Free Community Gift · Keep Forever
+                  </span>
+                ) : book.status === 'lent_out' ? (
                   <span className="px-3 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/60 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                     Currently lent out
@@ -403,15 +417,30 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
               </div>
 
               <button
-                disabled={!owner.isAvailable}
+                disabled={!owner.isAvailable || isClaimed}
                 onClick={() => onRequestBorrow(book, owner.name)}
-                className={`w-full py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-sm active:scale-95 ${
-                  owner.isAvailable
+                className={`w-full py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 ${
+                  isClaimed
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                    : isDonation
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : owner.isAvailable
                     ? 'bg-brand hover:bg-brand-dark text-white'
                     : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
                 }`}
               >
-                {owner.isAvailable ? 'Request' : 'Unavailable'}
+                {isClaimed ? (
+                  <span>Claimed</span>
+                ) : isDonation ? (
+                  <>
+                    <HugeiconsIcon icon={GiftIcon} size={15} />
+                    <span>Claim Free Gift</span>
+                  </>
+                ) : owner.isAvailable ? (
+                  <span>Request to Borrow</span>
+                ) : (
+                  <span>Unavailable</span>
+                )}
               </button>
             </div>
           ))}

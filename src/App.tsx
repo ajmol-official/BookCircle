@@ -5,7 +5,8 @@ import { CategoryPills } from './components/CategoryPills';
 import { BooksSection } from './components/BooksSection';
 import { ReadersSection } from './components/ReadersSection';
 import { CoffeeModal } from './components/CoffeeModal';
-import { BorrowWizardModal } from './components/borrow/BorrowWizardModal';
+import { BorrowWizardModal, type BorrowHandoverDetails } from './components/borrow/BorrowWizardModal';
+import { ClaimGiftModal, type ClaimGiftDetails } from './components/borrow/ClaimGiftModal';
 import { AddBookModal } from './components/mybooks/AddBookModal';
 import { FloatingAddBookButton } from './components/FloatingAddBookButton';
 import type { NotificationItem } from './components/NotificationDropdown';
@@ -76,6 +77,7 @@ const BookCircleMain: React.FC = () => {
   const [viewingBookDetails, setViewingBookDetails] = useState<Book | null>(null);
   const [viewingPublicReader, setViewingPublicReader] = useState<Reader | null>(null);
   const [selectedBorrowBook, setSelectedBorrowBook] = useState<Book | null>(null);
+  const [selectedClaimBook, setSelectedClaimBook] = useState<Book | null>(null);
   const [isGlobalAddBookOpen, setIsGlobalAddBookOpen] = useState<boolean>(false);
   const [globalToast, setGlobalToast] = useState<string | null>(null);
 
@@ -222,26 +224,88 @@ const BookCircleMain: React.FC = () => {
   };
 
   const handleQuickBorrow = (book: Book) => {
-    requireAuth({
-      title: 'Sign In to Borrow',
-      message: `Sign in or join BookCircle to borrow "${book.title}" from ${book.ownerName}.`,
-      targetAction: 'borrow',
-      bookTitle: book.title,
-      ownerName: book.ownerName,
-      onAuthorized: () => setSelectedBorrowBook(book),
-    });
+    const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
+
+    if (isDonation) {
+      requireAuth({
+        title: 'Sign In to Claim Free Gift',
+        message: `Sign in or join BookCircle to claim "${book.title}" as a free community gift from ${book.ownerName}.`,
+        targetAction: 'claim',
+        bookTitle: book.title,
+        ownerName: book.ownerName,
+        onAuthorized: () => setSelectedClaimBook(book),
+      });
+    } else {
+      requireAuth({
+        title: 'Sign In to Borrow',
+        message: `Sign in or join BookCircle to borrow "${book.title}" from ${book.ownerName}.`,
+        targetAction: 'borrow',
+        bookTitle: book.title,
+        ownerName: book.ownerName,
+        onAuthorized: () => setSelectedBorrowBook(book),
+      });
+    }
   };
 
   const handleDetailsRequestBorrow = (b: Book, owner?: string) => {
     const ownerName = owner || b.ownerName;
-    requireAuth({
-      title: 'Sign In to Request Book',
-      message: `Connect with ${ownerName} to arrange a friendly community meetup for "${b.title}".`,
-      targetAction: 'borrow',
-      bookTitle: b.title,
-      ownerName,
-      onAuthorized: () => setSelectedBorrowBook(owner ? { ...b, ownerName: owner } : b),
-    });
+    const isDonation = b.availabilityMode === 'donation' || b.status === 'donation';
+
+    if (isDonation) {
+      requireAuth({
+        title: 'Sign In to Claim Free Gift',
+        message: `Connect with ${ownerName} to collect "${b.title}" as a free community gift to keep forever.`,
+        targetAction: 'claim',
+        bookTitle: b.title,
+        ownerName,
+        onAuthorized: () => setSelectedClaimBook(owner ? { ...b, ownerName } : b),
+      });
+    } else {
+      requireAuth({
+        title: 'Sign In to Request Book',
+        message: `Connect with ${ownerName} to arrange a friendly community meetup for "${b.title}".`,
+        targetAction: 'borrow',
+        bookTitle: b.title,
+        ownerName,
+        onAuthorized: () => setSelectedBorrowBook(owner ? { ...b, ownerName } : b),
+      });
+    }
+  };
+
+  const handleClaimSubmitted = (details: ClaimGiftDetails) => {
+    // 1. Mark book as 'claimed' in booksList
+    setBooksList((prev) =>
+      prev.map((b) => (b.id === details.book.id ? { ...b, status: 'claimed' } : b))
+    );
+
+    // 2. If viewing this book details, update live
+    if (viewingBookDetails?.id === details.book.id) {
+      setViewingBookDetails((prev) => (prev ? { ...prev, status: 'claimed' } : null));
+    }
+
+    // 3. Trigger celebration toast for claiming a free gift
+    setGlobalToast(
+      `🎁 Free Gift Claimed! Meetup with ${details.owner.name} scheduled for ${details.date} at ${details.time}. It is yours to keep forever!`
+    );
+    setTimeout(() => setGlobalToast(null), 5000);
+  };
+
+  const handleBorrowSubmitted = (details: BorrowHandoverDetails) => {
+    // 1. Mark book as 'lent_out' in booksList
+    setBooksList((prev) =>
+      prev.map((b) => (b.id === details.book.id ? { ...b, status: 'lent_out' } : b))
+    );
+
+    // 2. If viewing this book details, update live
+    if (viewingBookDetails?.id === details.book.id) {
+      setViewingBookDetails((prev) => (prev ? { ...prev, status: 'lent_out' } : null));
+    }
+
+    // 3. Trigger celebration toast for borrowing
+    setGlobalToast(
+      `📖 Borrow Request Sent! Meetup with ${details.owner.name} scheduled for ${details.date} at ${details.time}.`
+    );
+    setTimeout(() => setGlobalToast(null), 5000);
   };
 
   const handleFloatingAddBook = () => {
@@ -535,12 +599,22 @@ const BookCircleMain: React.FC = () => {
       {/* Interactive Support / Coffee Modal */}
       <CoffeeModal isOpen={isCoffeeModalOpen} onClose={() => setIsCoffeeModalOpen(false)} />
 
-      {/* Borrow Handover Wizard Modal */}
+      {/* Borrow Handover Wizard Modal (Exclusively for lending & 30-day loans) */}
       <BorrowWizardModal
         isOpen={!!selectedBorrowBook}
         book={selectedBorrowBook}
         initialOwnerName={selectedBorrowBook?.ownerName}
         onClose={() => setSelectedBorrowBook(null)}
+        onRequestSubmitted={handleBorrowSubmitted}
+      />
+
+      {/* Free Gift Claim Modal (Exclusively for permanent community gifts) */}
+      <ClaimGiftModal
+        isOpen={!!selectedClaimBook}
+        book={selectedClaimBook}
+        initialOwnerName={selectedClaimBook?.ownerName}
+        onClose={() => setSelectedClaimBook(null)}
+        onClaimSubmitted={handleClaimSubmitted}
       />
 
       {/* Floating "+ Add Book" Button (Responsive across mobile, tablet, desktop) */}

@@ -5,7 +5,8 @@ import {
   Location01Icon,
   BookOpen01Icon,
   GiftIcon,
-  FavouriteIcon
+  FavouriteIcon,
+  CheckmarkCircle02Icon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +27,7 @@ export const BookCard: React.FC<BookCardProps> = ({
   const { toggleWishlist, isWishlisted } = useAuth();
   const [imageLoaded, setImageLoaded] = React.useState(false);
   const isSaved = isWishlisted(book.id);
+  const isClaimed = book.status === 'claimed';
   const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
 
   return (
@@ -65,12 +67,17 @@ export const BookCard: React.FC<BookCardProps> = ({
               </span>
             </div>
 
-            {isDonation && (
+            {isClaimed ? (
+              <span className="px-2 py-0.5 rounded-full bg-slate-900/85 text-white text-[10px] font-bold tracking-wide uppercase shadow-sm flex items-center gap-1">
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={11} className="text-emerald-400" />
+                <span>Claimed</span>
+              </span>
+            ) : isDonation ? (
               <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold tracking-wide uppercase shadow-sm flex items-center gap-1">
                 <HugeiconsIcon icon={GiftIcon} size={11} />
                 <span>Gift</span>
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Wishlist Heart Button on Top Right */}
@@ -133,7 +140,11 @@ export const BookCard: React.FC<BookCardProps> = ({
               </span>
             </button>
 
-            {isDonation ? (
+            {isClaimed ? (
+              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">
+                Claimed Gift
+              </span>
+            ) : isDonation ? (
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold">
                 Free Gift
               </span>
@@ -173,7 +184,12 @@ export const BookCard: React.FC<BookCardProps> = ({
         </div>
 
         {/* Quick Borrow or Claim Button */}
-        {isDonation ? (
+        {isClaimed ? (
+          <span className="px-3 py-1 rounded-lg bg-slate-100 text-slate-500 text-xs font-semibold flex items-center gap-1 shadow-2xs">
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} className="text-emerald-600" />
+            <span>Claimed</span>
+          </span>
+        ) : isDonation ? (
           <button 
             onClick={(e) => {
               e.stopPropagation();

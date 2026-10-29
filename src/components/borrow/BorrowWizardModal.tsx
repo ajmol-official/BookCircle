@@ -12,12 +12,27 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 
+export interface BorrowHandoverDetails {
+  book: Book;
+  owner: {
+    id: string;
+    name: string;
+    avatar: string;
+    distance: string;
+    trust: string;
+  };
+  date: string;
+  time: string;
+  spot: string;
+  note: string;
+}
+
 interface BorrowWizardModalProps {
   isOpen: boolean;
   book: Book | null;
   initialOwnerName?: string;
   onClose: () => void;
-  onRequestSubmitted?: (details: any) => void;
+  onRequestSubmitted?: (details: BorrowHandoverDetails) => void;
 }
 
 export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
@@ -29,7 +44,6 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  const isDonation = book?.availabilityMode === 'donation' || book?.status === 'donation';
   const targetOwnerName = initialOwnerName || book?.ownerName || 'Rahim Chowdhury';
 
   // Step 1: Owner selection & Note
@@ -43,7 +57,7 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
         memberSince: '2024',
         lendsCount: 42,
         trust: book?.ownerTrust || 'Tier 5 · Verified',
-        note: isDonation ? 'Offering as a free community gift to keep permanently' : 'Prefers meeting at local cafes'
+        note: 'Prefers meeting at local cafes'
       },
       {
         id: 'owner-amira',
@@ -72,25 +86,21 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
       index === self.findIndex((t) => t.name.toLowerCase() === item.name.toLowerCase())
     );
     return unique;
-  }, [targetOwnerName, book, isDonation]);
+  }, [targetOwnerName, book]);
 
   const [selectedOwner, setSelectedOwner] = useState(owners[0]);
   const [borrowNote, setBorrowNote] = useState(
-    isDonation
-      ? 'Hi! I would love to claim this generous donation book for my personal collection. Thank you so much for passing it along!'
-      : 'Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.'
+    'Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.'
   );
 
   React.useEffect(() => {
     if (owners[0]) {
       setSelectedOwner(owners[0]);
     }
-    setBorrowNote(
-      isDonation
-        ? 'Hi! I would love to claim this generous donation book for my personal collection. Thank you so much for passing it along!'
-        : 'Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.'
-    );
-  }, [book, targetOwnerName, isDonation, owners]);
+    setBorrowNote('Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.');
+    setStep(1);
+    setIsSuccess(false);
+  }, [book, targetOwnerName, owners]);
 
   // Step 2: Date, Time & Meetup Spot
   const dates = [

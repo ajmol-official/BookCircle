@@ -41,7 +41,7 @@ export interface PhoneOtpVerification {
 export interface AuthPromptContext {
   title?: string;
   message: string;
-  targetAction?: 'borrow' | 'add-book' | 'messages' | 'requests' | 'my-books' | 'profile' | 'general';
+  targetAction?: 'borrow' | 'claim' | 'add-book' | 'messages' | 'requests' | 'my-books' | 'profile' | 'general';
   bookTitle?: string;
   ownerName?: string;
   onAuthorized?: () => void;

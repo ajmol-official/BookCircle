@@ -146,7 +146,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
         // 2. Multi-select Availability Checkboxes
         if (selectedAvailabilities.length > 0) {
           const isLending = book.status === 'available' && book.availabilityMode !== 'donation';
-          const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
+          const isDonation = (book.availabilityMode === 'donation' || book.status === 'donation') && book.status !== 'claimed';
           const isLentOut = book.status === 'lent_out';
 
           const matchesAnySelected =
@@ -241,7 +241,9 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
     let lentOutCount = 0;
 
     books.forEach((b) => {
-      if (b.availabilityMode === 'donation' || b.status === 'donation') {
+      if (b.status === 'claimed') {
+        // Already claimed community gift
+      } else if (b.availabilityMode === 'donation' || b.status === 'donation') {
         donationCount++;
       } else if (b.status === 'available') {
         availableCount++;

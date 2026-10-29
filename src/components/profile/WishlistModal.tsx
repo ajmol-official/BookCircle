@@ -9,7 +9,9 @@ import {
   Notification01Icon,
   Delete02Icon,
   ArrowRight01Icon,
-  SparklesIcon
+  SparklesIcon,
+  GiftIcon,
+  CheckmarkCircle02Icon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { modalBackdropVariants, modalContentVariants } from '../../animations/motionVariants';
@@ -240,7 +242,24 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
 
                       {/* Right Actions */}
                       <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                        {isAvailable ? (
+                        {book.status === 'claimed' ? (
+                          <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1.5">
+                            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} className="text-emerald-600" />
+                            <span>Claimed</span>
+                          </span>
+                        ) : (book.availabilityMode === 'donation' || book.status === 'donation') ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onRequestBorrow(book, book.ownerName);
+                              onClose();
+                            }}
+                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition active:scale-95 flex items-center gap-1.5"
+                          >
+                            <HugeiconsIcon icon={GiftIcon} size={14} />
+                            <span>Claim Gift</span>
+                          </button>
+                        ) : isAvailable ? (
                           <button
                             type="button"
                             onClick={() => {

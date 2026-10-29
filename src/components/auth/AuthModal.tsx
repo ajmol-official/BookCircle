@@ -11,7 +11,8 @@ import {
   ShieldCheckIcon,
   LockIcon,
   RefreshIcon,
-  CheckmarkCircle02Icon
+  CheckmarkCircle02Icon,
+  GiftIcon
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '../../context/AuthContext';
 import type { PhoneOtpVerification } from '../../types/auth';
@@ -244,11 +245,31 @@ export const AuthModal: React.FC = () => {
 
         {/* Intent-Aware Action Notice (if prompted by an action) */}
         {authPromptContext && (
-          <div className="mb-5 p-3.5 bg-amber-50/80 border border-amber-200/70 rounded-2xl flex items-start gap-2.5 text-xs text-amber-900 animate-in fade-in">
-            <HugeiconsIcon icon={LockIcon} size={16} className="text-amber-700 flex-shrink-0 mt-0.5" />
+          <div
+            className={`mb-5 p-3.5 rounded-2xl flex items-start gap-2.5 text-xs animate-in fade-in ${
+              authPromptContext.targetAction === 'claim'
+                ? 'bg-emerald-50 border border-emerald-200/80 text-emerald-950'
+                : 'bg-amber-50/80 border border-amber-200/70 text-amber-900'
+            }`}
+          >
+            <HugeiconsIcon
+              icon={authPromptContext.targetAction === 'claim' ? GiftIcon : LockIcon}
+              size={16}
+              className={`${
+                authPromptContext.targetAction === 'claim' ? 'text-emerald-700' : 'text-amber-700'
+              } flex-shrink-0 mt-0.5`}
+            />
             <div>
               <p className="font-semibold">{authPromptContext.title || 'Account Required'}</p>
-              <p className="text-amber-800/90 mt-0.5 leading-relaxed">{authPromptContext.message}</p>
+              <p
+                className={`${
+                  authPromptContext.targetAction === 'claim'
+                    ? 'text-emerald-800'
+                    : 'text-amber-800/90'
+                } mt-0.5 leading-relaxed`}
+              >
+                {authPromptContext.message}
+              </p>
             </div>
           </div>
         )}

@@ -547,7 +547,12 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                       </div>
 
                       {/* Action Button depending on mode */}
-                      {isDonation ? (
+                      {book.status === 'claimed' ? (
+                        <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold flex items-center gap-1">
+                          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} className="text-emerald-600" />
+                          <span>Claimed</span>
+                        </span>
+                      ) : isDonation ? (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

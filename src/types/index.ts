@@ -9,7 +9,7 @@ export interface Book {
   distance: string;
   ownersCount: number;
   category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
-  status: 'available' | 'lent_out' | 'donation';
+  status: 'available' | 'lent_out' | 'donation' | 'claimed';
   ownerName: string;
   ownerAvatar: string;
   ownerTrust: string;
