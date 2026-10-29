@@ -36,11 +36,11 @@ export const BookCard: React.FC<BookCardProps> = ({
       tabIndex={0}
       onClick={() => onSelectBook(book)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectBook(book); } }}
-      className="group bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-slate-300 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none transition-all duration-300 flex flex-col justify-between cursor-pointer"
+      className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-brand/40 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none transition-all duration-300 flex flex-col justify-between cursor-pointer"
     >
       <div>
         {/* Book Cover Image & Badge with Shimmer Skeleton */}
-        <div className="relative w-full h-60 rounded-xl overflow-hidden bg-slate-100 mb-4 shadow-inner">
+        <div className="relative w-full h-56 sm:h-60 rounded-xl overflow-hidden bg-slate-100 mb-4 shadow-inner">
           {/* Skeleton Shimmer */}
           {!imageLoaded && (
             <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse" />
@@ -80,14 +80,14 @@ export const BookCard: React.FC<BookCardProps> = ({
             ) : null}
           </div>
 
-          {/* Wishlist Heart Button on Top Right */}
+          {/* Wishlist Heart Button on Top Right (36–40px accessible touch target) */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               toggleWishlist(book.id);
             }}
-            className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all active:scale-90 shadow-sm z-10 ${
+            className={`absolute top-3 right-3 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all active:scale-90 shadow-sm z-10 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none ${
               isSaved
                 ? 'bg-rose-500 text-white shadow-rose-500/30'
                 : 'bg-slate-900/60 text-white hover:bg-slate-900/85 hover:text-rose-300'
@@ -97,7 +97,7 @@ export const BookCard: React.FC<BookCardProps> = ({
           >
             <HugeiconsIcon
               icon={FavouriteIcon}
-              size={13}
+              size={15}
               className={isSaved ? 'fill-white text-white' : 'text-white'}
             />
           </button>
@@ -112,14 +112,14 @@ export const BookCard: React.FC<BookCardProps> = ({
 
         {/* Book Details */}
         <div className="flex flex-col gap-1">
-          <h3 className="font-serif text-lg font-semibold text-slate-800 line-clamp-1 group-hover:text-brand transition-colors">
+          <h3 className="font-serif text-base sm:text-lg font-semibold text-slate-800 line-clamp-1 group-hover:text-brand transition-colors">
             {book.title}
           </h3>
           <p className="text-xs text-slate-500 font-medium">
             {book.author}
           </p>
 
-          {/* Owner info row */}
+          {/* Owner info row (Secondary hierarchy) */}
           <div className="flex items-center justify-between gap-2 mt-2 pt-1">
             <button
               type="button"
@@ -127,7 +127,7 @@ export const BookCard: React.FC<BookCardProps> = ({
                 e.stopPropagation();
                 if (onSelectOwner) onSelectOwner(book.ownerName);
               }}
-              className="flex items-center gap-1.5 text-left group/owner hover:opacity-90 transition max-w-[70%]"
+              className="flex items-center gap-1.5 text-left group/owner hover:opacity-90 transition max-w-[70%] py-0.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand/30"
               title={`View ${book.ownerName}'s shelf`}
             >
               <img
@@ -157,15 +157,15 @@ export const BookCard: React.FC<BookCardProps> = ({
         </div>
       </div>
 
-      {/* Ratings & Action Footer */}
-      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+      {/* Ratings & Action Footer (Primary CTA aligned with rating) */}
+      <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-2">
         {/* Rating stars */}
         <div
-          className="flex items-center gap-1.5"
+          className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-shrink"
           aria-label={`Rating: ${book.rating} out of 5 stars from ${book.reviewsCount} reviews`}
           title={`Rating: ${book.rating} (${book.reviewsCount} reviews)`}
         >
-          <div className="flex items-center text-amber-500">
+          <div className="flex items-center text-amber-500 flex-shrink-0">
             {[...Array(5)].map((_, i) => (
               <HugeiconsIcon
                 key={i}
@@ -175,22 +175,23 @@ export const BookCard: React.FC<BookCardProps> = ({
               />
             ))}
           </div>
-          <span className="text-xs font-semibold text-slate-700">
+          <span className="text-xs font-semibold text-slate-700 flex-shrink-0">
             {book.rating}
           </span>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[11px] text-slate-500 truncate hidden xs:inline">
             ({book.reviewsCount})
           </span>
         </div>
 
-        {/* Quick Borrow or Claim Button */}
+        {/* Primary Action Button (Height 40-44px: within 40-56px range) */}
         {isClaimed ? (
-          <span className="px-3 py-1 rounded-lg bg-slate-100 text-slate-500 text-xs font-semibold flex items-center gap-1 shadow-2xs">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} className="text-emerald-600" />
+          <span className="h-10 sm:h-11 px-3.5 sm:px-4 rounded-xl bg-slate-100 text-slate-500 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 border border-slate-200/80 shadow-2xs flex-shrink-0 select-none">
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} className="text-emerald-600" />
             <span>Claimed</span>
           </span>
         ) : isDonation ? (
           <button 
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               if (onQuickBorrow) {
@@ -199,13 +200,14 @@ export const BookCard: React.FC<BookCardProps> = ({
                 onSelectBook(book);
               }
             }}
-            className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center gap-1 shadow-2xs"
+            className="h-10 sm:h-11 px-4 sm:px-4.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md flex-shrink-0 focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:outline-none"
           >
-            <HugeiconsIcon icon={GiftIcon} size={13} />
+            <HugeiconsIcon icon={GiftIcon} size={15} />
             <span>Claim</span>
           </button>
         ) : (
           <button 
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               if (onQuickBorrow) {
@@ -214,9 +216,9 @@ export const BookCard: React.FC<BookCardProps> = ({
                 onSelectBook(book);
               }
             }}
-            className="px-3 py-1 rounded-lg bg-brand/10 hover:bg-brand text-brand hover:text-white text-xs font-semibold transition-all duration-200 active:scale-95 flex items-center gap-1"
+            className="h-10 sm:h-11 px-4 sm:px-4.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md flex-shrink-0 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
           >
-            <HugeiconsIcon icon={BookOpen01Icon} size={13} />
+            <HugeiconsIcon icon={BookOpen01Icon} size={15} />
             <span>Borrow</span>
           </button>
         )}
@@ -225,4 +227,3 @@ export const BookCard: React.FC<BookCardProps> = ({
     </div>
   );
 };
-

@@ -41,8 +41,8 @@ export const ReadersSection: React.FC<ReadersSectionProps> = ({
         </button>
       </div>
 
-      {/* Readers Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Readers List */}
+      <div className="flex flex-col gap-3.5 sm:gap-4">
         {readers.map((reader) => (
           <ReaderCard
             key={reader.id}

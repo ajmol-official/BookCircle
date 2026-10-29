@@ -9,6 +9,7 @@ import { BorrowWizardModal, type BorrowHandoverDetails } from './components/borr
 import { ClaimGiftModal, type ClaimGiftDetails } from './components/borrow/ClaimGiftModal';
 import { AddBookModal } from './components/mybooks/AddBookModal';
 import { FloatingAddBookButton } from './components/FloatingAddBookButton';
+import { dbService } from './services/dbService';
 import type { NotificationItem } from './components/NotificationDropdown';
 import { MyBooksPage } from './components/mybooks/MyBooksPage';
 import { BookDetailsPage } from './components/bookdetails/BookDetailsPage';
@@ -34,6 +35,7 @@ import { BookOpen01Icon, FavouriteIcon } from '@hugeicons/core-free-icons';
 
 const BookCircleMain: React.FC = () => {
   const {
+    currentUser,
     isAuthenticated,
     requireAuth,
     isOnboardingOpen,
@@ -83,6 +85,21 @@ const BookCircleMain: React.FC = () => {
 
   // Dynamic books collection with live availability tracking
   const [booksList, setBooksList] = useState<Book[]>(mockBooks);
+  const [readersList, setReadersList] = useState<Reader[]>(mockReaders);
+
+  // Load live books and readers from database (Supabase) if available, with graceful fallback to mock data
+  useEffect(() => {
+    dbService.getBooks().then((books) => {
+      if (books && books.length > 0) {
+        setBooksList(books);
+      }
+    });
+    dbService.getReaders().then((readers) => {
+      if (readers && readers.length > 0) {
+        setReadersList(readers);
+      }
+    });
+  }, []);
 
   // Notifications State (including message notification)
   const [notifications, setNotifications] = useState<NotificationItem[]>([
@@ -158,7 +175,7 @@ const BookCircleMain: React.FC = () => {
   };
 
   const handleSelectOwner = (ownerName: string) => {
-    const match = mockReaders.find(
+    const match = readersList.find(
       (r) =>
         r.name.toLowerCase().trim() === ownerName.toLowerCase().trim() ||
         r.name.toLowerCase().includes(ownerName.toLowerCase().trim()) ||
@@ -168,7 +185,7 @@ const BookCircleMain: React.FC = () => {
     if (match) {
       setViewingPublicReader(match);
     } else {
-      const ownerBooks = mockBooks.filter((b) => b.ownerName.toLowerCase().includes(ownerName.toLowerCase()));
+      const ownerBooks = booksList.filter((b) => b.ownerName.toLowerCase().includes(ownerName.toLowerCase()));
       const firstBook = ownerBooks[0];
       const dynamicReader: Reader = {
         id: `reader-${ownerName.toLowerCase().replace(/\s+/g, '-')}`,
@@ -278,12 +295,23 @@ const BookCircleMain: React.FC = () => {
       prev.map((b) => (b.id === details.book.id ? { ...b, status: 'claimed' } : b))
     );
 
-    // 2. If viewing this book details, update live
+    // 2. Persist to DB if connected
+    dbService.createBorrowRequest({
+      bookId: details.book.id,
+      borrowerId: currentUser?.id,
+      exchangeType: 'gift',
+      meetupDate: details.date,
+      meetupTime: details.time,
+      meetupSpot: details.spot,
+      message: details.note,
+    }).catch(console.error);
+
+    // 3. If viewing this book details, update live
     if (viewingBookDetails?.id === details.book.id) {
       setViewingBookDetails((prev) => (prev ? { ...prev, status: 'claimed' } : null));
     }
 
-    // 3. Trigger celebration toast for claiming a free gift
+    // 4. Trigger celebration toast for claiming a free gift
     setGlobalToast(
       `🎁 Free Gift Claimed! Meetup with ${details.owner.name} scheduled for ${details.date} at ${details.time}. It is yours to keep forever!`
     );
@@ -296,12 +324,23 @@ const BookCircleMain: React.FC = () => {
       prev.map((b) => (b.id === details.book.id ? { ...b, status: 'lent_out' } : b))
     );
 
-    // 2. If viewing this book details, update live
+    // 2. Persist to DB if connected
+    dbService.createBorrowRequest({
+      bookId: details.book.id,
+      borrowerId: currentUser?.id,
+      exchangeType: 'borrow',
+      meetupDate: details.date,
+      meetupTime: details.time,
+      meetupSpot: details.spot,
+      message: details.note,
+    }).catch(console.error);
+
+    // 3. If viewing this book details, update live
     if (viewingBookDetails?.id === details.book.id) {
       setViewingBookDetails((prev) => (prev ? { ...prev, status: 'lent_out' } : null));
     }
 
-    // 3. Trigger celebration toast for borrowing
+    // 4. Trigger celebration toast for borrowing
     setGlobalToast(
       `📖 Borrow Request Sent! Meetup with ${details.owner.name} scheduled for ${details.date} at ${details.time}.`
     );
@@ -377,8 +416,32 @@ const BookCircleMain: React.FC = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
   };
 
-  const handleGlobalBookAdded = (newBook: { title: string; author: string }) => {
+  const handleGlobalBookAdded = async (newBook: any) => {
     setIsGlobalAddBookOpen(false);
+    if (newBook?.title && newBook?.author) {
+      const added = await dbService.addBook(
+        {
+          title: newBook.title,
+          author: newBook.author,
+          coverImage: newBook.coverImage || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
+          category: newBook.category || 'Fiction',
+          status: newBook.status || 'available',
+          availabilityMode: newBook.availabilityMode || 'lending',
+          condition: newBook.condition || 'Like New',
+          description: newBook.description || '',
+          distance: '0.1 km away',
+          ownersCount: 1,
+          rating: 5.0,
+          reviewsCount: 1,
+          ownerName: currentUser?.displayName || 'You',
+          ownerAvatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          ownerTrust: 'Verified Neighbor',
+        },
+        currentUser?.id
+      );
+      setBooksList((prev) => [added, ...prev]);
+    }
+
     setGlobalToast(
       `“${newBook.title}” was added to your shelf! Reader ratings & reviews are synced with all community copies.`
     );
@@ -472,7 +535,7 @@ const BookCircleMain: React.FC = () => {
                   selectedRadius={selectedRadius}
                 />
                 <ReadersSection
-                  readers={mockReaders}
+                  readers={readersList}
                   onBrowseShelf={handleBrowseReader}
                   onSeeAll={() => setActiveTab('readers')}
                 />
@@ -515,7 +578,7 @@ const BookCircleMain: React.FC = () => {
               <InboxPage
                 initialOwnerName={selectedChatParticipant}
                 onSelectBook={(title) => {
-                  const match = mockBooks.find((b) => b.title.toLowerCase() === title.toLowerCase());
+                  const match = booksList.find((b) => b.title.toLowerCase() === title.toLowerCase());
                   if (match) setViewingBookDetails(match);
                 }}
               />
@@ -524,13 +587,13 @@ const BookCircleMain: React.FC = () => {
             {activeTab === 'profile' && (
               <ProfilePage
                 onSelectBook={(book) => setViewingBookDetails(book)}
-                myBooks={mockBooks}
+                myBooks={booksList}
               />
             )}
 
             {activeTab === 'readers' && (
               <ReadersBrowsePage
-                readers={mockReaders}
+                readers={readersList}
                 onBrowseShelf={handleBrowseReader}
                 onBack={() => setActiveTab('home')}
               />
