@@ -44,10 +44,11 @@ import { BookOpen01Icon, FavouriteIcon } from '@hugeicons/core-free-icons';
 // ─── BOOK DETAILS ROUTE WRAPPER ───────────────────────────────────────
 const BookDetailsRoute: React.FC<{
   booksList: Book[];
+  isInitialLoading?: boolean;
   onRequestBorrow: (b: Book, owner?: string) => void;
   onSelectOwner: (ownerName: string) => void;
   onSimulateReturn: (b: Book) => void;
-}> = ({ booksList, onRequestBorrow, onSelectOwner, onSimulateReturn }) => {
+}> = ({ booksList, isInitialLoading, onRequestBorrow, onSelectOwner, onSimulateReturn }) => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
 
@@ -64,6 +65,15 @@ const BookDetailsRoute: React.FC<{
   }, [booksList, bookId]);
 
   if (!book) {
+    if (isInitialLoading) {
+      return (
+        <div className="py-32 text-center max-w-md mx-auto animate-pulse">
+          <div className="w-10 h-10 border-2 border-brand/20 border-t-brand rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm font-medium text-slate-500">Loading book details...</p>
+        </div>
+      );
+    }
+
     return (
       <div className="py-24 text-center max-w-md mx-auto">
         <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand mx-auto flex items-center justify-center mb-4">
@@ -264,18 +274,23 @@ const BookCircleMain: React.FC = () => {
   // Dynamic books collection with live availability tracking
   const [booksList, setBooksList] = useState<Book[]>(mockBooks);
   const [readersList, setReadersList] = useState<Reader[]>(mockReaders);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
 
   // Load live books and readers from database (Supabase) if available, with graceful fallback to mock data
   useEffect(() => {
-    dbService.getBooks().then((books) => {
-      if (books && books.length > 0) {
-        setBooksList(books);
-      }
-    });
-    dbService.getReaders().then((readers) => {
-      if (readers && readers.length > 0) {
-        setReadersList(readers);
-      }
+    Promise.all([
+      dbService.getBooks().then((books) => {
+        if (books && books.length > 0) {
+          setBooksList(books);
+        }
+      }),
+      dbService.getReaders().then((readers) => {
+        if (readers && readers.length > 0) {
+          setReadersList(readers);
+        }
+      })
+    ]).finally(() => {
+      setIsInitialLoading(false);
     });
   }, []);
 
@@ -732,6 +747,7 @@ const BookCircleMain: React.FC = () => {
             element={
               <BookDetailsRoute
                 booksList={booksList}
+                isInitialLoading={isInitialLoading}
                 onRequestBorrow={handleDetailsRequestBorrow}
                 onSelectOwner={handleSelectOwner}
                 onSimulateReturn={handleSimulateReturn}

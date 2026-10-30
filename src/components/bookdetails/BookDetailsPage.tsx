@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   StarIcon,
   Location01Icon,
   ArrowRight01Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
   BookOpen01Icon,
   FavouriteIcon,
   Notification01Icon,
@@ -38,6 +40,37 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
   const isPersonal = book.availabilityMode === 'personal';
   const isClaimed = book.status === 'claimed';
+
+  const descriptionText =
+    book.description ||
+    'A sweeping saga of a Korean family across four generations, exploring identity, displacement, and resilience from colonial Busan to post-war Osaka. Rich in historical texture and emotional depth, it captures the everyday triumphs and burdens of exile and survival.';
+
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [canExpand, setCanExpand] = useState(false);
+  const descriptionRef = useRef<HTMLParagraphElement>(null);
+
+  // Reset expanded state when changing books
+  useEffect(() => {
+    setIsDescriptionExpanded(false);
+  }, [book.id, book.description]);
+
+  // Check if text exceeds clamped 2-3 lines to conditionally show Read More
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (descriptionRef.current && !isDescriptionExpanded) {
+        const isOverflowing =
+          descriptionRef.current.scrollHeight > descriptionRef.current.clientHeight + 1;
+        setCanExpand(isOverflowing);
+      }
+    };
+
+    const timer = setTimeout(checkOverflow, 40);
+    window.addEventListener('resize', checkOverflow);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkOverflow);
+    };
+  }, [descriptionText, isDescriptionExpanded]);
 
   const baseCount = book.wishlistCount || 6;
   const currentWishlistCount = bookWishlisted ? baseCount + 1 : baseCount;
@@ -190,7 +223,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
         </div>
 
         {/* Book Metadata */}
-        <div className="flex-1 flex flex-col justify-between h-full space-y-4 w-full">
+        <div className="flex-1 flex flex-col space-y-4 w-full">
           <div>
             <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
               <div className="flex items-center gap-2">
@@ -291,6 +324,33 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
             </div>
           </div>
 
+          {/* Integrated Book Description */}
+          {descriptionText && (
+            <div className="pt-1">
+              <p
+                ref={descriptionRef}
+                className={`text-sm text-slate-600 leading-relaxed font-sans ${
+                  !isDescriptionExpanded ? 'line-clamp-2 sm:line-clamp-3' : ''
+                }`}
+              >
+                {descriptionText}
+              </p>
+              {canExpand && (
+                <button
+                  type="button"
+                  onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+                  className="mt-1.5 text-xs sm:text-sm font-semibold text-brand hover:text-brand-dark transition-colors inline-flex items-center gap-1 focus:outline-none"
+                >
+                  <span>{isDescriptionExpanded ? 'Show less' : 'Read more'}</span>
+                  <HugeiconsIcon
+                    icon={isDescriptionExpanded ? ArrowUp01Icon : ArrowDown01Icon}
+                    size={14}
+                  />
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Lent-out Alert & Notification CTA Banner */}
           {book.status === 'lent_out' && (
             <div className="mt-3 p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -338,16 +398,6 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      {/* About this book section */}
-      <div className="mt-10 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card">
-        <h2 className="font-serif text-2xl font-semibold text-slate-800 mb-3">
-          About this book
-        </h2>
-        <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-sans">
-          {book.description || 'A sweeping saga of a Korean family across four generations, exploring identity, displacement, and resilience from colonial Busan to post-war Osaka. Rich in historical texture and emotional depth, it captures the everyday triumphs and burdens of exile and survival.'}
-        </p>
       </div>
 
       {/* Available from nearby readers section */}
