@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Search01Icon,
@@ -11,6 +12,9 @@ import {
   BookOpen01Icon,
   Globe02Icon,
   StarIcon,
+  FilterHorizontalIcon,
+  CheckmarkBadge01Icon,
+  ArrowDown01Icon,
 } from '@hugeicons/core-free-icons';
 import type { Reader } from '../../types';
 import { ReaderCard } from '../ReaderCard';
@@ -28,23 +32,23 @@ type ReaderSort = 'distance-asc' | 'rating-desc' | 'books-desc' | 'borrows-desc'
 
 const DISTANCE_OPTIONS: { value: DistanceOption; label: string }[] = [
   { value: 'all', label: 'Any distance' },
-  { value: '1km', label: 'Within 1 km' },
-  { value: '2km', label: 'Within 2 km' },
-  { value: '5km', label: 'Within 5 km' },
-  { value: '10km', label: 'Within 10 km' },
+  { value: '1km', label: '< 1 km away' },
+  { value: '2km', label: '< 2 km away' },
+  { value: '5km', label: '< 5 km away' },
+  { value: '10km', label: '< 10 km away' },
 ];
 
 const RATING_OPTIONS: { value: RatingOption; label: string }[] = [
-  { value: 'all', label: 'Any rating' },
-  { value: '4.8', label: '⭐ 4.8+ Top Rated' },
-  { value: '4.9', label: '⭐ 4.9+ Master Readers' },
+  { value: 'all', label: 'Any Rating' },
+  { value: '4.8', label: '4.8+ ⭐' },
+  { value: '4.9', label: '4.9+ ⭐' },
 ];
 
 const SORT_OPTIONS: { value: ReaderSort; label: string }[] = [
   { value: 'distance-asc', label: 'Nearest First' },
   { value: 'rating-desc', label: 'Highest Rated' },
-  { value: 'books-desc', label: 'Most Books' },
-  { value: 'borrows-desc', label: 'Most Borrows' },
+  { value: 'books-desc', label: 'Most Books Available' },
+  { value: 'borrows-desc', label: 'Most Borrows Completed' },
   { value: 'name-asc', label: 'Name: A to Z' },
 ];
 
@@ -57,10 +61,15 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Filter States
+  // Primary Search State (Outside Drawer)
   const [searchQuery, setSearchQuery] = useState('');
-  const [sharingFilter, setSharingFilter] = useState<SharingFilter>('all');
+
+  // Primary Distance Filter (Outside Drawer)
   const [selectedDistance, setSelectedDistance] = useState<DistanceOption>('all');
+
+  // Filter Drawer State & Drawer Filters
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+  const [sharingFilter, setSharingFilter] = useState<SharingFilter>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
   const [selectedRating, setSelectedRating] = useState<RatingOption>('all');
@@ -90,7 +99,7 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
     return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
   }, [readers]);
 
-  // Dynamic counts for sharing mode pills
+  // Dynamic counts for sharing mode options
   const counts = useMemo(() => {
     let verified = 0;
     let lending = 0;
@@ -118,33 +127,29 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
     };
   }, [readers]);
 
-  // Active filters count (excluding defaults)
-  const activeFiltersCount = useMemo(() => {
+  // Count of active filters inside the drawer
+  const drawerFiltersCount = useMemo(() => {
     let count = 0;
-    if (searchQuery.trim() !== '') count++;
     if (sharingFilter !== 'all') count++;
-    if (selectedDistance !== 'all') count++;
     if (selectedLocation !== 'all') count++;
     if (selectedGenre !== 'All') count++;
     if (selectedRating !== 'all') count++;
+    if (sortBy !== 'distance-asc') count++;
     return count;
-  }, [
-    searchQuery,
-    sharingFilter,
-    selectedDistance,
-    selectedLocation,
-    selectedGenre,
-    selectedRating,
-  ]);
+  }, [sharingFilter, selectedLocation, selectedGenre, selectedRating, sortBy]);
 
-  const handleResetFilters = () => {
-    setSearchQuery('');
+  const handleResetDrawerFilters = () => {
     setSharingFilter('all');
-    setSelectedDistance('all');
     setSelectedLocation('all');
     setSelectedGenre('All');
     setSelectedRating('all');
     setSortBy('distance-asc');
+  };
+
+  const handleResetAllFilters = () => {
+    setSearchQuery('');
+    setSelectedDistance('all');
+    handleResetDrawerFilters();
   };
 
   // Filter & sort readers
@@ -165,7 +170,7 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
           }
         }
 
-        // 2. Sharing Filter Pill
+        // 2. Sharing Filter Pill / Status
         if (sharingFilter === 'verified') {
           const isVerified =
             reader.verified ||
@@ -180,7 +185,7 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
           if ((reader.booksForDonation || 0) <= 0) return false;
         }
 
-        // 3. Distance Filter
+        // 3. Distance Filter (from toolbar)
         if (selectedDistance !== 'all') {
           const maxDist = parseFloat(selectedDistance.replace('km', ''));
           const readerDist = parseFloat(reader.distance);
@@ -294,209 +299,43 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 2: PROPER IN-LINE FILTER SECTION (NO MODAL / NO DRAWER)
+          SECTION 2: SINGLE HORIZONTAL TOOLBAR
+          (Displays Reader Count, Distance Filter & More Filters Button in 1 line)
       ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 mb-6 shadow-2xs space-y-4">
-        {/* Layer 1: Sharing Type & Verification Pills */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none w-full sm:w-auto">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex-shrink-0 mr-1">
-              Filter By:
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 mb-6 shadow-2xs flex flex-row items-center justify-between gap-2 sm:gap-3">
+        {/* Left: Reader Count Context */}
+        <div className="flex items-center gap-1.5 text-slate-700 min-w-0">
+          <span className="font-serif font-bold text-slate-900 text-sm sm:text-base flex-shrink-0">
+            {filteredAndSortedReaders.length}
+          </span>
+          <span className="text-xs sm:text-sm text-slate-600 font-medium truncate">
+            {filteredAndSortedReaders.length === 1 ? 'Reader Found' : 'Readers Found'}
+          </span>
+          {drawerFiltersCount > 0 && (
+            <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand/10 text-brand text-[11px] font-semibold ml-1">
+              {drawerFiltersCount} {drawerFiltersCount === 1 ? 'filter' : 'filters'} active
             </span>
-
-            <button
-              type="button"
-              onClick={() => setSharingFilter('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition active:scale-95 flex-shrink-0 ${
-                sharingFilter === 'all'
-                  ? 'bg-brand text-white shadow-2xs'
-                  : 'bg-slate-100/80 hover:bg-slate-200/70 text-slate-700'
-              }`}
-            >
-              All Readers ({counts.all})
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSharingFilter('verified')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 flex-shrink-0 ${
-                sharingFilter === 'verified'
-                  ? 'bg-brand text-white shadow-2xs'
-                  : 'bg-slate-100/80 hover:bg-slate-200/70 text-slate-700'
-              }`}
-            >
-              <HugeiconsIcon
-                icon={ShieldCheckIcon}
-                size={14}
-                className={sharingFilter === 'verified' ? 'text-white' : 'text-emerald-600'}
-              />
-              <span>Verified ({counts.verified})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSharingFilter('lending')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 flex-shrink-0 ${
-                sharingFilter === 'lending'
-                  ? 'bg-brand text-white shadow-2xs'
-                  : 'bg-slate-100/80 hover:bg-slate-200/70 text-slate-700'
-              }`}
-            >
-              <HugeiconsIcon
-                icon={BookOpen01Icon}
-                size={14}
-                className={sharingFilter === 'lending' ? 'text-white' : 'text-brand'}
-              />
-              <span>Books to Lend ({counts.lending})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSharingFilter('donations')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 flex-shrink-0 ${
-                sharingFilter === 'donations'
-                  ? 'bg-brand text-white shadow-2xs'
-                  : 'bg-slate-100/80 hover:bg-slate-200/70 text-slate-700'
-              }`}
-            >
-              <HugeiconsIcon
-                icon={GiftIcon}
-                size={14}
-                className={sharingFilter === 'donations' ? 'text-white' : 'text-emerald-600'}
-              />
-              <span>Has Free Gifts 🎁 ({counts.donations})</span>
-            </button>
-          </div>
+          )}
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-slate-100" />
-
-        {/* Layer 2: Refined Inline Dropdowns */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-            {/* Distance Dropdown */}
-            <div className="relative">
-              <select
-                value={selectedDistance}
-                onChange={(e) => setSelectedDistance(e.target.value as DistanceOption)}
-                className="appearance-none pl-7 pr-7 py-1.5 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer shadow-2xs"
-                title="Filter by distance"
-              >
-                {DISTANCE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <HugeiconsIcon
-                icon={Location01Icon}
-                size={13}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-              <HugeiconsIcon
-                icon={ArrowUpDownIcon}
-                size={11}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-            </div>
-
-            {/* Neighborhood / Location Dropdown */}
-            <div className="relative">
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="appearance-none pl-7 pr-7 py-1.5 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer shadow-2xs"
-                title="Filter by neighborhood"
-              >
-                <option value="all">All Neighborhoods</option>
-                {neighborhoodOptions.map((area) => (
-                  <option key={area} value={area}>
-                    {area}
-                  </option>
-                ))}
-              </select>
-              <HugeiconsIcon
-                icon={Globe02Icon}
-                size={13}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-              <HugeiconsIcon
-                icon={ArrowUpDownIcon}
-                size={11}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-            </div>
-
-            {/* Favorite Genre Dropdown */}
-            <div className="relative">
-              <select
-                value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
-                className="appearance-none pl-7 pr-7 py-1.5 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer shadow-2xs"
-                title="Filter by reading taste"
-              >
-                {genreOptions.map((g) => (
-                  <option key={g} value={g}>
-                    {g === 'All' ? 'All Reading Tastes' : g}
-                  </option>
-                ))}
-              </select>
-              <HugeiconsIcon
-                icon={BookOpen01Icon}
-                size={13}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-              <HugeiconsIcon
-                icon={ArrowUpDownIcon}
-                size={11}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-            </div>
-
-            {/* Minimum Rating Dropdown */}
-            <div className="relative">
-              <select
-                value={selectedRating}
-                onChange={(e) => setSelectedRating(e.target.value as RatingOption)}
-                className="appearance-none pl-7 pr-7 py-1.5 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer shadow-2xs"
-                title="Filter by rating"
-              >
-                {RATING_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <HugeiconsIcon
-                icon={StarIcon}
-                size={13}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-              <HugeiconsIcon
-                icon={ArrowUpDownIcon}
-                size={11}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-            </div>
-          </div>
-
-          {/* Sort By Dropdown (Aligned to Right) */}
-          <div className="relative self-end sm:self-auto flex-shrink-0">
+        {/* Right: Distance Dropdown & More Filters Control (Strict Single Line) */}
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+          {/* Distance Filter Dropdown */}
+          <div className="relative">
             <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as ReaderSort)}
-              className="appearance-none pl-7 pr-7 py-1.5 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer shadow-2xs"
-              title="Sort readers"
+              value={selectedDistance}
+              onChange={(e) => setSelectedDistance(e.target.value as DistanceOption)}
+              className="appearance-none pl-7 pr-7 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer shadow-2xs transition"
+              title="Filter by distance"
             >
-              {SORT_OPTIONS.map((opt) => (
+              {DISTANCE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
               ))}
             </select>
             <HugeiconsIcon
-              icon={ArrowUpDownIcon}
+              icon={Location01Icon}
               size={13}
               className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
             />
@@ -506,131 +345,26 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
             />
           </div>
-        </div>
 
-        {/* Layer 3: Contextual Results Bar & Active Filter Chips */}
-        <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100 flex-wrap text-xs">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 text-slate-700 font-medium">
-              <span className="font-serif font-bold text-slate-900 text-sm">
-                {filteredAndSortedReaders.length}
+          {/* More Filters Control (Opens Drawer) */}
+          <button
+            type="button"
+            onClick={() => setIsFilterDrawerOpen(true)}
+            className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl border text-xs font-semibold shadow-2xs transition active:scale-95 flex-shrink-0 ${
+              drawerFiltersCount > 0
+                ? 'border-brand bg-brand/10 text-brand ring-1 ring-brand/30'
+                : 'border-slate-200/90 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <HugeiconsIcon icon={FilterHorizontalIcon} size={15} className="text-brand" />
+            <span className="hidden xs:inline">More Filters</span>
+            <span className="xs:hidden">Filters</span>
+            {drawerFiltersCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center">
+                {drawerFiltersCount}
               </span>
-              <span>
-                {filteredAndSortedReaders.length === 1 ? 'reader found' : 'readers found'}
-              </span>
-              {sharingFilter !== 'all' && (
-                <span className="text-slate-400">
-                  ·{' '}
-                  {sharingFilter === 'verified'
-                    ? 'Verified'
-                    : sharingFilter === 'lending'
-                    ? 'With books to lend'
-                    : 'With free gifts'}
-                </span>
-              )}
-              {selectedDistance !== 'all' && (
-                <span className="text-slate-400">· within {selectedDistance}</span>
-              )}
-              {selectedLocation !== 'all' && (
-                <span className="text-slate-400">· in {selectedLocation}</span>
-              )}
-              {selectedGenre !== 'All' && (
-                <span className="text-slate-400">· reads {selectedGenre}</span>
-              )}
-              {selectedRating !== 'all' && (
-                <span className="text-slate-400">· {selectedRating}+ rated</span>
-              )}
-            </div>
-
-            {/* Active Dismissible Chips */}
-            {activeFiltersCount > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap ml-1">
-                {sharingFilter !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-200">
-                    {sharingFilter === 'verified'
-                      ? 'Verified 🛡️'
-                      : sharingFilter === 'lending'
-                      ? 'To Lend 🤝'
-                      : 'Free Gifts 🎁'}
-                    <button
-                      onClick={() => setSharingFilter('all')}
-                      title="Clear sharing filter"
-                      className="hover:opacity-75"
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} size={10} />
-                    </button>
-                  </span>
-                )}
-
-                {selectedDistance !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-brand/10 text-brand text-[11px] font-semibold border border-brand/20">
-                    <HugeiconsIcon icon={Location01Icon} size={11} />
-                    Within {selectedDistance}
-                    <button
-                      onClick={() => setSelectedDistance('all')}
-                      title="Clear distance filter"
-                      className="hover:opacity-75"
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} size={10} />
-                    </button>
-                  </span>
-                )}
-
-                {selectedLocation !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-800 text-[11px] font-semibold border border-blue-200">
-                    <HugeiconsIcon icon={Globe02Icon} size={11} className="text-blue-600" />
-                    {selectedLocation}
-                    <button
-                      onClick={() => setSelectedLocation('all')}
-                      title="Clear neighborhood filter"
-                      className="hover:opacity-75"
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} size={10} />
-                    </button>
-                  </span>
-                )}
-
-                {selectedGenre !== 'All' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-brand/10 text-brand text-[11px] font-semibold border border-brand/20">
-                    <HugeiconsIcon icon={BookOpen01Icon} size={11} />
-                    {selectedGenre}
-                    <button
-                      onClick={() => setSelectedGenre('All')}
-                      title="Clear genre filter"
-                      className="hover:opacity-75"
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} size={10} />
-                    </button>
-                  </span>
-                )}
-
-                {selectedRating !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
-                    <HugeiconsIcon icon={StarIcon} size={11} className="text-amber-500 fill-amber-400" />
-                    {selectedRating}+ Rating
-                    <button
-                      onClick={() => setSelectedRating('all')}
-                      title="Clear rating filter"
-                      className="hover:opacity-75"
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} size={10} />
-                    </button>
-                  </span>
-                )}
-              </div>
             )}
-          </div>
-
-          {/* Reset All Action */}
-          {activeFiltersCount > 0 && (
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="text-[11px] text-brand hover:underline font-bold ml-auto"
-            >
-              Reset All ({activeFiltersCount})
-            </button>
-          )}
+          </button>
         </div>
       </div>
 
@@ -648,7 +382,7 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
           </p>
           <button
             type="button"
-            onClick={handleResetFilters}
+            onClick={handleResetAllFilters}
             className="mt-4 px-4 py-2 rounded-xl bg-brand text-white text-xs font-semibold hover:bg-brand-dark transition shadow-2xs active:scale-95"
           >
             Reset All Filters
@@ -665,6 +399,327 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
           ))}
         </div>
       )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 4: COMPREHENSIVE FILTER DRAWER (SLIDE-OVER PANEL)
+      ───────────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {isFilterDrawerOpen && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsFilterDrawerOpen(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+
+            {/* Slide-over Drawer Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col justify-between z-10"
+            >
+              <div className="space-y-6">
+                {/* Drawer Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
+                      <HugeiconsIcon icon={FilterHorizontalIcon} size={18} />
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-lg font-semibold text-slate-900">
+                        Filter & Refine Readers
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Refine by category, neighborhood, reading taste, rating & sort
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterDrawerOpen(false)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+                    title="Close drawer"
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} size={18} />
+                  </button>
+                </div>
+
+                {/* 1. READER CATEGORIES / SHARING STATUS */}
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={CheckmarkBadge01Icon} size={14} className="text-amber-500" />
+                      <span>Reader Categories</span>
+                    </label>
+                    {sharingFilter !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setSharingFilter('all')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSharingFilter('all')}
+                      className={`py-2 px-3 text-xs rounded-xl border text-left transition ${
+                        sharingFilter === 'all'
+                          ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                          : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      <div className="font-medium truncate">All Readers</div>
+                      <div className={`text-[10px] ${sharingFilter === 'all' ? 'text-white/80' : 'text-slate-400'}`}>
+                        {counts.all} available
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSharingFilter('verified')}
+                      className={`py-2 px-3 text-xs rounded-xl border text-left transition ${
+                        sharingFilter === 'verified'
+                          ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                          : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1 font-medium truncate">
+                        <HugeiconsIcon
+                          icon={ShieldCheckIcon}
+                          size={12}
+                          className={sharingFilter === 'verified' ? 'text-white' : 'text-emerald-600'}
+                        />
+                        <span>Verified</span>
+                      </div>
+                      <div className={`text-[10px] ${sharingFilter === 'verified' ? 'text-white/80' : 'text-slate-400'}`}>
+                        {counts.verified} neighbors
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSharingFilter('lending')}
+                      className={`py-2 px-3 text-xs rounded-xl border text-left transition ${
+                        sharingFilter === 'lending'
+                          ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                          : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1 font-medium truncate">
+                        <HugeiconsIcon
+                          icon={BookOpen01Icon}
+                          size={12}
+                          className={sharingFilter === 'lending' ? 'text-white' : 'text-brand'}
+                        />
+                        <span>Books to Lend</span>
+                      </div>
+                      <div className={`text-[10px] ${sharingFilter === 'lending' ? 'text-white/80' : 'text-slate-400'}`}>
+                        {counts.lending} lenders
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSharingFilter('donations')}
+                      className={`py-2 px-3 text-xs rounded-xl border text-left transition ${
+                        sharingFilter === 'donations'
+                          ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                          : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1 font-medium truncate">
+                        <HugeiconsIcon
+                          icon={GiftIcon}
+                          size={12}
+                          className={sharingFilter === 'donations' ? 'text-white' : 'text-emerald-600'}
+                        />
+                        <span>Has Free Gifts</span>
+                      </div>
+                      <div className={`text-[10px] ${sharingFilter === 'donations' ? 'text-white/80' : 'text-slate-400'}`}>
+                        {counts.donations} donors
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. NEIGHBORHOOD / LOCATION */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={Globe02Icon} size={14} className="text-blue-500" />
+                      <span>Neighborhood / Area</span>
+                    </label>
+                    {selectedLocation !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedLocation('all')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={selectedLocation}
+                      onChange={(e) => setSelectedLocation(e.target.value)}
+                      className="w-full appearance-none pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand cursor-pointer shadow-2xs transition"
+                    >
+                      <option value="all">All Neighborhoods ({readers.length} readers)</option>
+                      {neighborhoodOptions.map((area) => (
+                        <option key={area} value={area}>
+                          📍 {area}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <HugeiconsIcon icon={ArrowDown01Icon} size={16} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. READING TASTES & FAVORITE GENRES */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={BookOpen01Icon} size={14} className="text-brand" />
+                      <span>Reading Tastes & Genres</span>
+                    </label>
+                    {selectedGenre !== 'All' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedGenre('All')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {genreOptions.map((g) => {
+                      const isSelected = selectedGenre === g;
+                      return (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setSelectedGenre(g)}
+                          className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition ${
+                            isSelected
+                              ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {g === 'All' ? 'All Genres' : g}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. MINIMUM TRUST RATING */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={StarIcon} size={14} className="text-amber-500 fill-amber-500" />
+                      <span>Minimum Community Rating</span>
+                    </label>
+                    {selectedRating !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRating('all')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {RATING_OPTIONS.map((opt) => {
+                      const isSelected = selectedRating === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setSelectedRating(opt.value)}
+                          className={`py-2 px-2 text-xs font-semibold rounded-xl border text-center transition ${
+                            isSelected
+                              ? 'bg-brand text-white border-brand shadow-xs'
+                              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 5. SORTING OPTIONS */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="text-brand" />
+                      <span>Sort Readers By</span>
+                    </label>
+                    {sortBy !== 'distance-asc' && (
+                      <button
+                        type="button"
+                        onClick={() => setSortBy('distance-asc')}
+                        className="text-[11px] text-brand hover:underline font-semibold"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as ReaderSort)}
+                      className="w-full appearance-none pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand cursor-pointer shadow-2xs transition"
+                    >
+                      {SORT_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <HugeiconsIcon icon={ArrowDown01Icon} size={16} />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Drawer Footer Actions */}
+              <div className="pt-6 border-t border-slate-100 flex items-center gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handleResetDrawerFilters}
+                  className="flex-1 py-3 px-4 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition text-center"
+                >
+                  Reset Drawer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFilterDrawerOpen(false)}
+                  className="flex-1 py-3 px-4 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition text-center shadow-sm active:scale-95"
+                >
+                  Show {filteredAndSortedReaders.length} Results
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
