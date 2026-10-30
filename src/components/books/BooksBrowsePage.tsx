@@ -319,30 +319,6 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
             )}
           </div>
         </div>
-
-        {/* Quick Search Suggestions */}
-        {!searchQuery && (
-          <div className="mt-2.5 flex items-center gap-2 text-xs text-slate-400 flex-wrap px-1">
-            <span className="font-medium text-slate-500">Popular shortcuts:</span>
-            {[
-              { label: 'Sapiens', action: () => setSearchQuery('Sapiens') },
-              { label: 'Free Gifts', action: () => setActiveAvailabilityTab('donation') },
-              { label: 'Fiction', action: () => setSelectedCategory('Fiction') },
-              { label: 'Within 1km', action: () => setSelectedDistance('1km') },
-              { label: 'Like New', action: () => setSelectedCondition('Like New') },
-              { label: 'USA Authors', action: () => setSelectedCountry('United States') },
-            ].map((shortcut) => (
-              <button
-                key={shortcut.label}
-                type="button"
-                onClick={shortcut.action}
-                className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-brand/10 hover:text-brand text-slate-600 transition"
-              >
-                {shortcut.label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
