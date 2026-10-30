@@ -124,8 +124,7 @@ export const QuickBorrowModal: React.FC<QuickBorrowModalProps> = ({ book, onClos
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {[
                   'Riverside Coffee, Rampura',
-                  'Elm Park Library entrance',
-                  'Meadow Square bench'
+                  'Elm Park Library entrance'
                 ].map((spot) => (
                   <button
                     key={spot}

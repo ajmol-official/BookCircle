@@ -702,8 +702,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
             <div className="space-y-3 pt-1">
               {[
                 { name: 'Camden Coffee Roasters', desc: 'Main entrance foyer · Usually weekdays 5pm - 7pm' },
-                { name: 'Primrose Hill Community Library', desc: 'Front reception desk · Saturdays 10am - 1pm' },
-                { name: 'Riverside Java Cafe', desc: 'Outdoor seating patio · Flexible times' }
+                { name: 'Primrose Hill Community Library', desc: 'Front reception desk · Saturdays 10am - 1pm' }
               ].map((spot, i) => (
                 <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
                   <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand flex-shrink-0 mt-0.5" />
