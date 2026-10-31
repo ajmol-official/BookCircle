@@ -39,6 +39,8 @@ interface ExchangeContextType {
     reason?: string;
     borrower?: string;
   };
+  seedSampleActivities: () => Promise<void>;
+  clearSampleActivities: () => Promise<void>;
   refreshExchanges: () => Promise<void>;
 }
 
@@ -268,6 +270,28 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [exchanges]
   );
 
+  const seedSampleActivities = async () => {
+    setError(null);
+    try {
+      await exchangeService.seedSampleActivities(currentUserId, currentUserDisplayName);
+      await loadData();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to seed sample activities');
+      throw err;
+    }
+  };
+
+  const clearSampleActivities = async () => {
+    setError(null);
+    try {
+      await exchangeService.clearSampleActivities(currentUserId, currentUserDisplayName);
+      await loadData();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to clear sample activities');
+      throw err;
+    }
+  };
+
   const value = {
     exchanges,
     isLoading,
@@ -291,6 +315,8 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     createGiftClaim,
     cancelPendingRequestsForBook,
     isBookInActiveExchange,
+    seedSampleActivities,
+    clearSampleActivities,
     refreshExchanges: loadData,
   };
 

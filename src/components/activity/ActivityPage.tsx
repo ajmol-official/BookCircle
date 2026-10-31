@@ -139,11 +139,38 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     confirmReturnReceipt,
     submitRating,
     addDonationToPrivateCollection,
+    seedSampleActivities,
+    clearSampleActivities,
   } = useExchanges();
 
   const [activeTab, setActiveTab] = useState<'lending' | 'borrowing' | 'history'>(initialTab);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'lent' | 'borrowed' | 'gift'>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSeeding, setIsSeeding] = useState<boolean>(false);
+
+  const handleSeedSampleActivities = async () => {
+    setIsSeeding(true);
+    try {
+      await seedSampleActivities();
+      showToast('Sample activities loaded! You can now test approving meetups, confirming handovers, and returns.');
+    } catch (err: any) {
+      showToast(`Error loading samples: ${err?.message || 'Database error'}`);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const handleClearSampleActivities = async () => {
+    setIsSeeding(true);
+    try {
+      await clearSampleActivities();
+      showToast('Sample activities cleared.');
+    } catch (err: any) {
+      showToast(`Error clearing samples: ${err?.message || 'Database error'}`);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   // Return Wizard Modal State
   const [returnModalTarget, setReturnModalTarget] = useState<ExchangeTransaction | null>(null);
@@ -202,15 +229,15 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
 
   // Helper: Is current user the owner?
   const isOwner = (e: ExchangeTransaction) =>
-    e.ownerId === currentUserId ||
-    (currentUserDisplayName && e.ownerName.toLowerCase().trim() === currentUserDisplayName.toLowerCase().trim()) ||
-    (isDemoSession && (e.ownerName === 'Maya Lin' || e.ownerName === 'You'));
+    Boolean(e.ownerId && e.ownerId === currentUserId) ||
+    Boolean(currentUserDisplayName && e.ownerName && e.ownerName.toLowerCase().trim() === currentUserDisplayName.toLowerCase().trim()) ||
+    Boolean(isDemoSession && (e.ownerName === 'Maya Lin' || e.ownerName === 'You'));
 
   // Helper: Is current user the borrower?
   const isBorrower = (e: ExchangeTransaction) =>
-    e.borrowerId === currentUserId ||
-    (currentUserDisplayName && e.borrowerName.toLowerCase().trim() === currentUserDisplayName.toLowerCase().trim()) ||
-    (isDemoSession && (e.borrowerName === 'Maya Lin' || e.borrowerName === 'You'));
+    Boolean(e.borrowerId && e.borrowerId === currentUserId) ||
+    Boolean(currentUserDisplayName && e.borrowerName && e.borrowerName.toLowerCase().trim() === currentUserDisplayName.toLowerCase().trim()) ||
+    Boolean(isDemoSession && (e.borrowerName === 'Maya Lin' || e.borrowerName === 'You'));
 
   // ─── LENDING TAB DATA ─────────────────────────────────────────────────────
   const lendingExchanges = useMemo(() => exchanges.filter(isOwner), [exchanges, currentUserId, currentUserDisplayName]);
@@ -281,15 +308,19 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
   );
 
   // ─── HISTORY TAB DATA ─────────────────────────────────────────────────────
+  const userHistoryList = useMemo(() => {
+    return exchanges.filter((e) => isOwner(e) || isBorrower(e));
+  }, [exchanges, currentUserId, currentUserDisplayName]);
+
   const historyExchanges = useMemo(() => {
-    const list = exchanges.filter(
+    const list = userHistoryList.filter(
       (e) => e.status === 'completed' || e.status === 'claim_completed'
     );
     if (historyFilter === 'lent') return list.filter(isOwner);
     if (historyFilter === 'borrowed') return list.filter(isBorrower);
     if (historyFilter === 'gift') return list.filter((e) => e.exchangeType === 'gift');
     return list;
-  }, [exchanges, historyFilter, currentUserId, currentUserDisplayName]);
+  }, [userHistoryList, historyFilter, currentUserId, currentUserDisplayName]);
 
   // Handle return handover scheduling callback
   const handleReturnScheduledCallback = async (details: ReturnHandoverDetails) => {
@@ -351,48 +382,100 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
       </div>
 
       {/* 2. Primary Tabs: Lending | Borrowing | History */}
-      <div className="mt-6 flex items-center gap-8 border-b border-slate-200">
-        {[
-          {
-            id: 'lending',
-            label: 'Lending',
-            badge: actionRequiredLending > 0 ? actionRequiredLending : null,
-          },
-          {
-            id: 'borrowing',
-            label: 'Borrowing',
-            badge: actionRequiredBorrowing > 0 ? actionRequiredBorrowing : null,
-          },
-          {
-            id: 'history',
-            label: 'History',
-            badge: null,
-          },
-        ].map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
+      <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200">
+        <div className="flex items-center gap-8">
+          {[
+            {
+              id: 'lending',
+              label: 'Lending',
+              badge: actionRequiredLending > 0 ? actionRequiredLending : null,
+            },
+            {
+              id: 'borrowing',
+              label: 'Borrowing',
+              badge: actionRequiredBorrowing > 0 ? actionRequiredBorrowing : null,
+            },
+            {
+              id: 'history',
+              label: 'History',
+              badge: null,
+            },
+          ].map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`relative pb-3 text-base sm:text-lg font-serif transition-colors flex items-center gap-2 ${
+                  isActive
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-500 hover:text-slate-700 font-medium'
+                }`}
+              >
+                <span>{tab.label}</span>
+                {tab.badge && (
+                  <span className="min-w-5 h-5 px-1 rounded-full bg-brand text-white text-[11px] font-sans font-bold flex items-center justify-center">
+                    {tab.badge}
+                  </span>
+                )}
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-900 rounded-full transition-all" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Quick sample controls */}
+        <div className="flex items-center gap-2 pb-2 self-end sm:self-auto">
+          {lendingExchanges.length > 0 || borrowingExchanges.length > 0 || historyExchanges.length > 0 ? (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`relative pb-3 text-base sm:text-lg font-serif transition-colors flex items-center gap-2 ${
-                isActive
-                  ? 'text-slate-900 font-semibold'
-                  : 'text-slate-500 hover:text-slate-700 font-medium'
-              }`}
+              onClick={handleClearSampleActivities}
+              disabled={isSeeding}
+              className="text-[11px] font-medium text-slate-400 hover:text-slate-600 px-2 py-1 transition"
+              title="Clear sample activities"
             >
-              <span>{tab.label}</span>
-              {tab.badge && (
-                <span className="min-w-5 h-5 px-1 rounded-full bg-brand text-white text-[11px] font-sans font-bold flex items-center justify-center">
-                  {tab.badge}
-                </span>
-              )}
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-900 rounded-full transition-all" />
-              )}
+              Clear Samples
             </button>
-          );
-        })}
+          ) : null}
+          <button
+            onClick={handleSeedSampleActivities}
+            disabled={isSeeding}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200/80 text-xs font-semibold shadow-2xs transition active:scale-95 disabled:opacity-75"
+            title="Load sample activities to test the exchange engine"
+          >
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
+            <span>{isSeeding ? 'Loading...' : 'Load Sample Activities'}</span>
+          </button>
+        </div>
       </div>
+
+      {/* Helper Banner when all tabs are empty */}
+      {lendingExchanges.length === 0 && borrowingExchanges.length === 0 && historyExchanges.length === 0 && (
+        <div className="mt-6 p-5 sm:p-6 bg-gradient-to-r from-purple-50 via-[#FDF8F2] to-amber-50 rounded-2xl border border-brand/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+              <HugeiconsIcon icon={BookOpen01Icon} size={20} />
+            </div>
+            <div>
+              <h3 className="font-serif text-base font-semibold text-slate-800">
+                Explore the Activity Lifecycle
+              </h3>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Your account currently has no active requests. Load interactive sample activities to test approving meetups, confirming handovers, and return inspections.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleSeedSampleActivities}
+            disabled={isSeeding}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center justify-center gap-2 flex-shrink-0 disabled:opacity-75"
+          >
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
+            <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Database / Network Error Banner with Retry */}
       {error && (
@@ -785,7 +868,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
             pendingLendingHandovers.length === 0 &&
             currentlyLentLoans.length === 0 &&
             returnsToReview.length === 0 && (
-              <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-12 text-center">
+              <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-8 sm:p-12 text-center">
                 <div className="w-14 h-14 rounded-full bg-brand/10 text-brand mx-auto flex items-center justify-center mb-3">
                   <HugeiconsIcon icon={BookOpen01Icon} size={26} />
                 </div>
@@ -793,14 +876,24 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                 <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
                   When neighbors request books from your shelf or schedule returns, they will appear right here.
                 </p>
-                {onOpenAddBook && (
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
                   <button
-                    onClick={onOpenAddBook}
-                    className="mt-5 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition"
+                    onClick={handleSeedSampleActivities}
+                    disabled={isSeeding}
+                    className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2"
                   >
-                    + Add a Book to Your Shelf
+                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
+                    <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities (See How It Works)'}</span>
                   </button>
-                )}
+                  {onOpenAddBook && (
+                    <button
+                      onClick={onOpenAddBook}
+                      className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
+                    >
+                      + Add a Book to Your Shelf
+                    </button>
+                  )}
+                </div>
               </div>
             )}
         </div>
@@ -1132,7 +1225,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
             pendingBorrowHandovers.length === 0 &&
             currentlyBorrowedLoans.length === 0 &&
             returnsInProgress.length === 0 && (
-              <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-12 text-center">
+              <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-8 sm:p-12 text-center">
                 <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 mx-auto flex items-center justify-center mb-3">
                   <HugeiconsIcon icon={BookOpen01Icon} size={26} />
                 </div>
@@ -1140,13 +1233,23 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                 <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
                   Explore books in your neighborhood to borrow, read, and return with trust!
                 </p>
-                <button
-                  type="button"
-                  onClick={() => navigate('/books')}
-                  className="mt-5 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95"
-                >
-                  + Explore Community Books
-                </button>
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={handleSeedSampleActivities}
+                    disabled={isSeeding}
+                    className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2"
+                  >
+                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
+                    <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities (See How It Works)'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/books')}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition active:scale-95"
+                  >
+                    + Explore Community Books
+                  </button>
+                </div>
               </div>
             )}
         </div>
@@ -1190,7 +1293,28 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
             </div>
           </div>
 
-          <div className="space-y-3.5 mt-4">
+          {historyExchanges.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-8 sm:p-12 text-center">
+              <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-600 mx-auto flex items-center justify-center mb-3">
+                <HugeiconsIcon icon={BookOpen01Icon} size={26} />
+              </div>
+              <h3 className="font-serif text-xl font-semibold text-slate-800">No completed exchanges yet</h3>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                Completed loans, verified returns, and gift claims will be archived here.
+              </p>
+              <div className="mt-5 flex justify-center">
+                <button
+                  onClick={handleSeedSampleActivities}
+                  disabled={isSeeding}
+                  className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2"
+                >
+                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
+                  <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities (See How It Works)'}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3.5 mt-4">
             {historyExchanges.map((item) => {
               const userIsLender = isOwner(item);
               const partnerName = userIsLender ? item.borrowerName : item.ownerName;
@@ -1318,6 +1442,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
               );
             })}
           </div>
+          )}
         </div>
       )}
 

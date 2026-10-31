@@ -33,18 +33,24 @@ const decodeMessageAndMeta = (rawMessage?: string): { message: string; meta: Rec
 const mapRowToTransaction = (item: any): ExchangeTransaction => {
   const { message: cleanMessage, meta } = decodeMessageAndMeta(item.message);
 
-  const substatus = meta.substatus || (item.status as ExchangeStatus);
-
-  // Status backward compatibility mapping
-  let resolvedStatus: ExchangeStatus = substatus;
-  if (item.status === 'pending' && !meta.substatus) {
+  // Status resolution: cancelled or declined in database always takes precedence
+  let resolvedStatus: ExchangeStatus;
+  if (item.status === 'cancelled' || item.status === 'claim_cancelled') {
+    resolvedStatus = 'cancelled';
+  } else if (item.status === 'declined' || item.status === 'claim_declined') {
+    resolvedStatus = 'declined';
+  } else if (meta.substatus) {
+    resolvedStatus = meta.substatus;
+  } else if (item.status === 'pending') {
     resolvedStatus = item.exchange_type === 'gift' ? 'pending_claim' : 'pending_approval';
-  } else if (item.status === 'handed_over' && !meta.substatus) {
+  } else if (item.status === 'handed_over') {
     resolvedStatus = 'active_loan';
-  } else if (item.status === 'returned' && !meta.substatus) {
+  } else if (item.status === 'returned') {
     resolvedStatus = 'completed';
-  } else if (item.status === 'claimed' && !meta.substatus) {
+  } else if (item.status === 'claimed') {
     resolvedStatus = 'claim_completed';
+  } else {
+    resolvedStatus = (item.status as ExchangeStatus) || 'pending_approval';
   }
 
   const pickupConfirmation = meta.pickupConfirmation || {
@@ -1143,4 +1149,256 @@ export const exchangeService = {
       status: pendings[0]?.status,
     };
   },
+
+  /**
+   * Seed realistic sample activities for the given user in Supabase.
+   * Enables new or existing users to immediately explore and test the complete
+   * Lending, Borrowing, Handover, Return, and Review lifecycle.
+   */
+  async seedSampleActivities(userId: string = 'demo-user', userDisplayName: string = 'Reader'): Promise<void> {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase client not configured.');
+    }
+
+    const sampleRows = [
+      // 1. Lending - Pending Borrow Request
+      {
+        book_id: 'the-overstory',
+        book_title: 'The Overstory',
+        owner_id: userId,
+        owner_name: userDisplayName,
+        borrower_id: 'sample-borrower-elena',
+        borrower_name: 'Elena Rostova',
+        exchange_type: 'borrow',
+        status: 'pending',
+        meetup_date: 'Tomorrow',
+        meetup_time: '2:30 PM',
+        meetup_spot: 'Riverside Coffee',
+        message: encodeMessageWithMeta('Hi! Would love to borrow this for our local book circle next week. Happy to meet by the window tables!', {
+          substatus: 'pending_approval',
+          bookAuthor: 'Richard Powers',
+          bookCover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300',
+          borrowerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          borrowerTrust: 'Reliable Neighbor · 5.0 ★',
+          requestDate: 'Today',
+          pickupConfirmation: { lenderConfirmed: false, borrowerConfirmed: false }
+        })
+      },
+      // 2. Lending - Handover Scheduled (Action Required)
+      {
+        book_id: 'klara-and-the-sun',
+        book_title: 'Klara and the Sun',
+        owner_id: userId,
+        owner_name: userDisplayName,
+        borrower_id: 'sample-borrower-marcus',
+        borrower_name: 'Marcus Vance',
+        exchange_type: 'borrow',
+        status: 'accepted',
+        meetup_date: 'Saturday',
+        meetup_time: '11:00 AM',
+        meetup_spot: 'Central Library Steps',
+        message: encodeMessageWithMeta('Meetup agreed for Saturday. Ready to confirm handover!', {
+          substatus: 'accepted',
+          bookAuthor: 'Kazuo Ishiguro',
+          bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
+          borrowerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+          borrowerTrust: 'Punctual Reader · 4.9 ★',
+          requestDate: 'Yesterday',
+          pickupConfirmation: { lenderConfirmed: false, borrowerConfirmed: false }
+        })
+      },
+      // 3. Lending - Active Loan (Currently Lent)
+      {
+        book_id: 'pachinko',
+        book_title: 'Pachinko',
+        owner_id: userId,
+        owner_name: userDisplayName,
+        borrower_id: 'sample-borrower-priya',
+        borrower_name: 'Priya Shah',
+        exchange_type: 'borrow',
+        status: 'handed_over',
+        meetup_date: '2 weeks ago',
+        meetup_time: '10:00 AM',
+        meetup_spot: 'Riverside Coffee',
+        message: encodeMessageWithMeta('Active 30-day neighborhood loan in progress.', {
+          substatus: 'active_loan',
+          bookAuthor: 'Min Jin Lee',
+          bookCover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=300',
+          borrowerAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
+          borrowerTrust: 'Active Reader',
+          handoverDate: '12 days ago',
+          dueDate: 'Due in 18 days',
+          daysUsed: 12,
+          totalDays: 30,
+          daysLeft: 18,
+          pickupConfirmation: { lenderConfirmed: true, borrowerConfirmed: true }
+        })
+      },
+      // 4. Lending - Return to Review (Action Required)
+      {
+        book_id: 'stoner',
+        book_title: 'Stoner',
+        owner_id: userId,
+        owner_name: userDisplayName,
+        borrower_id: 'sample-borrower-diego',
+        borrower_name: 'Diego Ramirez',
+        exchange_type: 'borrow',
+        status: 'handed_over',
+        meetup_date: 'Today',
+        meetup_time: '1:00 PM',
+        meetup_spot: 'Elm Park Kiosk',
+        message: encodeMessageWithMeta('Borrower handed back the book. Ready for condition check and confirmation.', {
+          substatus: 'return_in_progress',
+          bookAuthor: 'John Williams',
+          bookCover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?auto=format&fit=crop&q=80&w=300',
+          borrowerAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+          borrowerTrust: 'Verified Neighbor',
+          returnSchedule: {
+            trackingCode: 'RET-SAMPLE-489',
+            date: 'Today',
+            time: '1:00 PM',
+            spot: 'Elm Park Kiosk',
+            note: 'Handed back by Diego at the kiosk.',
+            borrowerConfirmed: true,
+            lenderConfirmed: false,
+            conditionVerified: 'Good'
+          }
+        })
+      },
+      // 5. Borrowing - Request Sent (Awaiting Owner)
+      {
+        book_id: 'the-night-circus',
+        book_title: 'The Night Circus',
+        owner_id: 'sample-owner-arif',
+        owner_name: 'Arif Ahmed',
+        borrower_id: userId,
+        borrower_name: userDisplayName,
+        exchange_type: 'borrow',
+        status: 'pending',
+        meetup_date: 'Monday',
+        meetup_time: '5:00 PM',
+        meetup_spot: 'Elm Park Green',
+        message: encodeMessageWithMeta('Looking forward to reading this magical story!', {
+          substatus: 'pending_approval',
+          bookAuthor: 'Erin Morgenstern',
+          bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
+          ownerAvatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=200',
+          ownerTrust: 'Top Rated Lender · 5.0 ★',
+          requestDate: 'Today'
+        })
+      },
+      // 6. Borrowing - Ready for Collection (Action Required)
+      {
+        book_id: 'the-god-of-small-things',
+        book_title: 'The God of Small Things',
+        owner_id: 'sample-owner-amira',
+        owner_name: 'Amira Khan',
+        borrower_id: userId,
+        borrower_name: userDisplayName,
+        exchange_type: 'borrow',
+        status: 'accepted',
+        meetup_date: 'Tomorrow',
+        meetup_time: '10:00 AM',
+        meetup_spot: 'High Street Bookshop',
+        message: encodeMessageWithMeta('Meetup confirmed! See you tomorrow morning.', {
+          substatus: 'accepted',
+          bookAuthor: 'Arundhati Roy',
+          bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
+          ownerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          ownerTrust: 'Verified Lender · 4.8 ★',
+          pickupConfirmation: { lenderConfirmed: false, borrowerConfirmed: false }
+        })
+      },
+      // 7. Borrowing - Currently Reading
+      {
+        book_id: 'drive-daniel-pink',
+        book_title: 'Drive',
+        owner_id: 'sample-owner-jonas',
+        owner_name: 'Jonas Meier',
+        borrower_id: userId,
+        borrower_name: userDisplayName,
+        exchange_type: 'borrow',
+        status: 'handed_over',
+        meetup_date: '10 days ago',
+        meetup_time: '3:00 PM',
+        meetup_spot: 'Community Center',
+        message: encodeMessageWithMeta('Enjoying reading about autonomy and mastery.', {
+          substatus: 'active_loan',
+          bookAuthor: 'Daniel H. Pink',
+          bookCover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300',
+          ownerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+          ownerTrust: 'Friendly Neighbor',
+          handoverDate: '10 days ago',
+          dueDate: 'Due in 20 days',
+          daysUsed: 10,
+          totalDays: 30,
+          daysLeft: 20,
+          pickupConfirmation: { lenderConfirmed: true, borrowerConfirmed: true }
+        })
+      },
+      // 8. History - Completed Exchange
+      {
+        book_id: 'a-short-history',
+        book_title: 'A Short History of Nearly Everything',
+        owner_id: userId,
+        owner_name: userDisplayName,
+        borrower_id: 'sample-borrower-hana',
+        borrower_name: 'Hana Yamada',
+        exchange_type: 'borrow',
+        status: 'returned',
+        meetup_date: 'Last month',
+        meetup_time: '2:00 PM',
+        meetup_spot: 'Riverside Coffee',
+        message: encodeMessageWithMeta('Successfully returned and condition verified.', {
+          substatus: 'completed',
+          bookAuthor: 'Bill Bryson',
+          bookCover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?auto=format&fit=crop&q=80&w=300',
+          borrowerAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
+          completedDate: '7 days ago',
+          conditionVerified: 'Like New',
+          lenderRating: 5,
+          lenderFeedback: 'Wonderful neighbor, kept the book in great shape!',
+          borrowerRating: 5,
+          borrowerFeedback: 'Fantastic experience borrowing from this neighbor!'
+        })
+      }
+    ];
+
+    const { error } = await supabase.from('borrow_requests').insert(sampleRows);
+    if (error) {
+      console.error('Error seeding sample activities:', error);
+      throw new Error(`Failed to load sample activities: ${error.message}`);
+    }
+  },
+
+  /**
+   * Remove or cancel sample activities created for the user.
+   */
+  async clearSampleActivities(userId: string = 'demo-user', userDisplayName: string = 'Reader'): Promise<void> {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const orFilter = `owner_name.eq.${userDisplayName},borrower_name.eq.${userDisplayName},owner_id.eq.${userId},borrower_id.eq.${userId}`;
+      const { data: rows } = await supabase
+        .from('borrow_requests')
+        .select('id, message')
+        .or(orFilter);
+
+      if (rows && rows.length > 0) {
+        await Promise.all(
+          rows.map((r) => {
+            const { message: cleanMsg, meta } = decodeMessageAndMeta(r.message);
+            return supabase
+              .from('borrow_requests')
+              .update({
+                status: 'cancelled',
+                message: encodeMessageWithMeta(cleanMsg, { ...meta, substatus: 'cancelled' }),
+              })
+              .eq('id', r.id);
+          })
+        );
+      }
+    } catch (e) {
+      console.error('Error clearing sample activities:', e);
+    }
+  }
 };
