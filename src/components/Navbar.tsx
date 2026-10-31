@@ -29,6 +29,7 @@ interface NavbarProps {
   onNotificationClick?: (item: NotificationItem) => void;
   onMarkAllNotificationsRead?: () => void;
   unreadCount?: number;
+  activityBadgeCount?: number;
   /** @deprecated handled internally by NotificationDropdown */
   onToggleNotifications?: () => void;
   /** @deprecated use onRequestLogout instead */
@@ -46,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNotificationClick,
   onMarkAllNotificationsRead,
   unreadCount = 2,
+  activityBadgeCount,
   onLogout
 }) => {
   const {
@@ -90,7 +92,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItems = [
     { id: 'home', label: 'Home' },
     { id: 'my-books', label: 'My Books' },
-    { id: 'requests', label: 'Requests', badge: isAuthenticated ? '1' : undefined },
+    {
+      id: 'activity',
+      label: 'Activity',
+      badge:
+        isAuthenticated && activityBadgeCount !== undefined
+          ? activityBadgeCount > 0
+            ? String(activityBadgeCount)
+            : undefined
+          : isAuthenticated
+          ? '2'
+          : undefined,
+    },
     { id: 'messages', label: 'Messages', badge: isAuthenticated ? '1' : undefined },
     { id: 'profile', label: 'Profile' },
   ];
@@ -248,7 +261,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     }
                   }}
                   onGoToRequests={() => {
-                    setActiveTab('requests');
+                    setActiveTab('activity');
                     setIsNotificationOpen(false);
                   }}
                 />
@@ -309,7 +322,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </p>
                         <div className="flex items-center gap-1.5 mt-1 text-[11px]">
                           <span className="text-amber-600 font-semibold">★ {currentUser?.trustScore || 4.9}</span>
-                          <span className="text-slate-400">• {currentUser?.lendsCount ?? 18} books lent</span>
+                          <span className="text-slate-500">• {currentUser?.lendsCount ?? 18} books lent</span>
                         </div>
                       </div>
                     </div>
@@ -333,7 +346,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800">Profile</p>
-                            <p className="text-[11px] text-slate-400">View public library & trust stats</p>
+                            <p className="text-[11px] text-slate-500">View public library & trust stats</p>
                           </div>
                         </div>
                       </button>
@@ -354,7 +367,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800">Messages</p>
-                            <p className="text-[11px] text-slate-400">Chat with borrowers & lenders</p>
+                            <p className="text-[11px] text-slate-500">Chat with borrowers & lenders</p>
                           </div>
                         </div>
                         <span className="text-[10px] font-bold bg-brand text-white px-2 py-0.5 rounded-full">
@@ -362,12 +375,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </span>
                       </button>
 
-                      {/* 3. Pending Request */}
+                      {/* 3. Activity Hub */}
                       <button
                         type="button"
-                        onClick={() => handleSelectMenuItem('requests')}
+                        onClick={() => handleSelectMenuItem('activity')}
                         className={`w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition ${
-                          activeTab === 'requests'
+                          activeTab === 'activity'
                             ? 'bg-brand/10 text-brand font-semibold'
                             : 'text-slate-700 hover:bg-slate-50'
                         }`}
@@ -377,13 +390,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                             <HugeiconsIcon icon={Clock01Icon} size={18} />
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-800">Pending Request</p>
-                            <p className="text-[11px] text-slate-400">Borrow & return approval status</p>
+                            <p className="font-semibold text-slate-800">Activity Hub</p>
+                            <p className="text-[11px] text-slate-500">Borrowing, lending & returns</p>
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold bg-amber-badge text-white px-2 py-0.5 rounded-full">
-                          1
-                        </span>
+                        {activityBadgeCount && activityBadgeCount > 0 ? (
+                          <span className="text-[10px] font-bold bg-amber-badge text-white px-2 py-0.5 rounded-full">
+                            {activityBadgeCount}
+                          </span>
+                        ) : null}
                       </button>
 
                       {/* 4. My Books */}
@@ -402,7 +417,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800">My Books</p>
-                            <p className="text-[11px] text-slate-400">Manage shelf, lent out & history</p>
+                            <p className="text-[11px] text-slate-500">Manage shelf, lent out & history</p>
                           </div>
                         </div>
                       </button>
@@ -422,7 +437,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800 group-hover/wish:text-rose-900">Wishlist & Alerts</p>
-                            <p className="text-[11px] text-slate-400">Saved books & return notifications</p>
+                            <p className="text-[11px] text-slate-500">Saved books & return notifications</p>
                           </div>
                         </div>
                         {wishlist && wishlist.length > 0 && (
@@ -447,7 +462,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800">How BookCircle Works</p>
-                            <p className="text-[11px] text-slate-400">Review community sharing guides</p>
+                            <p className="text-[11px] text-slate-500">Review community sharing guides</p>
                           </div>
                         </div>
                       </button>
@@ -467,7 +482,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800">Settings</p>
-                            <p className="text-[11px] text-slate-400">Account & notification preferences</p>
+                            <p className="text-[11px] text-slate-500">Account & notification preferences</p>
                           </div>
                         </div>
                       </button>

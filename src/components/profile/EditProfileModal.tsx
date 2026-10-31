@@ -91,6 +91,24 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     }
   }, [isOpen, userProfile]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleToggleGenre = (genre: string) => {
@@ -155,6 +173,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-profile-title"
         className="relative w-full max-w-xl max-h-[90vh] bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
@@ -163,7 +184,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+          className="absolute top-5 right-5 p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition"
           aria-label="Close"
         >
           <HugeiconsIcon icon={Cancel01Icon} size={18} />
@@ -173,7 +194,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           <span className="text-[11px] font-bold tracking-wider uppercase text-brand bg-brand/10 px-2.5 py-0.5 rounded-full">
             Reader Profile
           </span>
-          <h3 className="font-serif text-2xl font-semibold text-slate-800 mt-1">
+          <h3 id="edit-profile-title" className="font-serif text-2xl font-semibold text-slate-800 mt-1">
             Edit Profile & Preferences
           </h3>
           <p className="mt-1 text-xs sm:text-sm text-slate-500">
@@ -358,7 +379,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                   Reading Preferences / Favorite Genres
                 </label>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-500">
                   {selectedGenres.length} selected
                 </span>
               </div>

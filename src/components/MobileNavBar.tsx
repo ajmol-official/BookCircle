@@ -13,6 +13,7 @@ interface MobileNavBarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   unreadMessages?: number;
+  activityBadgeCount?: number;
   pendingRequests?: number;
 }
 
@@ -20,6 +21,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
   activeTab,
   setActiveTab,
   unreadMessages = 1,
+  activityBadgeCount,
   pendingRequests = 1,
 }) => {
   const { isAuthenticated, requireAuth } = useAuth();
@@ -46,7 +48,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
   const navItems = [
     { id: 'home', label: 'Home', icon: Home01Icon },
     { id: 'my-books', label: 'My Books', icon: BookOpen01Icon },
-    { id: 'requests', label: 'Requests', icon: Clock01Icon },
+    { id: 'activity', label: 'Activity', icon: Clock01Icon },
     { id: 'messages', label: 'Messages', icon: BubbleChatIcon },
     { id: 'profile', label: isAuthenticated ? 'Profile' : 'Sign In', icon: UserCircle02Icon },
   ];
@@ -56,11 +58,14 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
       <div className="flex items-center justify-around px-2 py-1.5 safe-area-bottom">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
+          const effectiveActivityBadge =
+            activityBadgeCount !== undefined ? activityBadgeCount : pendingRequests;
+
           const badge =
             isAuthenticated && item.id === 'messages' && unreadMessages > 0
               ? unreadMessages
-              : isAuthenticated && item.id === 'requests' && pendingRequests > 0
-              ? pendingRequests
+              : isAuthenticated && item.id === 'activity' && effectiveActivityBadge > 0
+              ? effectiveActivityBadge
               : null;
 
           return (

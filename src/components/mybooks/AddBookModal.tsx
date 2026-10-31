@@ -122,12 +122,31 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
   // Success state
   const [isSuccess, setIsSuccess] = useState(false);
   const [lastAddedTitle, setLastAddedTitle] = useState('');
+  const [titleError, setTitleError] = useState<string | null>(null);
 
   // Refs for outside click handling and file picker
   const conditionDropdownRef = useRef<HTMLDivElement>(null);
   const availabilityDropdownRef = useRef<HTMLDivElement>(null);
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -228,7 +247,15 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
     const finalTitle = mode === 'search' ? (selectedCatalogBook?.title || searchQuery) : manualTitle;
     const finalAuthor = mode === 'search' ? (selectedCatalogBook?.author || author) : author;
     
-    if (!finalTitle.trim()) return;
+    if (!finalTitle.trim()) {
+      setTitleError(
+        mode === 'search'
+          ? 'Please search and select an existing title or switch to manual entry.'
+          : 'Please enter a book title to add it to your shelf.'
+      );
+      return;
+    }
+    setTitleError(null);
 
     // Generate canonical Unique ID if manual, or use existing catalog book ID
     const generatedId = finalTitle
@@ -265,6 +292,9 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-book-title"
         className="relative w-full max-w-lg bg-cream rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200/80 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -288,7 +318,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
 
         {/* Modal Header */}
         <div>
-          <h3 className="font-serif text-2xl font-semibold text-slate-800">
+          <h3 id="add-book-title" className="font-serif text-2xl font-semibold text-slate-800">
             {mode === 'search' ? 'Add a book to your library' : 'List book to your library'}
           </h3>
           <p className="mt-1 text-xs sm:text-sm text-slate-500">
@@ -537,10 +567,18 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
                     type="text"
                     required
                     value={manualTitle}
-                    onChange={(e) => setManualTitle(e.target.value)}
+                    onChange={(e) => {
+                      setManualTitle(e.target.value);
+                      if (titleError) setTitleError(null);
+                    }}
                     placeholder="Book Title (e.g. The God of Small Things)"
-                    className="w-full px-4 py-3 bg-white rounded-xl border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                    className={`w-full px-4 py-3 bg-white rounded-xl border ${
+                      titleError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'
+                    } text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs`}
                   />
+                  {titleError && (
+                    <p className="text-xs text-red-600 mt-1.5 font-medium">{titleError}</p>
+                  )}
                 </div>
 
                 {/* Manual Author Name */}
@@ -800,6 +838,13 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
                 </div>
               )}
             </div>
+
+            {/* Error Message if Any */}
+            {titleError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium">
+                {titleError}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="pt-2 space-y-2.5">

@@ -174,7 +174,7 @@ export const ProfileSetupModal: React.FC = () => {
                 className="w-full py-2.5 pl-10 pr-3.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400"
               />
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Visible to other community readers.</p>
+            <p className="text-[11px] text-slate-500 mt-1">Visible to other community readers.</p>
           </div>
 
           {/* Location / Neighborhood (Optional) */}

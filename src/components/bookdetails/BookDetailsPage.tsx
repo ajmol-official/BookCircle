@@ -296,7 +296,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
             <span className="font-serif font-bold text-lg text-slate-800">
               {book.rating}
             </span>
-            <span className="text-sm text-slate-400">
+            <span className="text-sm text-slate-500">
               {book.reviewsCount || 124} community reviews
             </span>
           </div>
@@ -433,7 +433,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
                       <span>{owner.name}</span>
                       <span className="text-[10px] text-brand font-sans font-medium">→</span>
                     </h4>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-500">
                       {owner.distance} · Member {owner.memberSince}
                     </p>
                   </div>
@@ -446,7 +446,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
                       <span>{owner.status}</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-400">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-500">
                       <span>{owner.status}</span>
                     </span>
                   )}
@@ -463,7 +463,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                     : owner.isAvailable
                     ? 'bg-brand hover:bg-brand-dark text-white'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                    : 'bg-slate-100 text-slate-500 cursor-not-allowed shadow-none'
                 }`}
               >
                 {isClaimed ? (
@@ -526,7 +526,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
                     />
                     <div>
                       <h4 className="font-serif text-sm font-semibold text-slate-800">{rev.author}</h4>
-                      <p className="text-[11px] text-slate-400">{rev.date}</p>
+                      <p className="text-[11px] text-slate-500">{rev.date}</p>
                     </div>
                   </div>
 

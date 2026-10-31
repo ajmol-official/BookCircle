@@ -141,7 +141,7 @@ export const AuthModal: React.FC = () => {
             {/* Close Button */}
             <button
               onClick={handleClose}
-              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              className="absolute top-4 right-4 p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition"
               aria-label="Close"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={18} />
@@ -318,7 +318,7 @@ export const AuthModal: React.FC = () => {
                   </button>
                 </div>
                 {activeTab === 'signup' && (
-                  <p className="text-[11px] text-slate-400 mt-1">Must be at least 6 characters</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Must be at least 6 characters</p>
                 )}
               </div>
 
@@ -369,7 +369,7 @@ export const AuthModal: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="mt-5 pt-3.5 border-t border-slate-100 text-center text-[11px] text-slate-400">
+            <div className="mt-5 pt-3.5 border-t border-slate-100 text-center text-[11px] text-slate-500">
               <span>By continuing, you agree to BookCircle's community trust guidelines.</span>
             </div>
           </motion.div>

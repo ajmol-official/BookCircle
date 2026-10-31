@@ -68,7 +68,7 @@ export const BooksSection: React.FC<BooksSectionProps> = ({
           <p className="text-slate-600 text-sm font-medium">
             No books found matching your search.
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Try a different category or search term to discover more books.
           </p>
         </div>

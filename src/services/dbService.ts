@@ -2,52 +2,112 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { mockBooks, mockReaders } from '../data/mockData';
 import type { Book, Reader } from '../types';
 
+function mapDbBookToBook(item: any): Book {
+  const isPersonal =
+    (item.description && item.description.includes('[PRIVATE_COLLECTION]')) ||
+    item.availability_mode === 'personal';
+
+  return {
+    id: item.id,
+    title: item.title,
+    author: item.author,
+    coverImage: item.cover_image,
+    rating: Number(item.rating) || 4.8,
+    reviewsCount: item.reviews_count || 0,
+    distance: item.distance || 'Nearby',
+    ownersCount: item.owners_count || 1,
+    category: item.category || 'Fiction',
+    status: item.status || 'available',
+    ownerName: item.owner_name || 'Neighbor',
+    ownerAvatar: item.owner_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    ownerTrust: 'Verified Neighbor',
+    description: item.description,
+    condition: item.condition || 'Like New',
+    availabilityMode: isPersonal ? 'personal' : ((item.availability_mode || 'lending') as 'lending' | 'donation' | 'personal'),
+  };
+}
+
 export const dbService = {
   /**
-   * Fetch all books (from Supabase if configured, otherwise fallback to local/mock)
+   * Fetch community discovery books.
+   * Database-level privacy guard: strictly excludes personal collection and claimed donations directly via Supabase query.
    */
   async getBooks(): Promise<Book[]> {
     if (!isSupabaseConfigured()) {
-      return mockBooks;
+      return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
     }
 
     try {
       const { data, error } = await supabase
         .from('books')
         .select('*')
+        .neq('status', 'claimed')
+        .neq('availability_mode', 'personal')
+        .not('description', 'like', '%[PRIVATE_COLLECTION]%')
         .order('created_at', { ascending: false });
 
       if (error) {
         console.warn('Supabase fetch error, using fallback books:', error.message);
-        return mockBooks;
+        return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
       }
 
       if (!data || data.length === 0) {
-        return mockBooks;
+        return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
       }
 
-      // Map Supabase snake_case fields to frontend camelCase Book type
-      return data.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        author: item.author,
-        coverImage: item.cover_image,
-        rating: Number(item.rating) || 4.8,
-        reviewsCount: item.reviews_count || 0,
-        distance: item.distance || 'Nearby',
-        ownersCount: item.owners_count || 1,
-        category: item.category || 'Fiction',
-        status: item.status || 'available',
-        ownerName: item.owner_name || 'Neighbor',
-        ownerAvatar: item.owner_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-        ownerTrust: 'Verified Neighbor',
-        description: item.description,
-        condition: item.condition || 'Like New',
-        availabilityMode: (item.availability_mode || 'lending') as 'lending' | 'donation' | 'personal',
-      }));
+      return data.map(mapDbBookToBook);
     } catch (err) {
       console.warn('Network error accessing Supabase, using mock fallback:', err);
-      return mockBooks;
+      return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
+    }
+  },
+
+  /**
+   * Fetch all books owned by a specific user (including their personal collection)
+   */
+  async getUserBooks(userId: string): Promise<Book[]> {
+    if (!isSupabaseConfigured()) {
+      return mockBooks.filter((b) => b.ownerName === 'You');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('owner_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error || !data) return [];
+      return data.map(mapDbBookToBook);
+    } catch (err) {
+      console.warn('Error fetching user books from Supabase:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Fetch public books for another user's profile, strictly excluding private collection at DB query level
+   */
+  async getPublicUserBooks(userId: string): Promise<Book[]> {
+    if (!isSupabaseConfigured()) {
+      return mockBooks.filter((b) => b.ownerName !== 'You' && b.availabilityMode !== 'personal' && b.status !== 'claimed');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('owner_id', userId)
+        .neq('status', 'claimed')
+        .neq('availability_mode', 'personal')
+        .not('description', 'like', '%[PRIVATE_COLLECTION]%')
+        .order('created_at', { ascending: false });
+
+      if (error || !data) return [];
+      return data.map(mapDbBookToBook);
+    } catch (err) {
+      console.warn('Error fetching public user books from Supabase:', err);
+      return [];
     }
   },
 

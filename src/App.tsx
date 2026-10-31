@@ -20,6 +20,7 @@ import { FloatingAddBookButton } from './components/FloatingAddBookButton';
 import { dbService } from './services/dbService';
 import type { NotificationItem } from './components/NotificationDropdown';
 import { MyBooksPage } from './components/mybooks/MyBooksPage';
+import { ActivityPage } from './components/activity/ActivityPage';
 import { BookDetailsPage } from './components/bookdetails/BookDetailsPage';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { PublicProfilePage } from './components/profile/PublicProfilePage';
@@ -36,6 +37,7 @@ import { BooksBrowsePage } from './components/books/BooksBrowsePage';
 import { NotFoundPage } from './components/NotFoundPage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ExchangeProvider, useExchanges } from './context/ExchangeContext';
 import { mockBooks, mockReaders } from './data/mockData';
 import type { Book, Reader } from './types';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -213,6 +215,8 @@ const BookCircleMain: React.FC = () => {
     toggleWishlist,
   } = useAuth();
 
+  const { actionRequiredTotal, createBorrowRequest, createGiftClaim } = useExchanges();
+
   // Scroll to top upon route change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -230,8 +234,8 @@ const BookCircleMain: React.FC = () => {
           ? '/books'
           : tabParam === 'my-books'
           ? '/my-books'
-          : tabParam === 'requests'
-          ? '/requests'
+          : tabParam === 'activity' || tabParam === 'requests'
+          ? '/activity'
           : tabParam === 'messages'
           ? '/messages'
           : tabParam === 'readers'
@@ -249,7 +253,7 @@ const BookCircleMain: React.FC = () => {
     if (path === '/' || path === '') return 'home';
     if (path === '/books') return 'books';
     if (path === '/my-books') return 'my-books';
-    if (path === '/requests') return 'requests';
+    if (path === '/activity' || path === '/requests') return 'activity';
     if (path === '/messages') return 'messages';
     if (path === '/profile') return 'profile';
     if (path === '/readers') return 'readers';
@@ -305,7 +309,7 @@ const BookCircleMain: React.FC = () => {
       time: '3 hours ago',
       type: 'request',
       unread: true,
-      targetTab: 'requests',
+      targetTab: 'activity',
     },
     {
       id: 'notif-2',
@@ -327,7 +331,7 @@ const BookCircleMain: React.FC = () => {
       time: '1 day ago',
       type: 'approved',
       unread: false,
-      targetTab: 'my-books',
+      targetTab: 'activity',
     },
     {
       id: 'notif-4',
@@ -338,7 +342,7 @@ const BookCircleMain: React.FC = () => {
       time: '3 days ago',
       type: 'meetup',
       unread: false,
-      targetTab: 'requests',
+      targetTab: 'activity',
     },
   ]);
 
@@ -381,8 +385,8 @@ const BookCircleMain: React.FC = () => {
         ? '/books'
         : tab === 'my-books'
         ? '/my-books'
-        : tab === 'requests'
-        ? '/requests'
+        : tab === 'activity' || tab === 'requests'
+        ? '/activity'
         : tab === 'messages'
         ? '/messages'
         : tab === 'profile'
@@ -468,22 +472,20 @@ const BookCircleMain: React.FC = () => {
       prev.map((b) => (b.id === details.book.id ? { ...b, status: 'claimed' } : b))
     );
 
-    // 2. Persist to DB if connected
-    dbService
-      .createBorrowRequest({
-        bookId: details.book.id,
-        bookTitle: details.book.title,
-        borrowerId: currentUser?.id,
-        borrowerName: currentUser?.displayName || 'Community Reader',
-        ownerId: details.owner.id,
-        ownerName: details.owner.name,
-        exchangeType: 'gift',
-        meetupDate: details.date,
-        meetupTime: details.time,
-        meetupSpot: details.spot,
-        message: details.note,
-      })
-      .catch(console.error);
+    // 2. Persist to ExchangeContext & DB
+    createGiftClaim({
+      book: details.book,
+      owner: details.owner,
+      borrower: {
+        id: currentUser?.id || 'demo-user',
+        name: currentUser?.displayName || 'Maya Lin',
+        avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      },
+      date: details.date,
+      time: details.time,
+      spot: details.spot,
+      note: details.note,
+    });
 
     // 3. Trigger celebration toast for claiming a free gift
     setGlobalToast(
@@ -498,22 +500,20 @@ const BookCircleMain: React.FC = () => {
       prev.map((b) => (b.id === details.book.id ? { ...b, status: 'lent_out' } : b))
     );
 
-    // 2. Persist to DB if connected
-    dbService
-      .createBorrowRequest({
-        bookId: details.book.id,
-        bookTitle: details.book.title,
-        borrowerId: currentUser?.id,
-        borrowerName: currentUser?.displayName || 'Community Reader',
-        ownerId: details.owner.id,
-        ownerName: details.owner.name,
-        exchangeType: 'borrow',
-        meetupDate: details.date,
-        meetupTime: details.time,
-        meetupSpot: details.spot,
-        message: details.note,
-      })
-      .catch(console.error);
+    // 2. Persist to ExchangeContext & DB
+    createBorrowRequest({
+      book: details.book,
+      owner: details.owner,
+      borrower: {
+        id: currentUser?.id || 'demo-user',
+        name: currentUser?.displayName || 'Maya Lin',
+        avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      },
+      date: details.date,
+      time: details.time,
+      spot: details.spot,
+      note: details.note,
+    });
 
     // 3. Trigger friendly confirmation toast
     setGlobalToast(
@@ -679,6 +679,7 @@ const BookCircleMain: React.FC = () => {
         onNotificationClick={handleNotificationClick}
         onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
         unreadCount={unreadNotificationsCount}
+        activityBadgeCount={isAuthenticated ? actionRequiredTotal : 0}
       />
 
       {/* Global Toast Message */}
@@ -774,19 +775,29 @@ const BookCircleMain: React.FC = () => {
           />
 
           <Route
-            path="/requests"
+            path="/activity"
             element={
-              <MyBooksPage
-                key="my-books-requests"
-                initialSubTab="requests"
-                myBooks={currentUserShelfBooks}
-                onUpdateBookStatus={handleUpdateBookStatus}
-                onDeleteBook={handleDeleteBook}
-                onBookAdded={handleGlobalBookAdded}
+              <ActivityPage
                 onNavigateToMessages={(name) => {
                   setSelectedChatParticipant(name);
                   navigate(`/messages?chat=${encodeURIComponent(name)}`);
                 }}
+                onOpenAddBook={() => setIsGlobalAddBookOpen(true)}
+              />
+            }
+          />
+
+          {/* Backward compatibility: redirect /requests to /activity */}
+          <Route
+            path="/requests"
+            element={
+              <ActivityPage
+                initialTab="lending"
+                onNavigateToMessages={(name) => {
+                  setSelectedChatParticipant(name);
+                  navigate(`/messages?chat=${encodeURIComponent(name)}`);
+                }}
+                onOpenAddBook={() => setIsGlobalAddBookOpen(true)}
               />
             }
           />
@@ -881,7 +892,7 @@ const BookCircleMain: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={handleTabChange}
         unreadMessages={isAuthenticated ? 1 : 0}
-        pendingRequests={isAuthenticated ? 1 : 0}
+        activityBadgeCount={isAuthenticated ? actionRequiredTotal : 0}
       />
 
       {/* First-Visit Dismissible Onboarding Modal */}
@@ -972,7 +983,9 @@ const BookCircleMain: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <BookCircleMain />
+      <ExchangeProvider>
+        <BookCircleMain />
+      </ExchangeProvider>
     </AuthProvider>
   );
 };

@@ -16,6 +16,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { Book, Reader } from '../../types';
 import { ReturnReliabilityModal } from './ReturnReliabilityModal';
+import { useAuth } from '../../context/AuthContext';
 
 interface PublicProfilePageProps {
   reader: Reader;
@@ -41,16 +42,37 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [notifiedBooks, setNotifiedBooks] = useState<Record<string, boolean>>({});
 
+  const { currentUser } = useAuth();
+  const isOwnProfile = Boolean(
+    currentUser &&
+      ((reader.id && currentUser.id === reader.id) ||
+        (currentUser.displayName &&
+          reader.name &&
+          currentUser.displayName.toLowerCase().trim() === reader.name.toLowerCase().trim()))
+  );
+
   // Filter books owned by this reader
   const readerBooks = useMemo(() => {
     const readerNameNormalized = reader.name.toLowerCase().trim();
     const books = allBooks.filter((book) => {
       const ownerNormalized = book.ownerName.toLowerCase().trim();
-      return (
+      const isOwner =
         ownerNormalized === readerNameNormalized ||
         ownerNormalized.includes(readerNameNormalized) ||
-        readerNameNormalized.includes(ownerNormalized)
-      );
+        readerNameNormalized.includes(ownerNormalized);
+      if (!isOwner) return false;
+
+      // Privacy Isolation: Non-owners NEVER see private collection books on another user's public profile
+      if (!isOwnProfile) {
+        if (
+          book.availabilityMode === 'personal' ||
+          book.status === 'claimed' ||
+          (book.description && book.description.includes('[PRIVATE_COLLECTION]'))
+        ) {
+          return false;
+        }
+      }
+      return true;
     });
 
     // If no direct matches in global catalog, provide default books for this reader
@@ -61,12 +83,12 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
         ownerName: reader.name,
         ownerAvatar: reader.avatar,
         distance: reader.distance,
-        availabilityMode: (idx === 2 ? 'personal' : idx % 2 === 0 ? 'lending' : 'donation') as 'lending' | 'donation' | 'personal',
+        availabilityMode: (idx % 2 === 0 ? 'lending' : 'donation') as 'lending' | 'donation' | 'personal',
         status: (idx === 3 ? 'lent_out' : idx % 2 === 0 ? 'available' : 'donation') as 'available' | 'lent_out' | 'donation'
       }));
     }
     return books;
-  }, [allBooks, reader]);
+  }, [allBooks, reader, isOwnProfile]);
 
   // Derived counts
   const lendingCount = readerBooks.filter((b) => b.availabilityMode === 'lending' && b.status === 'available').length;
@@ -309,7 +331,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
           <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mt-1">
             Total Shelf Books
           </span>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">Physical collection</span>
+          <span className="text-[11px] text-slate-500 mt-0.5 block">Physical collection</span>
         </div>
 
         <div className="bg-purple-50/60 p-4 rounded-2xl border border-purple-200/60 shadow-xs">
@@ -356,7 +378,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id as any)}
               className={`relative pb-3 text-base sm:text-lg font-serif transition-colors ${
-                isActive ? 'text-slate-900 font-semibold' : 'text-slate-400 hover:text-slate-700 font-medium'
+                isActive ? 'text-slate-900 font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
               }`}
             >
               <span>{tab.label}</span>
@@ -444,7 +466,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
               <HugeiconsIcon
                 icon={Search01Icon}
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
               />
               <input
                 type="text"
@@ -458,7 +480,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
 
           {/* Genre Chips */}
           <div className="flex items-center gap-2 flex-wrap pt-1">
-            <span className="text-xs font-medium text-slate-400 mr-1">Genre:</span>
+            <span className="text-xs font-medium text-slate-500 mr-1">Genre:</span>
             {['All', 'Fiction', 'Non-fiction', 'History', 'Science', 'Poetry'].map((genre) => (
               <button
                 key={genre}
@@ -526,7 +548,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
                         <HugeiconsIcon icon={StarIcon} size={14} className="text-amber-500 fill-amber-400" />
                         <span>{book.rating}</span>
-                        <span className="text-[11px] text-slate-400 font-normal">({book.reviewsCount})</span>
+                        <span className="text-[11px] text-slate-500 font-normal">({book.reviewsCount})</span>
                       </div>
 
                       {/* Action Button depending on mode */}
@@ -632,10 +654,10 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                         className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100"
                       />
                       <div>
-                        <h4 className="font-serif text-sm font-semibold text-slate-800">
+                        <h4 className="font-sans font-semibold text-sm text-slate-900">
                           {rev.neighborName}
                         </h4>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500">
                           <span className="font-medium text-brand">{rev.type}</span>
                           <span>·</span>
                           <span>For “{rev.bookTitle}”</span>

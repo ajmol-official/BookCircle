@@ -26,6 +26,7 @@ export const BookCard: React.FC<BookCardProps> = ({
 }) => {
   const { toggleWishlist, isWishlisted } = useAuth();
   const [imageLoaded, setImageLoaded] = React.useState(false);
+  const [imageError, setImageError] = React.useState(false);
   const isSaved = isWishlisted(book.id);
   const isClaimed = book.status === 'claimed';
   const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
@@ -42,19 +43,30 @@ export const BookCard: React.FC<BookCardProps> = ({
         {/* Book Cover Image & Badge with Shimmer Skeleton */}
         <div className="relative w-full h-56 sm:h-60 rounded-xl overflow-hidden bg-slate-100 mb-4 shadow-inner">
           {/* Skeleton Shimmer */}
-          {!imageLoaded && (
+          {!imageLoaded && !imageError && (
             <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse" />
           )}
 
-          <img
-            src={book.coverImage}
-            alt={`Cover of ${book.title} by ${book.author}`}
-            onLoad={() => setImageLoaded(true)}
-            className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${
-              imageLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-            loading="lazy"
-          />
+          {imageError || !book.coverImage ? (
+            <div className="w-full h-full bg-gradient-to-br from-brand/10 via-[#FDF8F2] to-amber-500/10 flex flex-col items-center justify-center p-4 text-center select-none">
+              <HugeiconsIcon icon={BookOpen01Icon} size={36} className="text-brand/60 mb-2" />
+              <span className="font-serif font-semibold text-slate-800 text-sm line-clamp-2 px-2">
+                {book.title}
+              </span>
+              <span className="text-xs text-slate-500 mt-1 line-clamp-1">{book.author}</span>
+            </div>
+          ) : (
+            <img
+              src={book.coverImage}
+              alt={`Cover of ${book.title} by ${book.author}`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              loading="lazy"
+            />
+          )}
           {/* Subtle gradient overlay on bottom of image */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 pointer-events-none" />
 
@@ -82,7 +94,7 @@ export const BookCard: React.FC<BookCardProps> = ({
               e.stopPropagation();
               toggleWishlist(book.id);
             }}
-            className={`absolute top-3 right-3 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all active:scale-90 shadow-sm z-10 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none ${
+            className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all active:scale-90 shadow-sm z-10 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none ${
               isSaved
                 ? 'bg-rose-500 text-white shadow-rose-500/30'
                 : 'bg-slate-900/60 text-white hover:bg-slate-900/85 hover:text-rose-300'

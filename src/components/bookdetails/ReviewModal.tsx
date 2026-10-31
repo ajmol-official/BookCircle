@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Cancel01Icon,
   StarIcon,
   CheckmarkCircle02Icon
 } from '@hugeicons/core-free-icons';
+import { useAuth } from '../../context/AuthContext';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -19,10 +20,27 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   bookTitle,
   onReviewSubmitted
 }) => {
+  const { currentUser } = useAuth();
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [reviewText, setReviewText] = useState<string>('');
   const [submitted, setSubmitted] = useState<boolean>(false);
+
+  // Lock body scroll and listen for Escape key when open
+  useEffect(() => {
+    if (!isOpen) return;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -33,9 +51,9 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     setSubmitted(true);
     setTimeout(() => {
       onReviewSubmitted({
-        author: 'Maya Rahman',
+        author: currentUser?.displayName || 'Community Reader',
         rating,
-        text: reviewText
+        text: reviewText.trim()
       });
       setSubmitted(false);
       setReviewText('');
@@ -46,6 +64,9 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Review ${bookTitle}`}
         className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >

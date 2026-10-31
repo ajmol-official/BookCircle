@@ -23,7 +23,7 @@ export const FloatingAddBookButton: React.FC<FloatingAddBookButtonProps> = ({
         isMessagesActive
           ? 'hidden sm:flex bottom-8 right-8'
           : 'bottom-[76px] right-4 sm:bottom-8 sm:right-8 flex'
-      } items-center justify-center sm:justify-start gap-2.5 w-13 h-13 sm:w-auto sm:h-auto w-[52px] h-[52px] sm:px-5 sm:py-3.5 rounded-full bg-gradient-to-r from-brand via-[#483EA3] to-brand hover:from-brand-dark hover:to-brand-dark text-white font-semibold text-xs sm:text-sm border border-white/25 ring-4 ring-brand/15 active:ring-brand/30 transition-all duration-200`}
+      } items-center justify-center sm:justify-start gap-2.5 w-[52px] h-[52px] sm:w-auto sm:h-auto sm:px-5 sm:py-3.5 rounded-full bg-gradient-to-r from-brand via-[#483EA3] to-brand hover:from-brand-dark hover:to-brand-dark text-white font-semibold text-xs sm:text-sm border border-white/25 ring-4 ring-brand/15 active:ring-brand/30 transition-all duration-200`}
       aria-label="Add a book to your shelf"
       title="Add a book to your shelf"
     >

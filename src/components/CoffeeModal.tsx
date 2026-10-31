@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Coffee02Icon,
@@ -6,6 +6,7 @@ import {
   FavouriteIcon,
   Tick01Icon
 } from '@hugeicons/core-free-icons';
+import { useAuth } from '../context/AuthContext';
 
 interface CoffeeModalProps {
   isOpen: boolean;
@@ -13,9 +14,26 @@ interface CoffeeModalProps {
 }
 
 export const CoffeeModal: React.FC<CoffeeModalProps> = ({ isOpen, onClose }) => {
+  const { currentUser } = useAuth();
   const [selectedAmount, setSelectedAmount] = useState<number>(3);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+
+  // Lock body scroll and listen for Escape key when open
+  useEffect(() => {
+    if (!isOpen) return;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -33,13 +51,17 @@ export const CoffeeModal: React.FC<CoffeeModalProps> = ({ isOpen, onClose }) => 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="coffee-modal-title"
         className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+          className="absolute top-5 right-5 p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition"
+          aria-label="Close"
         >
           <HugeiconsIcon icon={Cancel01Icon} size={18} />
         </button>
@@ -50,7 +72,7 @@ export const CoffeeModal: React.FC<CoffeeModalProps> = ({ isOpen, onClose }) => 
             <HugeiconsIcon icon={Coffee02Icon} size={28} />
           </div>
 
-          <h3 className="font-serif text-2xl font-semibold text-slate-800">
+          <h3 id="coffee-modal-title" className="font-serif text-2xl font-semibold text-slate-800">
             Buy Us a Coffee
           </h3>
           <p className="mt-2 text-sm text-slate-500 leading-relaxed">
@@ -63,7 +85,9 @@ export const CoffeeModal: React.FC<CoffeeModalProps> = ({ isOpen, onClose }) => 
             <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center">
               <HugeiconsIcon icon={Tick01Icon} size={20} />
             </div>
-            <p className="font-semibold text-base">Thank you so much, Maya!</p>
+            <p className="font-semibold text-base">
+              Thank you so much, {currentUser?.displayName ? currentUser.displayName.split(' ')[0] : 'neighbor'}!
+            </p>
             <p className="text-xs text-emerald-700">Your love fuels the reading circle.</p>
           </div>
         ) : (

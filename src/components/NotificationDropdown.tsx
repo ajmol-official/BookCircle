@@ -20,7 +20,7 @@ export interface NotificationItem {
   time: string;
   type: 'request' | 'approved' | 'meetup' | 'message' | 'wishlist_available';
   unread: boolean;
-  targetTab?: 'requests' | 'messages' | 'my-books' | 'book-details' | 'wishlist';
+  targetTab?: 'requests' | 'activity' | 'messages' | 'my-books' | 'book-details' | 'wishlist';
   bookId?: string;
 }
 
@@ -197,7 +197,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           }}
           className="w-full py-2 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold transition shadow-xs text-center flex items-center justify-center gap-1.5"
         >
-          <span>View All Borrow Requests</span>
+          <span>View All Activity</span>
         </button>
       </div>
         </motion.div>

@@ -78,7 +78,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           
           {/* Search Input */}
           <div className="flex items-center gap-3 flex-1 w-full px-2">
-            <HugeiconsIcon icon={Search01Icon} size={20} className="text-slate-400 flex-shrink-0" />
+            <HugeiconsIcon icon={Search01Icon} size={20} className="text-slate-500 flex-shrink-0" />
             <input
               type="text"
               value={searchQuery}
@@ -89,7 +89,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery('')}
-                className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition"
+                className="p-1 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-700 transition"
               >
                 <HugeiconsIcon icon={Cancel01Icon} size={16} />
               </button>

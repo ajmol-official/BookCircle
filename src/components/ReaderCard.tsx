@@ -251,7 +251,7 @@ export const ReaderCard: React.FC<ReaderCardProps> = ({ reader, onBrowseShelf })
               {joinedYear && (
                 <>
                   <span className="text-[11px] text-slate-300 hidden sm:inline">·</span>
-                  <span className="text-[11px] text-slate-400 hidden sm:inline">
+                  <span className="text-[11px] text-slate-500 hidden sm:inline">
                     Joined {joinedYear}
                   </span>
                 </>

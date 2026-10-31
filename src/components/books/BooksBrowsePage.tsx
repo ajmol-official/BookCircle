@@ -74,11 +74,15 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
 
     books.forEach((b) => {
       // Private Collection books never appear in community discovery or counts
-      if (b.availabilityMode === 'personal') return;
+      if (
+        b.availabilityMode === 'personal' ||
+        b.status === 'claimed' ||
+        (b.description && b.description.includes('[PRIVATE_COLLECTION]'))
+      ) {
+        return;
+      }
 
-      if (b.status === 'claimed') {
-        // Claimed gifts are archived
-      } else if (b.availabilityMode === 'donation' || b.status === 'donation') {
+      if (b.availabilityMode === 'donation' || b.status === 'donation') {
         donationCount++;
       } else if (b.status === 'available') {
         lendingCount++;
@@ -168,7 +172,11 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
     return books
       .filter((book) => {
         // 0. Private Collection Isolation: Never show in global discovery or search
-        if (book.availabilityMode === 'personal') {
+        if (
+          book.availabilityMode === 'personal' ||
+          book.status === 'claimed' ||
+          (book.description && book.description.includes('[PRIVATE_COLLECTION]'))
+        ) {
           return false;
         }
 
@@ -189,9 +197,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
         // 2. Availability Mode / Tab Selection
         if (activeAvailabilityTab !== 'all') {
           const isLending = book.status === 'available' && book.availabilityMode !== 'donation';
-          const isDonation =
-            (book.availabilityMode === 'donation' || book.status === 'donation') &&
-            book.status !== 'claimed';
+          const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
           const isLentOut = book.status === 'lent_out';
 
           if (activeAvailabilityTab === 'lending' && !isLending) return false;

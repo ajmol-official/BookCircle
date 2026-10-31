@@ -73,7 +73,7 @@ export const NotFoundPage: React.FC<NotFoundPageProps> = ({
       </div>
 
       {/* Quick Links Footer */}
-      <div className="mt-12 pt-8 border-t border-slate-200/80 max-w-sm w-full text-xs text-slate-400">
+      <div className="mt-12 pt-8 border-t border-slate-200/80 max-w-sm w-full text-xs text-slate-500">
         <p>BookCircle · Sharing books within your local neighborhood</p>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -37,6 +38,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   onRemoveWishlist,
   onSimulateReturn
 }) => {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'available' | 'lent_out'>('all');
 
   // Filter books in user's wishlist
@@ -103,7 +105,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
               {/* Close Button */}
               <button
                 onClick={onClose}
-                className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                className="p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition"
                 aria-label="Close"
               >
                 <HugeiconsIcon icon={Cancel01Icon} size={18} />
@@ -164,7 +166,10 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                       : 'Switch tabs to see all your saved books.'}
                   </p>
                   <button
-                    onClick={onClose}
+                    onClick={() => {
+                      onClose();
+                      navigate('/books');
+                    }}
                     className="mt-5 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-xs shadow-sm transition active:scale-95 flex items-center gap-2"
                   >
                     <span>Browse Books</span>

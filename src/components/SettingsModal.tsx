@@ -26,7 +26,7 @@ const ToggleRow: React.FC<ToggleRowProps> = ({ label, description, value, onChan
   <div className="flex items-center justify-between py-3">
     <div className="pr-4">
       <p className="text-sm font-semibold text-slate-800">{label}</p>
-      <p className="text-xs text-slate-400 mt-0.5">{description}</p>
+      <p className="text-xs text-slate-500 mt-0.5">{description}</p>
     </div>
     <button
       type="button"
@@ -82,6 +82,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-dialog-title"
         className="relative w-full max-w-lg bg-cream rounded-3xl shadow-2xl border border-slate-200/80 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -89,12 +92,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         <div className="sticky top-0 z-10 bg-cream/95 backdrop-blur-md px-6 sm:px-8 pt-6 pb-4 border-b border-slate-200/80">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="font-serif text-2xl font-semibold text-slate-800">Settings</h3>
+              <h3 id="settings-dialog-title" className="font-serif text-2xl font-semibold text-slate-800">Settings</h3>
               <p className="text-xs text-slate-500 mt-0.5">Account & notification preferences</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition"
+              className="p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 transition"
               aria-label="Close settings"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={18} />
@@ -187,7 +190,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             <div className="bg-white rounded-2xl border border-slate-200/80 px-4 divide-y divide-slate-100">
               <div className="py-3">
                 <p className="text-sm font-semibold text-slate-800">Default Search Radius</p>
-                <p className="text-xs text-slate-400 mt-0.5 mb-2">How far to show books and readers by default</p>
+                <p className="text-xs text-slate-500 mt-0.5 mb-2">How far to show books and readers by default</p>
                 <div className="grid grid-cols-2 gap-2">
                   {['Within 2km', 'Within 5km', 'Within 10km', 'Within 25km'].map((r) => (
                     <button
@@ -228,7 +231,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   <p className="text-sm font-semibold text-slate-800">
                     {currentUser?.email ? 'Email Address' : 'Verified Phone Number'}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     {currentUser?.email || currentUser?.phoneNumber || 'Not signed in'}
                   </p>
                 </div>
@@ -239,7 +242,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-800">Password</p>
-                  <p className="text-xs text-slate-400">Last changed 3 months ago</p>
+                  <p className="text-xs text-slate-500">Last changed 3 months ago</p>
                 </div>
                 <button className="text-xs text-brand font-semibold hover:underline">Change</button>
               </div>
