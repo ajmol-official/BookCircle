@@ -301,7 +301,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
       </div>
 
       {/* 4. Numerical Activity Metrics: Specifically Highlights Lending vs Donation */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 py-6 border-y border-slate-200/80">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white/80 p-4 rounded-2xl border border-slate-200/60 shadow-xs">
           <span className="font-serif text-3xl sm:text-4xl font-bold text-slate-800">
             {totalBooksCount}
