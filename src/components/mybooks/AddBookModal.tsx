@@ -819,23 +819,13 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
 
             {/* Action Buttons */}
             <div className="pt-3">
-              <div className="flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="text-slate-500 hover:text-slate-800 text-sm font-medium py-2.5 px-4 rounded-xl hover:bg-slate-100 transition shrink-0"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  className="flex-1 py-3 px-6 rounded-xl bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-medium text-sm flex items-center justify-center gap-2 shadow-md transition"
-                >
-                  <HugeiconsIcon icon={BookOpen02Icon} size={18} />
-                  <span>List book</span>
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="w-full py-3 px-6 rounded-xl bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-medium text-sm flex items-center justify-center gap-2 shadow-md transition"
+              >
+                <HugeiconsIcon icon={BookOpen02Icon} size={18} />
+                <span>List book</span>
+              </button>
 
               {/* Mode Toggle Link */}
               <div className="mt-3.5 text-center">
