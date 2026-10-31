@@ -13,38 +13,10 @@ import {
   ArrowLeft01Icon,
   BubbleChatIcon
 } from '@hugeicons/core-free-icons';
+import { useMessaging } from '../../context/MessagingContext';
+import type { ChatMessage, Conversation } from '../../types/messaging';
 
-export interface ChatMessage {
-  id: string;
-  sender: 'user' | 'other';
-  senderName: string;
-  senderAvatar: string;
-  text: string;
-  time: string;
-}
-
-export interface Conversation {
-  id: string;
-  participantName: string;
-  participantAvatar: string;
-  participantTrust: string;
-  bookTitle: string;
-  bookAuthor: string;
-  bookCover: string;
-  catalogId?: string;
-  role: 'Lender' | 'Borrower';
-  status: 'accepted' | 'pending';
-  lastMessage: string;
-  lastMessageTime: string;
-  unreadCount?: number;
-  meetupDetails?: {
-    date: string;
-    time: string;
-    spot: string;
-  };
-  initialNote?: string;
-  messages: ChatMessage[];
-}
+export type { ChatMessage, Conversation };
 
 interface InboxPageProps {
   initialOwnerName?: string | null;
@@ -52,150 +24,45 @@ interface InboxPageProps {
 }
 
 export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
-  const [conversations, setConversations] = useState<Conversation[]>([
-    {
-      id: 'conv-1',
-      participantName: 'Diego Ramirez',
-      participantAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-      participantTrust: '4.9 ★ (Verified Lender)',
-      bookTitle: 'The Overstory',
-      bookAuthor: 'Richard Powers',
-      bookCover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=200',
-      catalogId: 'the-overstory',
-      role: 'Lender',
-      status: 'accepted',
-      lastMessage: 'Riverside Coffee works great for me tomorrow at 10 AM. See you there!',
-      lastMessageTime: '10:14 AM',
-      unreadCount: 1,
-      meetupDetails: {
-        date: 'Fri 25 Apr',
-        time: '10:00 AM',
-        spot: 'Riverside Coffee, Rampura'
-      },
-      messages: [
-        {
-          id: 'm-1',
-          sender: 'other',
-          senderName: 'Diego Ramirez',
-          senderAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-          text: 'Hi Maya! I have accepted your request for The Overstory. Looking forward to lending it to you!',
-          time: 'Yesterday 4:15 PM'
-        },
-        {
-          id: 'm-2',
-          sender: 'user',
-          senderName: 'You',
-          senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-          text: 'Thank you so much Diego! I have been looking for this edition for months. Where is best to meet?',
-          time: 'Yesterday 4:18 PM'
-        },
-        {
-          id: 'm-3',
-          sender: 'other',
-          senderName: 'Diego Ramirez',
-          senderAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-          text: 'Riverside Coffee works great for me tomorrow at 10 AM. I will be sitting near the corner table with the book on the table.',
-          time: '10:02 AM'
-        },
-        {
-          id: 'm-4',
-          sender: 'user',
-          senderName: 'You',
-          senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-          text: 'Perfect! I will see you there around 10. Thanks again!',
-          time: '10:14 AM'
-        }
-      ]
-    },
-    {
-      id: 'conv-2',
-      participantName: 'Hana Yamada',
-      participantAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-      participantTrust: '4.8 ★ (Community Leader)',
-      bookTitle: 'Sapiens: A Brief History of Humankind',
-      bookAuthor: 'Yuval Noah Harari',
-      bookCover: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&q=80&w=200',
-      catalogId: 'sapiens',
-      role: 'Lender',
-      status: 'accepted',
-      lastMessage: 'Saturday at Elm Park Library works perfectly for me!',
-      lastMessageTime: 'Yesterday',
-      meetupDetails: {
-        date: 'Sat 26 Apr',
-        time: '11:30 AM',
-        spot: 'Elm Park Library entrance'
-      },
-      messages: [
-        {
-          id: 'm-201',
-          sender: 'other',
-          senderName: 'Hana Yamada',
-          senderAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-          text: 'Hi Maya! Hope you are enjoying Sapiens. Let me know when you are ready to arrange the return handover.',
-          time: '2 days ago'
-        },
-        {
-          id: 'm-202',
-          sender: 'user',
-          senderName: 'You',
-          senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-          text: 'Hi Hana! I just finished the final chapter yesterday. I have scheduled a return meetup for Saturday at Elm Park Library.',
-          time: 'Yesterday'
-        },
-        {
-          id: 'm-203',
-          sender: 'other',
-          senderName: 'Hana Yamada',
-          senderAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-          text: 'Saturday at Elm Park Library works perfectly for me! See you at 11:30 AM.',
-          time: 'Yesterday'
-        }
-      ]
-    },
-    {
-      id: 'conv-3',
-      participantName: 'Jonas Meier',
-      participantAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-      participantTrust: '4.7 ★ (Active Lender)',
-      bookTitle: 'The Night Circus',
-      bookAuthor: 'Erin Morgenstern',
-      bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200',
-      catalogId: 'the-night-circus',
-      role: 'Lender',
-      status: 'pending', // Pending acceptance rule: locked!
-      lastMessage: 'Borrow request sent · Awaiting Jonas Meier acceptance',
-      lastMessageTime: 'Yesterday',
-      initialNote: 'Hi Jonas! I would love to borrow The Night Circus. I take great care of books and will return it on time.',
-      meetupDetails: {
-        date: 'Sat 26 Apr',
-        time: '2:00 PM',
-        spot: 'Elm Park Library entrance'
-      },
-      messages: []
-    }
-  ]);
-
+  const {
+    conversations,
+    sendMessage,
+    simulateAcceptance,
+    drafts,
+    setDraft,
+    markAsRead,
+  } = useMessaging();
   // Active selected conversation
   const [selectedConvId, setSelectedConvId] = useState<string>(() => {
-    if (initialOwnerName) {
+    if (initialOwnerName && conversations.length > 0) {
       const match = conversations.find(
         (c) => c.participantName.toLowerCase() === initialOwnerName.toLowerCase()
       );
       if (match) return match.id;
     }
-    return conversations[0].id;
+    return conversations[0]?.id || 'conv-1';
   });
 
   const [mobileView, setMobileView] = useState<'list' | 'chat'>(initialOwnerName ? 'chat' : 'list');
   const [filter, setFilter] = useState<'all' | 'accepted' | 'pending'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [inputMessage, setInputMessage] = useState('');
+
+  const currentConv = conversations.find((c) => c.id === selectedConvId) || conversations[0];
+  const inputMessage = drafts[currentConv?.id || ''] || '';
+  const setInputMessage = (val: string) => {
+    if (currentConv) setDraft(currentConv.id, val);
+  };
 
   const acceptedCount = conversations.filter((c) => c.status === 'accepted').length;
   const pendingCount = conversations.filter((c) => c.status === 'pending').length;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const currentConv = conversations.find((c) => c.id === selectedConvId) || conversations[0];
+  // Mark as read when selected
+  useEffect(() => {
+    if (selectedConvId) {
+      markAsRead(selectedConvId);
+    }
+  }, [selectedConvId, markAsRead]);
 
   const filteredConversations = conversations.filter((c) => {
     if (filter === 'accepted' && c.status !== 'accepted') return false;
@@ -213,63 +80,17 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
   // Scroll to latest message smoothly when messages change or conversation switches
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [selectedConvId, currentConv.messages.length]);
+  }, [selectedConvId, currentConv?.messages.length]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim() || currentConv.status !== 'accepted') return;
-
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: 'user',
-      senderName: 'You',
-      senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-      text: inputMessage.trim(),
-      time: 'Just now'
-    };
-
-    setConversations((prev) =>
-      prev.map((c) => {
-        if (c.id === currentConv.id) {
-          return {
-            ...c,
-            lastMessage: newMsg.text,
-            lastMessageTime: 'Just now',
-            messages: [...c.messages, newMsg]
-          };
-        }
-        return c;
-      })
-    );
-
-    setInputMessage('');
+    if (!inputMessage.trim() || !currentConv || currentConv.status !== 'accepted') return;
+    await sendMessage(currentConv.id, inputMessage);
   };
 
   // Demo simulator to allow user to simulate Jonas accepting the request
   const handleSimulateAcceptance = (convId: string) => {
-    setConversations((prev) =>
-      prev.map((c) => {
-        if (c.id === convId) {
-          return {
-            ...c,
-            status: 'accepted',
-            lastMessage: 'Hi Maya! I have accepted your borrowing request! Looking forward to meeting.',
-            lastMessageTime: 'Just now',
-            messages: [
-              {
-                id: `msg-accept-${Date.now()}`,
-                sender: 'other',
-                senderName: c.participantName,
-                senderAvatar: c.participantAvatar,
-                text: `Hi Maya! I have accepted your borrowing request for “${c.bookTitle}”. Elm Park Library on Saturday at 2:00 PM works great!`,
-                time: 'Just now'
-              }
-            ]
-          };
-        }
-        return c;
-      })
-    );
+    simulateAcceptance(convId);
   };
 
   const quickReplies = [

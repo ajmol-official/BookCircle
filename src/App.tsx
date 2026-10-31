@@ -38,6 +38,8 @@ import { NotFoundPage } from './components/NotFoundPage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ExchangeProvider, useExchanges } from './context/ExchangeContext';
+import { MessagingProvider, useMessaging } from './context/MessagingContext';
+import { FloatingChatWidget } from './components/chat/FloatingChatWidget';
 import { mockBooks, mockReaders } from './data/mockData';
 import type { Book, Reader } from './types';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -216,6 +218,11 @@ const BookCircleMain: React.FC = () => {
   } = useAuth();
 
   const { actionRequiredTotal, createBorrowRequest, createGiftClaim } = useExchanges();
+  const { openFloatingChat, totalUnreadCount } = useMessaging();
+
+  const handleOpenFloatingChat = (name: string, bookTitle?: string) => {
+    openFloatingChat(name, bookTitle);
+  };
 
   // Scroll to top upon route change
   useEffect(() => {
@@ -766,9 +773,8 @@ const BookCircleMain: React.FC = () => {
                 onUpdateBookStatus={handleUpdateBookStatus}
                 onDeleteBook={handleDeleteBook}
                 onBookAdded={handleGlobalBookAdded}
-                onNavigateToMessages={(name) => {
-                  setSelectedChatParticipant(name);
-                  navigate(`/messages?chat=${encodeURIComponent(name)}`);
+                onNavigateToMessages={(name, bookTitle) => {
+                  handleOpenFloatingChat(name, bookTitle);
                 }}
               />
             }
@@ -778,9 +784,8 @@ const BookCircleMain: React.FC = () => {
             path="/activity"
             element={
               <ActivityPage
-                onNavigateToMessages={(name) => {
-                  setSelectedChatParticipant(name);
-                  navigate(`/messages?chat=${encodeURIComponent(name)}`);
+                onNavigateToMessages={(name, bookTitle) => {
+                  handleOpenFloatingChat(name, bookTitle);
                 }}
                 onOpenAddBook={() => setIsGlobalAddBookOpen(true)}
               />
@@ -793,9 +798,8 @@ const BookCircleMain: React.FC = () => {
             element={
               <ActivityPage
                 initialTab="lending"
-                onNavigateToMessages={(name) => {
-                  setSelectedChatParticipant(name);
-                  navigate(`/messages?chat=${encodeURIComponent(name)}`);
+                onNavigateToMessages={(name, bookTitle) => {
+                  handleOpenFloatingChat(name, bookTitle);
                 }}
                 onOpenAddBook={() => setIsGlobalAddBookOpen(true)}
               />
@@ -842,8 +846,7 @@ const BookCircleMain: React.FC = () => {
                 onSelectBook={handleSelectBook}
                 onRequestBorrow={handleDetailsRequestBorrow}
                 onSendMessage={(name) => {
-                  setSelectedChatParticipant(name);
-                  navigate(`/messages?chat=${encodeURIComponent(name)}`);
+                  handleOpenFloatingChat(name);
                 }}
               />
             }
@@ -891,7 +894,7 @@ const BookCircleMain: React.FC = () => {
       <MobileNavBar
         activeTab={activeTab}
         setActiveTab={handleTabChange}
-        unreadMessages={isAuthenticated ? 1 : 0}
+        unreadMessages={isAuthenticated ? totalUnreadCount : 0}
         activityBadgeCount={isAuthenticated ? actionRequiredTotal : 0}
       />
 
@@ -937,6 +940,9 @@ const BookCircleMain: React.FC = () => {
         onClick={handleFloatingAddBook}
         isMessagesActive={isMessagesActive}
       />
+
+      {/* Contextual Floating Chat Widget */}
+      <FloatingChatWidget />
 
       {/* Global Add Book Modal */}
       <AddBookModal
@@ -984,7 +990,9 @@ export const App: React.FC = () => {
   return (
     <AuthProvider>
       <ExchangeProvider>
-        <BookCircleMain />
+        <MessagingProvider>
+          <BookCircleMain />
+        </MessagingProvider>
       </ExchangeProvider>
     </AuthProvider>
   );
