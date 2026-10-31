@@ -184,44 +184,15 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
 
   return (
     <div className="pt-6 pb-24 animate-in fade-in duration-200 space-y-8">
-      {/* 1. Top Action Navigation */}
-      <div className="flex items-center justify-end gap-3">
-        <button
-          onClick={handleShareProfile}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200/90 text-slate-700 hover:text-brand hover:border-brand/40 text-xs font-semibold shadow-xs transition"
-        >
-          {copiedLink ? (
-            <>
-              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} className="text-emerald-600" />
-              <span className="text-emerald-600">Profile Link Copied!</span>
-            </>
-          ) : (
-            <>
-              <HugeiconsIcon icon={Share01Icon} size={15} />
-              <span>Share Profile</span>
-            </>
-          )}
-        </button>
-
-        {onSendMessage && (
-          <button
-            onClick={() => onSendMessage(reader.name)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-sm transition active:scale-95"
-          >
-            <HugeiconsIcon icon={Message01Icon} size={15} />
-            <span>Message {reader.name.split(' ')[0]}</span>
-          </button>
-        )}
-      </div>
-
-      {/* 2. Public User Profile Header Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+      {/* Cohesive Public Reader Profile Header Card */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 border border-slate-200/90 shadow-card">
+        <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
+          {/* Profile Photo with Online Status Indicator */}
           <div className="relative flex-shrink-0">
             <img
               src={reader.avatar}
               alt={reader.name}
-              className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover ring-4 ring-slate-100 shadow-md"
+              className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full object-cover ring-4 ring-slate-100 shadow-md"
             />
             {/* Active / Online Dot */}
             <span
@@ -230,9 +201,11 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
             />
           </div>
 
-          <div className="space-y-2">
+          {/* Profile Details, Bio, Actions & Compact Trustworthiness */}
+          <div className="flex-1 min-w-0 space-y-3">
+            {/* Writer's Name & Verification Badge */}
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-slate-800 tracking-tight">
+              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-semibold text-slate-800 tracking-tight">
                 {reader.name}
               </h1>
               {reader.verified !== false && (
@@ -243,80 +216,85 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
               )}
             </div>
 
+            {/* Location & Membership Date */}
             <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 flex-wrap">
               <div className="flex items-center gap-1 text-slate-600 font-medium">
-                <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand flex-shrink-0" />
+                <HugeiconsIcon icon={Location01Icon} size={15} className="text-brand flex-shrink-0" />
                 <span>{reader.location || `${reader.distance} away`}</span>
               </div>
               <span className="text-slate-300">·</span>
               <span>Member since {reader.memberSince}</span>
             </div>
 
-            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed pt-1 font-sans">
+            {/* Short Profile Description */}
+            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed font-sans">
               {reader.bio ||
                 'Passionate book lover and community member. Happy to share my shelf with neighborhood readers and donate extra paperbacks to good homes.'}
             </p>
-          </div>
-        </div>
 
-        {/* Quick action button for mobile / tablet */}
-        <div className="w-full md:w-auto flex md:flex-col gap-2.5 justify-end">
-          <div className="bg-cream-200 px-4 py-3 rounded-2xl border border-slate-200/80 text-center md:text-right">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Trust Rating</p>
-            <div className="flex items-center justify-center md:justify-end gap-1.5 mt-0.5">
-              <HugeiconsIcon icon={StarIcon} size={16} className="text-amber-500 fill-amber-400" />
-              <span className="font-serif text-lg font-bold text-slate-800">{reader.rating || 4.9}</span>
-              <span className="text-xs text-slate-500">/ 5.0</span>
+            {/* Action Buttons: Message & Share Profile (directly below description, visually grouped) */}
+            <div className="flex items-center gap-2.5 pt-1 flex-wrap">
+              {onSendMessage && !isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => onSendMessage(reader.name)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95"
+                >
+                  <HugeiconsIcon icon={Message01Icon} size={15} />
+                  <span>Message {reader.name.split(' ')[0]}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleShareProfile}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 text-slate-700 hover:text-brand text-xs font-semibold shadow-xs transition active:scale-95"
+              >
+                {copiedLink ? (
+                  <>
+                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} className="text-emerald-600" />
+                    <span className="text-emerald-600">Profile Link Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <HugeiconsIcon icon={Share01Icon} size={15} />
+                    <span>Share Profile</span>
+                  </>
+                )}
+              </button>
             </div>
-            <p className="text-[11px] text-emerald-700 font-medium mt-0.5">100% on-time returns</p>
-          </div>
-        </div>
-      </div>
 
-      {/* 3. Trust & Return Reliability Banner */}
-      <div className="bg-cream-200 rounded-2xl p-6 border border-slate-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
-        <div className="flex items-center gap-6 pr-6 md:border-r border-slate-300">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Return Reliability</p>
-            <p className="font-serif text-xl sm:text-2xl font-bold text-brand mt-0.5">
-              {reader.trustTier || 'Tier 5 · Verified Master'}
-            </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              {reader.trustScore || `${reader.totalBorrows || 42}/${reader.totalBorrows || 42} returned on time`}
-            </p>
-            <button
-              type="button"
-              onClick={() => setIsReliabilityModalOpen(true)}
-              className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-brand hover:text-brand-dark bg-brand/10 hover:bg-brand/20 px-2.5 py-1 rounded-lg transition"
-            >
-              <HugeiconsIcon icon={ShieldCheckIcon} size={13} />
-              <span>5-Tier Guide</span>
-            </button>
-          </div>
-        </div>
+            {/* Trust Rating & Return Reliability (Compactly presented without a separate section) */}
+            <div className="pt-2 flex items-center gap-2.5 sm:gap-3 flex-wrap">
+              {/* Trust Rating Chip */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF6F0] border border-amber-200/70 text-slate-700 text-xs">
+                <HugeiconsIcon icon={StarIcon} size={14} className="text-amber-500 fill-amber-400" />
+                <span className="font-semibold text-slate-800">{reader.rating || 4.9}</span>
+                <span className="text-slate-400 font-normal">/ 5.0</span>
+                <span className="text-slate-300">·</span>
+                <span className="text-slate-600 font-medium">Trust Rating</span>
+              </div>
 
-        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="flex items-center gap-3">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 flex-shrink-0 shadow-xs" />
-            <div>
-              <p className="text-xs sm:text-sm font-semibold text-slate-800">Always returned on time</p>
-              <p className="text-xs text-slate-500">100% punctuality rate</p>
-            </div>
-          </div>
+              {/* Return Reliability Chip */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF6F0] border border-slate-200/80 text-slate-700 text-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+                <span className="font-semibold text-brand">
+                  {reader.trustTier || 'Tier 4 · Highly Reliable'}
+                </span>
+                <span className="text-slate-300">·</span>
+                <span className="text-slate-600 font-medium">100% on-time returns</span>
+              </div>
 
-          <div className="flex items-center gap-3">
-            <span className="w-3.5 h-3.5 rounded-full bg-brand flex-shrink-0 shadow-xs" />
-            <div>
-              <p className="text-xs sm:text-sm font-semibold text-slate-800">Active Community Lender</p>
-              <p className="text-xs text-slate-500">{reader.totalBorrows || 28}+ handovers completed</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="w-3.5 h-3.5 rounded-full bg-amber-500 flex-shrink-0 shadow-xs" />
-            <div>
-              <p className="text-xs sm:text-sm font-semibold text-slate-800">Free Book Donator</p>
-              <p className="text-xs text-slate-500">{donationCount} books permanently gifted</p>
+              {/* 5-Tier Guide Button */}
+              <button
+                type="button"
+                onClick={() => setIsReliabilityModalOpen(true)}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-brand px-2.5 py-1 rounded-lg hover:bg-slate-100 transition"
+                title="Learn about BookCircle's 5-Tier Return Reliability System"
+              >
+                <HugeiconsIcon icon={ShieldCheckIcon} size={13} className="text-brand" />
+                <span>5-Tier Guide</span>
+              </button>
             </div>
           </div>
         </div>
