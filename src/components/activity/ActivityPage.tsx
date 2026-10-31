@@ -11,6 +11,7 @@ import {
   ShieldCheckIcon,
   AlertCircleIcon,
   Notification01Icon,
+  Cancel01Icon,
 } from '@hugeicons/core-free-icons';
 import { useExchanges } from '../../context/ExchangeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -193,10 +194,39 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
   const [disputeCustomText, setDisputeCustomText] = useState('');
   const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
 
+  // Decline Request Modal State (Requirement 2)
+  const [declineTarget, setDeclineTarget] = useState<ExchangeTransaction | null>(null);
+  const [declineNote, setDeclineNote] = useState('');
+  const [isSubmittingDecline, setIsSubmittingDecline] = useState(false);
+
+  // Action Confirmation Modal State (Requirement 1 & 3)
+  interface ActionConfirmationTarget {
+    type: 'accept_meetup' | 'lender_handover' | 'borrower_handover' | 'cancel_request' | 'borrower_return_handover' | 'add_to_collection';
+    exchange: ExchangeTransaction;
+    title: string;
+    description: string;
+    confirmLabel: string;
+    cancelLabel?: string;
+    isDanger?: boolean;
+    details?: {
+      date?: string;
+      time?: string;
+      spot?: string;
+    };
+  }
+  const [actionConfirmTarget, setActionConfirmTarget] = useState<ActionConfirmationTarget | null>(null);
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+
   // Modal Scroll Lock and Escape Listener
   useEffect(() => {
     const isAnyModalOpen = Boolean(
-      returnModalTarget || inspectingExchange || ratingTarget || disputeTarget
+      returnModalTarget ||
+      inspectingExchange ||
+      ratingTarget ||
+      disputeTarget ||
+      declineTarget ||
+      actionConfirmTarget ||
+      error
     );
     if (!isAnyModalOpen) return;
 
@@ -209,6 +239,9 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
         setInspectingExchange(null);
         setRatingTarget(null);
         setDisputeTarget(null);
+        setDeclineTarget(null);
+        setActionConfirmTarget(null);
+        clearError();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -217,7 +250,62 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [returnModalTarget, inspectingExchange, ratingTarget, disputeTarget]);
+  }, [
+    returnModalTarget,
+    inspectingExchange,
+    ratingTarget,
+    disputeTarget,
+    declineTarget,
+    actionConfirmTarget,
+    error,
+    clearError,
+  ]);
+
+  // Execute Action from Confirmation Modal
+  const handleExecuteConfirmedAction = async (target: ActionConfirmationTarget) => {
+    const { type, exchange } = target;
+    switch (type) {
+      case 'accept_meetup':
+        await acceptRequest(exchange.id);
+        showToast(`Approved meetup with ${exchange.borrowerName} for “${exchange.bookTitle}”!`);
+        break;
+      case 'lender_handover':
+        await confirmPickupHandover(exchange.id, 'lender');
+        showToast(`Confirmed handing over “${exchange.bookTitle}” to ${exchange.borrowerName}!`);
+        break;
+      case 'borrower_handover':
+        await confirmPickupHandover(exchange.id, 'borrower');
+        showToast(`Confirmed receipt of “${exchange.bookTitle}” from ${exchange.ownerName}! Enjoy reading.`);
+        break;
+      case 'cancel_request':
+        await cancelRequest(exchange.id);
+        showToast(`Cancelled request for “${exchange.bookTitle}”.`);
+        break;
+      case 'borrower_return_handover':
+        await confirmReturnHandedBack(exchange.id);
+        showToast(`Confirmed handing back “${exchange.bookTitle}” to ${exchange.ownerName}!`);
+        break;
+      case 'add_to_collection':
+        await addDonationToPrivateCollection(exchange);
+        setAddedDonationIds((prev) => new Set([...prev, exchange.id]));
+        showToast(`“${exchange.bookTitle}” added to your Private Collection! Visible only to you.`);
+        break;
+    }
+  };
+
+  // Confirm Decline Handler
+  const handleConfirmDecline = async () => {
+    if (!declineTarget) return;
+    setIsSubmittingDecline(true);
+    try {
+      await declineRequest(declineTarget.id, declineNote.trim() || undefined);
+      showToast(`Declined request for “${declineTarget.bookTitle}”.`);
+      setDeclineTarget(null);
+      setDeclineNote('');
+    } finally {
+      setIsSubmittingDecline(false);
+    }
+  };
 
   // Track donations added to private collection in this session
   const [addedDonationIds, setAddedDonationIds] = useState<Set<string>>(new Set());
@@ -477,36 +565,19 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
         </div>
       )}
 
-      {/* Database / Network Error Banner with Retry */}
-      {error && (
-        <div className="my-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-900 text-xs sm:text-sm font-semibold flex items-center justify-between gap-4 animate-in fade-in duration-200 shadow-xs">
-          <div className="flex items-center gap-2">
-            <HugeiconsIcon icon={AlertCircleIcon} size={18} className="text-red-600 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={() => refreshExchanges()}
-              className="px-3 py-1 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition"
-            >
-              Retry
-            </button>
-            <button
-              onClick={clearError}
-              className="p-1 rounded-lg text-red-400 hover:text-red-700 font-bold transition"
-              title="Dismiss error"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Toast Notification */}
+      {/* Floating Centered Toast Notification */}
       {toastMessage && (
-        <div className="my-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm font-semibold flex items-center gap-2 animate-in fade-in duration-200 shadow-xs">
-          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-emerald-600 flex-shrink-0" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[90%] sm:w-auto px-4 py-3 rounded-2xl bg-slate-900 text-white text-xs sm:text-sm font-medium flex items-center gap-2.5 shadow-2xl border border-slate-800 animate-in fade-in slide-in-from-top-3 duration-200">
+          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-emerald-400 flex-shrink-0" />
+          <span className="flex-1">{toastMessage}</span>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="text-slate-400 hover:text-white p-1 transition"
+            aria-label="Dismiss notification"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -600,18 +671,31 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                       {/* Right/Footer: Action Buttons */}
                       <div className="flex items-center justify-end gap-2.5 w-full lg:w-auto pt-3.5 lg:pt-0 border-t lg:border-t-0 border-slate-100 flex-shrink-0">
                         <button
-                          onClick={async () => {
-                            await declineRequest(req.id, 'Book unavailable at this time');
-                            showToast(`Declined request for “${req.bookTitle}”.`);
+                          type="button"
+                          onClick={() => {
+                            setDeclineTarget(req);
+                            setDeclineNote('');
                           }}
                           className="flex-1 sm:flex-initial px-4 py-2.5 sm:py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition text-center"
                         >
                           Decline
                         </button>
                         <button
-                          onClick={async () => {
-                            await acceptRequest(req.id);
-                            showToast(`Approved meetup with ${req.borrowerName} for “${req.bookTitle}”!`);
+                          type="button"
+                          onClick={() => {
+                            setActionConfirmTarget({
+                              type: 'accept_meetup',
+                              exchange: req,
+                              title: req.exchangeType === 'gift' ? 'Accept Gift Claim Meetup' : 'Accept Meetup & Lend Book',
+                              description: `Are you ready to accept the meetup with ${req.borrowerName} to ${req.exchangeType === 'gift' ? 'gift' : 'lend'} “${req.bookTitle}”?`,
+                              confirmLabel: 'Confirm Accept',
+                              cancelLabel: 'Cancel',
+                              details: {
+                                date: req.meetupDate,
+                                time: req.meetupTime,
+                                spot: req.meetupSpot,
+                              },
+                            });
                           }}
                           className="flex-1 sm:flex-initial px-4 py-2.5 sm:py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
                         >
@@ -713,9 +797,21 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                             </div>
                           ) : (
                             <button
-                              onClick={async () => {
-                                await confirmPickupHandover(item.id, 'lender');
-                                showToast(`Confirmed handing over “${item.bookTitle}” to ${item.borrowerName}!`);
+                              type="button"
+                              onClick={() => {
+                                setActionConfirmTarget({
+                                  type: 'lender_handover',
+                                  exchange: item,
+                                  title: 'Confirm Book Handover',
+                                  description: `Confirm that you met ${item.borrowerName} and handed over “${item.bookTitle}”?`,
+                                  confirmLabel: 'Confirm Handover',
+                                  cancelLabel: 'Cancel',
+                                  details: {
+                                    date: item.meetupDate,
+                                    time: item.meetupTime,
+                                    spot: item.meetupSpot,
+                                  },
+                                });
                               }}
                               className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
                             >
@@ -943,9 +1039,22 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                     </div>
 
                     <button
-                      onClick={async () => {
-                        await cancelRequest(req.id);
-                        showToast(`Cancelled request for “${req.bookTitle}”.`);
+                      type="button"
+                      onClick={() => {
+                        setActionConfirmTarget({
+                          type: 'cancel_request',
+                          exchange: req,
+                          title: 'Cancel Borrow Request',
+                          description: `Are you sure you want to cancel your request for “${req.bookTitle}” sent to ${req.ownerName}?`,
+                          confirmLabel: 'Yes, Cancel Request',
+                          cancelLabel: 'Keep Request',
+                          isDanger: true,
+                          details: {
+                            date: req.meetupDate,
+                            time: req.meetupTime,
+                            spot: req.meetupSpot,
+                          },
+                        });
                       }}
                       className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition text-center"
                     >
@@ -1044,9 +1153,21 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                             </div>
                           ) : (
                             <button
-                              onClick={async () => {
-                                await confirmPickupHandover(item.id, 'borrower');
-                                showToast(`Confirmed receipt of “${item.bookTitle}” from ${item.ownerName}! Enjoy reading.`);
+                              type="button"
+                              onClick={() => {
+                                setActionConfirmTarget({
+                                  type: 'borrower_handover',
+                                  exchange: item,
+                                  title: 'Confirm Book Receipt',
+                                  description: `Confirm that you received “${item.bookTitle}” from ${item.ownerName}?`,
+                                  confirmLabel: 'Confirm Receipt',
+                                  cancelLabel: 'Cancel',
+                                  details: {
+                                    date: item.meetupDate,
+                                    time: item.meetupTime,
+                                    spot: item.meetupSpot,
+                                  },
+                                });
                               }}
                               className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
                             >
@@ -1203,9 +1324,21 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                           </div>
                         ) : (
                           <button
-                            onClick={async () => {
-                              await confirmReturnHandedBack(item.id);
-                              showToast(`Confirmed handing back “${item.bookTitle}” to ${item.ownerName}!`);
+                            type="button"
+                            onClick={() => {
+                              setActionConfirmTarget({
+                                type: 'borrower_return_handover',
+                                exchange: item,
+                                title: 'Confirm Return Handover',
+                                description: `Confirm that you have handed back “${item.bookTitle}” to ${item.ownerName}?`,
+                                confirmLabel: 'Confirm Handover',
+                                cancelLabel: 'Cancel',
+                                details: {
+                                  date: item.returnSchedule?.date,
+                                  time: item.returnSchedule?.time,
+                                  spot: item.returnSchedule?.spot,
+                                },
+                              });
                             }}
                             className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition active:scale-95"
                           >
@@ -1387,10 +1520,16 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                         </span>
                       ) : (
                         <button
-                          onClick={async () => {
-                            await addDonationToPrivateCollection(item);
-                            setAddedDonationIds((prev) => new Set(prev).add(item.id));
-                            showToast(`“${item.bookTitle}” added to your Private Collection! Visible only to you.`);
+                          type="button"
+                          onClick={() => {
+                            setActionConfirmTarget({
+                              type: 'add_to_collection',
+                              exchange: item,
+                              title: 'Add to Private Collection',
+                              description: `Add this received gift “${item.bookTitle}” to your personal private bookshelf?`,
+                              confirmLabel: 'Add to Collection',
+                              cancelLabel: 'Cancel',
+                            });
                           }}
                           className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200/80 text-xs font-semibold shadow-2xs transition active:scale-95"
                         >
@@ -1773,6 +1912,268 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                 className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95 disabled:opacity-50"
               >
                 {isSubmittingDispute ? 'Submitting...' : 'Submit Issue Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* DECLINE REQUEST CONFIRMATION MODAL (REQUIREMENT 2)                  */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {declineTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setDeclineTarget(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="decline-modal-title"
+            className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Close Button & Icon */}
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center flex-shrink-0">
+                <HugeiconsIcon icon={AlertCircleIcon} size={24} />
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeclineTarget(null)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                aria-label="Close"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} size={18} />
+              </button>
+            </div>
+
+            <h3 id="decline-modal-title" className="font-serif text-xl sm:text-2xl font-semibold text-slate-900">
+              Decline Request
+            </h3>
+            <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Are you sure you want to decline the request from <strong>{declineTarget.borrowerName}</strong> for{' '}
+              <strong>“{declineTarget.bookTitle}”</strong>?
+            </p>
+
+            {/* Book & Requester Preview Summary */}
+            <div className="mt-4 p-3 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center gap-3">
+              <SafeBookThumbnail
+                src={declineTarget.bookCover}
+                title={declineTarget.bookTitle}
+                sizeClass="w-10 h-14"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-slate-800 truncate">“{declineTarget.bookTitle}”</p>
+                <p className="text-[11px] text-slate-500 truncate">Requested by {declineTarget.borrowerName}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                  Proposed meetup: {declineTarget.meetupDate} at {declineTarget.meetupTime}
+                </p>
+              </div>
+            </div>
+
+            {/* Optional Decline Note */}
+            <div className="mt-4 space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700">
+                Optional note to {declineTarget.borrowerName}
+              </label>
+              <textarea
+                rows={3}
+                value={declineNote}
+                onChange={(e) => setDeclineNote(e.target.value)}
+                placeholder="e.g. Sorry, I am currently re-reading this book or it's temporarily unavailable..."
+                className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand placeholder:text-slate-400 resize-none transition"
+              />
+              <p className="text-[11px] text-slate-400">
+                Sending a decline note is optional. You can decline without providing a reason.
+              </p>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isSubmittingDecline}
+                onClick={() => setDeclineTarget(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingDecline}
+                onClick={handleConfirmDecline}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white font-semibold text-xs sm:text-sm shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {isSubmittingDecline ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Declining...</span>
+                  </>
+                ) : (
+                  <span>Confirm Decline</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* ACTION CONFIRMATION MODAL (REQUIREMENT 1 & 3)                        */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {actionConfirmTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setActionConfirmTarget(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="action-confirm-title"
+            className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Close Button & Icon */}
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  actionConfirmTarget.isDanger
+                    ? 'bg-rose-100 text-rose-700'
+                    : 'bg-brand/10 text-brand'
+                }`}
+              >
+                <HugeiconsIcon
+                  icon={actionConfirmTarget.isDanger ? AlertCircleIcon : CheckmarkCircle02Icon}
+                  size={24}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setActionConfirmTarget(null)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                aria-label="Close"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} size={18} />
+              </button>
+            </div>
+
+            <h3 id="action-confirm-title" className="font-serif text-xl sm:text-2xl font-semibold text-slate-900">
+              {actionConfirmTarget.title}
+            </h3>
+            <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              {actionConfirmTarget.description}
+            </p>
+
+            {/* Book & Context Summary Card */}
+            <div className="mt-4 p-3 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center gap-3">
+              <SafeBookThumbnail
+                src={actionConfirmTarget.exchange.bookCover}
+                title={actionConfirmTarget.exchange.bookTitle}
+                sizeClass="w-10 h-14"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-slate-800 truncate">
+                  “{actionConfirmTarget.exchange.bookTitle}”
+                </p>
+                <p className="text-[11px] text-slate-500 truncate">
+                  by {actionConfirmTarget.exchange.bookAuthor}
+                </p>
+                {actionConfirmTarget.details && (
+                  <p className="text-[10px] text-slate-500 mt-0.5 truncate">
+                    {actionConfirmTarget.details.date && `${actionConfirmTarget.details.date} at `}
+                    {actionConfirmTarget.details.time}
+                    {actionConfirmTarget.details.spot && ` @ ${actionConfirmTarget.details.spot}`}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isSubmittingAction}
+                onClick={() => setActionConfirmTarget(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition disabled:opacity-50"
+              >
+                {actionConfirmTarget.cancelLabel || 'Cancel'}
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingAction}
+                onClick={async () => {
+                  setIsSubmittingAction(true);
+                  try {
+                    await handleExecuteConfirmedAction(actionConfirmTarget);
+                    setActionConfirmTarget(null);
+                  } finally {
+                    setIsSubmittingAction(false);
+                  }
+                }}
+                className={`px-5 py-2.5 rounded-xl text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5 ${
+                  actionConfirmTarget.isDanger
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-brand hover:bg-brand-dark'
+                }`}
+              >
+                {isSubmittingAction ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <span>{actionConfirmTarget.confirmLabel}</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* CENTERED ACTION NOTICE / ERROR MODAL (REQUIREMENT 1 & 3)            */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {error && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={clearError}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="error-modal-title"
+            className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-700 flex items-center justify-center mx-auto mb-4">
+              <HugeiconsIcon icon={AlertCircleIcon} size={24} />
+            </div>
+
+            <h3 id="error-modal-title" className="font-serif text-xl sm:text-2xl font-semibold text-slate-900">
+              Action Notice
+            </h3>
+            <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed max-w-sm mx-auto">
+              {error}
+            </p>
+
+            <div className="mt-6 flex items-center justify-center gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={clearError}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  clearError();
+                  refreshExchanges();
+                }}
+                className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95"
+              >
+                Retry
               </button>
             </div>
           </div>
