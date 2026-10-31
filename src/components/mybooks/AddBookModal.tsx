@@ -294,7 +294,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-book-title"
-        className="relative w-full max-w-lg bg-cream rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200/80 animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-lg bg-cream rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Hidden File Input for Image Upload */}
@@ -350,7 +350,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
 
             {/* MODE: SEARCH EXISTING BOOK */}
             {mode === 'search' && (
@@ -638,13 +638,13 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
                       </div>
                     </div>
                   ) : (
-                    /* Compact Dropzone Button */
+                    /* Clean Compact Dropzone Button */
                     <div
                       onClick={() => fileInputRef.current?.click()}
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
-                      className={`p-3 bg-white rounded-2xl border-2 border-dashed transition-all cursor-pointer flex items-center gap-3.5 ${
+                      className={`p-3.5 bg-white rounded-2xl border-2 border-dashed transition-all cursor-pointer flex items-center gap-3.5 ${
                         isDragging
                           ? 'border-brand bg-brand/5 scale-[1.01]'
                           : 'border-slate-300 hover:border-brand hover:bg-slate-50/60'
@@ -656,28 +656,11 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-slate-800">
-                          Click to browse or drag & drop cover photo
+                          Upload or choose a cover image
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">PNG, JPG, or WEBP up to 5MB</p>
-
-                        {/* Fast Preset Samples */}
-                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                          <span className="text-[10px] text-slate-400 font-medium">Or sample:</span>
-                          {PRESET_COVERS.map((preset) => (
-                            <button
-                              key={preset.id}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCoverUrl(preset.url);
-                                setIsCustomUploaded(false);
-                              }}
-                              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-brand/10 hover:text-brand text-slate-600 transition font-medium"
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
-                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1 leading-normal">
+                          Click to browse from your device or drag & drop photo (PNG, JPG, WEBP up to 5MB)
+                        </p>
                       </div>
                     </div>
                   )}
@@ -835,16 +818,27 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
             )}
 
             {/* Action Buttons */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                className="w-full py-3 px-6 rounded-xl bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-medium text-sm flex items-center justify-center gap-2 shadow-md transition"
-              >
-                <HugeiconsIcon icon={BookOpen02Icon} size={18} />
-                <span>List book</span>
-              </button>
+            <div className="pt-3">
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="text-slate-500 hover:text-slate-800 text-sm font-medium py-2.5 px-4 rounded-xl hover:bg-slate-100 transition shrink-0"
+                >
+                  Cancel
+                </button>
 
-              <div className="mt-3 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-6 rounded-xl bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-medium text-sm flex items-center justify-center gap-2 shadow-md transition"
+                >
+                  <HugeiconsIcon icon={BookOpen02Icon} size={18} />
+                  <span>List book</span>
+                </button>
+              </div>
+
+              {/* Mode Toggle Link */}
+              <div className="mt-3.5 text-center">
                 {mode === 'search' ? (
                   <button
                     type="button"
@@ -853,27 +847,19 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
                       setManualTitle(searchQuery);
                       setSelectedCatalogBook(null);
                     }}
-                    className="text-brand font-medium hover:underline transition truncate"
+                    className="text-xs text-brand font-medium hover:underline transition"
                   >
-                    Not found in list? Add manually
+                    Not found in list? Add manually with cover photo
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setMode('search')}
-                    className="text-brand font-medium hover:underline transition truncate"
+                    className="text-xs text-brand font-medium hover:underline transition"
                   >
-                    ← Search existing titles
+                    ← Already on BookCircle? Search existing titles
                   </button>
                 )}
-
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="text-slate-500 hover:text-slate-800 font-medium py-1 px-2.5 rounded-lg hover:bg-slate-100 transition shrink-0"
-                >
-                  Cancel
-                </button>
               </div>
             </div>
 
