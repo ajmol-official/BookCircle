@@ -456,24 +456,6 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
             </div>
           </div>
 
-          {/* Genre Chips */}
-          <div className="flex items-center gap-2 flex-wrap pt-1">
-            <span className="text-xs font-medium text-slate-500 mr-1">Genre:</span>
-            {['All', 'Fiction', 'Non-fiction', 'History', 'Science', 'Poetry'].map((genre) => (
-              <button
-                key={genre}
-                onClick={() => setSelectedGenre(genre)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
-                  selectedGenre === genre
-                    ? 'bg-brand text-white font-semibold shadow-xs'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {genre}
-              </button>
-            ))}
-          </div>
-
           {/* Books Grid */}
           {filteredBooks.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
