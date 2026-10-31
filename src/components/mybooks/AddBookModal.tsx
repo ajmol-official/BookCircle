@@ -12,7 +12,6 @@ import {
   Tick01Icon,
   Image01Icon,
   SparklesIcon,
-  InformationCircleIcon,
   Delete02Icon,
   Upload01Icon
 } from '@hugeicons/core-free-icons';
@@ -489,16 +488,6 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
                       )}
                     </div>
                   )}
-
-                  {/* Informational callout */}
-                  {selectedCatalogBook && (
-                    <div className="mt-2 p-2.5 bg-brand/5 rounded-xl border border-brand/20 flex items-start gap-2 text-xs text-brand-dark">
-                      <HugeiconsIcon icon={InformationCircleIcon} size={16} className="mt-0.5 flex-shrink-0 text-brand" />
-                      <p className="text-[11px] leading-relaxed">
-                        <strong className="font-semibold">Shared Community Title</strong>. Reader reviews and ratings for this title are shared across all copies.
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 {/* Author Name */}
@@ -859,9 +848,9 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full py-3 px-6 rounded-xl border border-brand text-brand hover:bg-brand/5 active:scale-[0.99] font-medium text-sm transition"
+                className="w-full py-3 px-6 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 active:scale-[0.99] font-medium text-sm transition"
               >
-                Save Privately
+                Cancel
               </button>
             </div>
 
