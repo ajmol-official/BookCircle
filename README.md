@@ -4,6 +4,15 @@
 
 ---
 
+## 📖 Documentation & Feature Deep Dives
+
+For exhaustive product specifications, UX architecture rationales, and technical diagrams, explore the dedicated documentation guides:
+
+- **[Platform Features & Architecture Specification (`docs/FEATURES.md`)](docs/FEATURES.md)** — In-depth breakdown of title catalog clustering, author directory, floating chat animations, handover wizards, return reliability tiers, and database privacy.
+- **[Author Profiles & Future Capabilities Roadmap (`docs/author-profiles-future-architecture.md`)](docs/author-profiles-future-architecture.md)** — Architectural separation of authors vs. members, profile claiming, verification badge workflows, and following systems.
+
+---
+
 ## 🚀 Tech Stack
 
 | Technology | Purpose |
@@ -12,7 +21,9 @@
 | **[TypeScript](https://www.typescriptlang.org/)** | Strict type safety, clean data interfaces, and maintainable architecture |
 | **[Tailwind CSS](https://tailwindcss.com/)** | Custom design system, responsive layouts, and modern aesthetics |
 | **[Vite](https://vitejs.dev/)** | High-performance development server with instant HMR and optimized production bundling |
+| **[Supabase](https://supabase.com/)** | Cloud PostgreSQL database, realtime synchronization, and database-level privacy enforcement |
 | **[Hugeicons](https://hugeicons.com/)** (`@hugeicons/react`) | Crisp, modern vector iconography across all views and modals |
+| **[Playwright](https://playwright.dev/)** | End-to-end automated verification suite covering desktop and mobile viewports |
 
 ---
 
@@ -30,51 +41,55 @@ Crafted with a warm, welcoming booklover palette based on the official Figma des
 
 ## ✨ Key Features & User Flows
 
-### 1. 🔍 Unified Title Catalog & Multi-Owner System
-- **Canonical Book IDs (`#BC-...`):** Every distinct title receives a unique platform catalog ID (e.g., `#BC-the-god-of-small-things`).
-- **Co-Ownership:** Multiple community members (e.g., Arif and Rahim) can list their own physical copies under the same canonical title.
-- **Aggregated Reviews:** Ratings and reader discussions stay unified under one book title regardless of how many members own a copy.
-- **Add a Book Flow:** Smart autocomplete search allows owners to quickly pick an existing title or add a new custom/translated edition with dropdowns for *Book Condition* and *Availability*.
+### 1. 🔍 Unified Title Catalog & Hyperlocal Discovery
+- **Canonical Book Clustering (`catalogId`):** Titles share canonical identifiers (e.g. `the-god-of-small-things`), grouping multiple member copies under one unified book page with aggregated reviews and ratings.
+- **Multi-Owner Support:** Multiple neighbors can list physical copies under the same title without fragmenting community discussions.
+- **Dual Browsing Modes:** Switch seamlessly between a visual 4-column **Grid View** and a high-density horizontal **Compact List View**.
+- **Distance Radius Filtering:** Filter books within 1 km, 2 km, 5 km, 10 km, or throughout the community.
 
-### 2. 🤝 Multi-Step Borrow Handover Wizard
-Structured borrowing workflow ensuring safety and accountability:
-1. **Condition Inspection:** Review physical copy quality, cover type, and existing notes.
-2. **Meetup Details:** Select friendly, public community meetup spots (e.g., local cafes, library foyers) with interactive date cards and time interval chips.
-3. **Handover Confirmation:** Digital confirmation receipt and safety guidelines before final request submission.
+### 2. ✍️ Dedicated Author Profiles & Directory (`/author/:authorId`)
+- **Universal Author Name Interaction:** Author names are clickable across book cards, book details pages, browse lists, wishlist alerts, and shelves, navigating to `/author/:authorId`.
+- **Author Information Header:** Creator photo, verified badge, nationality flag, profession, demographic facts, short biography, and curated literary achievements (e.g. *Man Booker Prize*, *Pulitzer Prize*, *Alex Award*).
+- **Bibliography Showcase:** Live count and responsive grid of physical copies circulating in the community with in-author search and category filters.
+- **Graceful Fallbacks:** Monogram avatar badges for missing photos, tasteful biography curation notices, and empty states inviting neighbors to add copies.
 
-### 3. 🔄 Streamlined Return Handover Wizard
-- Mirrors the safety and structure of the borrow flow.
-- The condition verification step is removed for speed, while retaining the exact **Meetup Time & Location Picker** and **Confirmation Receipt**.
-- Gives both lender and borrower structured handover receipts for peace of mind.
+### 3. 💬 Responsive Floating Chat Widget & Smart FAB Coordinator
+- **Contextual In-Page Communication:** Chat with neighbors without navigating away from your active page.
+- **3 Distinct Desktop States:**
+  - **Expanded (360×460px):** Fixed header, scrollable message area, and fixed message input. The floating `+ Add Book` button smoothly relocates to the left of the chat window with dynamic coordinate spacing.
+  - **Minimized (48×280px):** Compact horizontal bar displaying avatar, participant name, expand button, and unread badge. The FAB automatically rests directly above the bar.
+  - **Closed:** Dismisses chat and restores the FAB to its standard bottom-right position while preserving message history and unsent drafts.
+- **Mobile Bottom-Sheet (< 640px):** Seamless slide-up bottom sheet with top drag handle, hiding background floating buttons to maximize touch usability.
 
-### 4. 💬 Safety-First Messaging & Inbox
-- **Request-Gated Messaging:** Borrowers cannot message book owners until the owner accepts the borrow request, preventing spam and unsolicited messages.
-- **Fixed-Viewport Layout:** Zero layout shifts when switching conversations or scrolling message threads.
-- **33.3% / 66.7% Grid Ratio:** Responsive split with 4/12 left panel (conversation list with status filters) and 8/12 right panel (active conversation with meetup summary cards and quick replies).
+### 4. 📬 Safety-First Messaging & Full Messages Center (`/messages`)
+- **Request-Gated Messaging:** Prevents unsolicited spam by unlocking communication only after an owner accepts a borrow request.
+- **33.3% / 66.7% Grid Split:** Fixed-viewport layout preventing shifts between conversation list and active chat threads.
+- **Modal-to-Full Transition:** 1-click expand button (`↗`) elevates floating conversations into the full `/messages` center.
 
-### 5. 👤 Member Profile & Interactive Shelves
-- **Currently Borrowing:** Reading progress bars, due date badges, and quick one-click return requests.
-- **My Shelf & Lent Out:** Manage listed copies, toggle availability, and track who currently has each book.
-- **Profile Popover Menu:** Fast navbar access to Profile, Messages, Pending Requests, Shelves, Settings, and Log Out.
+### 5. 🤝 Structured Handover Protocols (Borrow & Return Wizards)
+- **Borrow Handover Wizard:** 3-step structured workflow covering condition inspection, public meetup selection (*Camden Coffee Roasters*, *Primrose Hill Library*), and digital confirmation receipts.
+- **Streamlined Return Wizard:** Rapid return scheduling with mutual receipts and automatic status updates.
 
-### 6. 🌟 First-Visit Onboarding & Guest Browsing
-- **Hyperlocal Welcome Card:** Compact, dismissible 3-pillar welcome guide introducing neighborhood discovery, borrow confidence, and shelf sharing.
-- **Unrestricted Guest Discovery:** Visitors can search books, filter categories, adjust radius, and explore reviews before creating an account.
-- **Action Guarding & Resumption:** Actions requiring an account (borrowing, listing a book, messaging) prompt a friendly sign-in modal and automatically resume the intended action after login.
+### 6. 👤 Unified Member Header & 5-Tier Return Reliability System
+- **Single Consolidated Header Card:** Merges reader photo, verification badge, location, bio, trust rating, and action buttons (*Message Neighbor*, *Share Profile*) into one balanced card.
+- **5-Tier Punctuality Guide:** Replaces subjective reviews with mathematical return punctuality tracking (*Tier 5 Master Reader* to *Tier 1 Building Reputation*).
 
-### 7. 🔐 Unified Authentication & Session Persistence
-- **Google OAuth:** Fast 1-click authentication detecting returning readers vs new sign-ups.
-- **WhatsApp Phone Verification:** 6-digit OTP entry with international country selector (+44, +1, +880, +91, +49, etc.), resend countdown timer, and WhatsApp Cloud API integration.
-- **Reader Profile Setup:** First-time profile completion for display name, avatar, and neighborhood radius without exposing private contact details.
-- **Session Persistence:** Persistent session storage across page reloads with secure logout confirmation.
+### 7. 🎁 Lending vs. Free Community Donations
+- **Lending Copies (🤝 To Lend):** 14–30 day loans with owner tracking and scheduled return handovers.
+- **Free Donations (🎁 Free Gift):** Permanent gifts that neighbors keep forever without return requirements. Claimed gifts immediately update the community ledger.
 
-### 8. 👥 Public Member Profiles & Community Shelves (Lending vs. Donation)
-- **Public Reader Profile Page:** Visitors and members can click on any neighbor (e.g. Rahim Chowdhury, Priya Shah, etc.) to view their basic information, online status, neighborhood radius, member tenure, and reader biography.
-- **Trust Badges & 5-Tier Return Reliability:** Displays return punctuality (e.g., *Tier 5 Verified Master Reader · 100% on schedule*), community rating, and quick access to the 5-tier return reliability system guide.
-- **Lending vs. Donation Inventory Breakdown:** Clear counters and category chips distinguishing books available to **lend** (14–28 day borrow cycle) from books available for **free community donation** (permanent gifts for neighbors to keep).
-- **In-Shelf Search & Genre Filtering:** Real-time search across the reader's shelf, along with mode filters (*All Books*, *Available to Lend 🤝*, *Free to Donate 🎁*, *Currently Lent Out ⏳*) and genre tags.
-- **One-Click Handovers:** Direct "Borrow" and "Claim Free Gift" buttons integrated with the structured meetup handover wizard and action-guarding.
-- **Community Endorsements & Preferred Meetup Spots:** Authentic neighbor feedback and favorite public exchange locations (e.g., *Camden Coffee Roasters*, *Primrose Hill Library*).
+### 8. 💖 Wishlist & Real-Time Return Alerts
+- **One-Click Wishlist:** Save books to personal reading lists.
+- **Instant Availability Alerts:** Wishlisting a lent-out book automatically arms a return alert, notifying the reader the moment the copy is marked returned.
+
+### 9. 🌟 First-Visit Onboarding & Guest Browsing
+- **Hyperlocal Welcome Guide:** Dismissible 3-pillar card introducing neighborhood discovery and lending confidence.
+- **Unrestricted Guest Browsing:** Visitors can search books, read reviews, and explore author profiles before registering.
+- **Action Guarding:** Privileged actions prompt a sign-in modal and automatically resume after authentication.
+
+### 10. 🔐 Unified Authentication & Supabase Cloud Sync
+- **Google OAuth & WhatsApp Phone OTP:** Fast social login and international WhatsApp OTP verification.
+- **Database-Level Privacy:** Personal collection books (`[PRIVATE_COLLECTION]`) are filtered out at the Supabase query level to ensure privacy.
 
 ---
 
@@ -82,44 +97,51 @@ Structured borrowing workflow ensuring safety and accountability:
 
 ```
 BookCircle/
+├── docs/                        # Dedicated technical specifications & architectural deep dives
+│   ├── FEATURES.md              # Comprehensive feature matrix, UX flows & screenshots
+│   └── author-profiles-future-architecture.md # Author entity models & Phase 2 roadmap
+├── scripts/                     # Automated end-to-end verification test suites
+│   ├── verify-author-profiles.mjs # Cross-platform author navigation & profile tests
+│   └── verify-floating-chat.mjs # Floating chat widget & responsive FAB coordinator tests
 ├── src/
 │   ├── assets/                  # Brand vectors & illustrations
 │   ├── components/
 │   │   ├── auth/                # AuthModal (Google & WhatsApp OTP) & ProfileSetupModal
+│   │   ├── author/              # AuthorProfilePage (biography, awards & published books)
 │   │   ├── bookdetails/         # BookDetailsPage & ReviewModal
+│   │   ├── books/               # BooksBrowsePage (dual grid & compact list views)
 │   │   ├── borrow/              # BorrowWizardModal & ReturnWizardModal
+│   │   ├── chat/                # FloatingChatWidget (Expanded, Minimized, Mobile bottom-sheet)
+│   │   ├── common/              # ScrollToTop and shared UI utilities
 │   │   ├── inbox/               # Request-gated fixed-viewport Messages page
-│   │   ├── mybooks/             # AddBookModal, ShelfView, BorrowingView, HistoryView, RequestsView
-│   │   ├── onboarding/          # WelcomeOnboardingModal (3-pillar dismissible intro)
-│   │   ├── profile/             # ProfilePage, PublicProfilePage, EditProfileModal & ReturnReliabilityModal
-│   │   ├── BookCard.tsx         # Book card with cover, badges, distance & quick borrow/claim trigger
-│   │   ├── BooksSection.tsx     # Filtered community book catalog grid
-│   │   ├── CategoryPills.tsx    # Horizontal genre selector chips
-│   │   ├── CoffeeModal.tsx      # Community support dialog
-│   │   ├── FloatingAddBookButton.tsx # Responsive floating "+ Add Book" action button
-│   │   ├── HeaderSection.tsx    # Dynamic greeting, book search & radius dropdown
-│   │   ├── LogoutConfirmDialog.tsx  # Secure sign-out confirmation dialog
-│   │   ├── MobileNavBar.tsx     # Responsive mobile bottom navigation bar
-│   │   ├── Navbar.tsx           # Sticky top navbar with profile menu & notification dropdown
-│   │   ├── NotificationDropdown.tsx # Dropdown notification popover panel
-│   │   ├── ReaderCard.tsx       # Reader card with lending & donation badges, and view shelf CTA
-│   │   └── ReadersSection.tsx   # Nearby community readers showcase
+│   │   ├── mybooks/             # AddBookModal, EditBookModal, shelf management
+│   │   ├── onboarding/          # WelcomeOnboardingModal (3-pillar intro)
+│   │   ├── profile/             # ProfilePage, PublicProfilePage, ReturnReliabilityModal & WishlistModal
+│   │   ├── readers/             # ReadersBrowsePage (community neighbor directory)
+│   │   ├── BookCard.tsx         # Unified book card with clickable author & quick actions
+│   │   ├── BooksSection.tsx     # Homepage community book grid
+│   │   ├── CategoryPills.tsx    # Horizontal genre filter chips
+│   │   ├── FloatingAddBookButton.tsx # Responsive FAB coordinated with floating chat
+│   │   └── Navbar.tsx           # Sticky top navbar with profile popover & notifications
 │   ├── context/
-│   │   └── AuthContext.tsx      # AuthProvider, session lifecycle & action guarding
+│   │   ├── AuthContext.tsx      # AuthProvider, session lifecycle & action guarding
+│   │   ├── ExchangeContext.tsx  # Borrow & return exchange state management
+│   │   └── MessagingContext.tsx # Floating chat coordination & thread messaging
 │   ├── data/
-│   │   └── mockData.ts          # Canonical catalog books, community listings (Rahim, Priya, etc.)
+│   │   ├── authors.ts           # Canonical author directory, slugs & dynamic author generator
+│   │   └── mockData.ts          # Seed catalog books, community copies & reader profiles
 │   ├── services/
-│   │   ├── authService.ts       # Google OAuth & WhatsApp Cloud API OTP logic
-│   │   └── storageService.ts    # Persistent localStorage & session engine
+│   │   ├── authService.ts       # Google OAuth & WhatsApp OTP services
+│   │   ├── dbService.ts         # Supabase client integration with local fallback
+│   │   └── storageService.ts    # Persistent localStorage engine
 │   ├── types/
-│   │   ├── auth.ts              # User, AuthSession, PhoneOtpVerification models
-│   │   └── index.ts             # Book, CatalogBook, Reader TypeScript interfaces
-│   ├── App.tsx                  # Root application coordinator with AuthProvider & routing
-│   ├── index.css                # Tailwind directives & design system utilities
-│   └── main.tsx                 # React application bootstrap
-├── public/                      # Static assets & icons
-├── tailwind.config.js           # Tailwind palette & theme configuration
-├── tsconfig.json                # Strict TypeScript compiler options
+│   │   ├── author.ts            # Author data entity & future-ready claim fields
+│   │   └── index.ts             # Book, CatalogBook, Reader & Exchange interfaces
+│   ├── App.tsx                  # Root router coordinator & global layout
+│   └── main.tsx                 # React 19 application entry point
+├── supabase/
+│   └── schema.sql               # PostgreSQL tables, RLS policies & indexes
+├── tailwind.config.js           # Warm booklover design system tokens
 └── package.json                 # Scripts & dependencies
 ```
 
@@ -131,10 +153,11 @@ BookCircle/
 - [Node.js](https://nodejs.org/) (v18 or higher recommended)
 - `npm`
 
-### Installation
+### Installation & Run
 
-1. **Clone the repository or navigate into the folder:**
+1. **Clone the repository:**
    ```bash
+   git clone https://github.com/ajmol-official/BookCircle.git
    cd BookCircle
    ```
 
@@ -147,13 +170,19 @@ BookCircle/
    ```bash
    npm run dev
    ```
-   Open your browser at `http://localhost:5173` to explore the app.
+   Open `http://localhost:5173` in your browser.
 
-4. **Build for production:**
+4. **Run Automated Verification Tests:**
+   ```bash
+   node scripts/verify-author-profiles.mjs
+   node scripts/verify-floating-chat.mjs
+   ```
+
+5. **Build for production:**
    ```bash
    npm run build
    ```
-   Validates all TypeScript types (`tsc -b`) and generates the minified production bundle in `dist/`.
+   Validates TypeScript types (`tsc -b`) and generates production bundles in `dist/`.
 
 ---
 

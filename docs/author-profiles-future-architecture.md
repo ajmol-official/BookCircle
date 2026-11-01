@@ -103,3 +103,4 @@ CREATE TABLE author_followers (
 ALTER TABLE catalog_books
   ADD COLUMN author_id UUID REFERENCES author_profiles(id);
 ```
+
