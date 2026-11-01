@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Add01Icon,
@@ -14,6 +15,7 @@ import {
   Tick01Icon,
   Alert01Icon,
   ArrowRight01Icon,
+  CheckmarkCircle02Icon,
 } from '@hugeicons/core-free-icons';
 import { AddBookModal } from './AddBookModal';
 import { EditBookModal } from './EditBookModal';
@@ -132,7 +134,7 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 4500);
+    setTimeout(() => setToastMessage(null), 3200);
   };
 
   // Close dropdown on click outside
@@ -263,7 +265,24 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
   };
 
   return (
-    <div className="pt-8 pb-20 animate-in fade-in duration-200 space-y-8">
+    <>
+      {/* Floating Centered Toast Notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-medium shadow-2xl border border-slate-700/80 flex items-center gap-2.5 max-w-md pointer-events-none"
+          >
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-emerald-400 flex-shrink-0" />
+            <span>{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="pt-8 pb-20 animate-in fade-in duration-200 space-y-8">
+
       {/* 1. Header with Title & Primary Add Book Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -322,14 +341,6 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
           </span>
         </div>
       </div>
-
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm font-semibold flex items-center gap-2 animate-in fade-in duration-200 shadow-xs">
-          <HugeiconsIcon icon={Tick01Icon} size={16} className="text-emerald-600" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
 
       {/* 3. Filter Chips & Search / Sort Toolbar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
@@ -843,5 +854,6 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
         </div>
       )}
     </div>
+    </>
   );
 };
