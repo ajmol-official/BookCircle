@@ -101,8 +101,8 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
 
         showToast(
           isUpvoted
-            ? 'Marked review as helpful. Thank you!'
-            : 'Removed helpful vote.'
+            ? 'Upvoted review. Thank you!'
+            : 'Removed upvote.'
         );
       } catch (err: any) {
         showToast(err?.message || 'Could not update vote');
@@ -112,7 +112,7 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
     if (!currentUser) {
       requireAuth({
         title: 'Sign in to Upvote',
-        message: 'Join BookCircle to upvote helpful reviews and guide your neighbors.',
+        message: 'Join BookCircle to upvote reviews and guide your neighbors.',
         targetAction: 'general',
         bookTitle: book.title,
         onAuthorized: () => {
@@ -188,7 +188,7 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
           <button
             type="button"
             onClick={() => navigate(`/book/${book.id}`)}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-brand transition group self-start"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-brand transition group self-start cursor-pointer"
           >
             <HugeiconsIcon
               icon={ArrowLeft01Icon}
@@ -201,7 +201,7 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
           <button
             type="button"
             onClick={() => setIsReviewModalOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95 self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95 self-start sm:self-auto cursor-pointer"
           >
             <HugeiconsIcon icon={Edit01Icon} size={16} />
             <span>Write a Review</span>
@@ -263,93 +263,8 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
           </div>
         </div>
 
-        {/* 3. Review Overview: Score Callout & Interactive Rating Histogram */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card">
-          <h2 className="font-serif text-xl font-semibold text-slate-900 mb-6">
-            Rating Breakdown & Overview
-          </h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left Column: Big Average Score */}
-            <div className="lg:col-span-4 flex flex-col items-center justify-center text-center p-6 rounded-2xl bg-slate-50/70 border border-slate-200/60">
-              <span className="font-serif text-5xl sm:text-6xl font-bold text-slate-900">
-                {distribution.total > 0 ? distribution.average : book.rating}
-              </span>
-              <div className="flex items-center gap-1 text-amber-500 mt-2 mb-1.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <HugeiconsIcon
-                    key={star}
-                    icon={StarIcon}
-                    size={18}
-                    className={
-                      star <= Math.round(distribution.total > 0 ? distribution.average : book.rating)
-                        ? 'fill-amber-400 text-amber-500'
-                        : 'text-slate-200'
-                    }
-                  />
-                ))}
-              </div>
-              <span className="text-xs text-slate-500 font-medium">
-                Based on {distribution.total} community review{distribution.total === 1 ? '' : 's'}
-              </span>
-            </div>
-
-            {/* Right Column: Interactive Rating Distribution Bars */}
-            <div className="lg:col-span-8 space-y-2.5">
-              {[5, 4, 3, 2, 1].map((star) => {
-                const count = distribution[star as 1 | 2 | 3 | 4 | 5] || 0;
-                const percentage =
-                  distribution.total > 0
-                    ? Math.round((count / distribution.total) * 100)
-                    : 0;
-                const isSelected = selectedRating === star;
-
-                return (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => {
-                      setSelectedRating(isSelected ? null : star);
-                      setVisibleCount(6);
-                    }}
-                    title={`Click to filter by ${star}-star reviews`}
-                    className={`w-full text-left flex items-center gap-3 p-2 rounded-xl transition-all ${
-                      isSelected
-                        ? 'bg-amber-50/80 ring-1 ring-amber-300'
-                        : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <span className="text-xs font-semibold text-slate-700 w-12 flex-shrink-0 flex items-center gap-1">
-                      <span>{star}</span>
-                      <HugeiconsIcon
-                        icon={StarIcon}
-                        size={12}
-                        className="text-amber-500 fill-amber-400"
-                      />
-                    </span>
-
-                    {/* Progress Bar Container */}
-                    <div className="flex-1 h-3 rounded-full bg-slate-100 overflow-hidden relative">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isSelected ? 'bg-amber-500' : 'bg-amber-400'
-                        }`}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-
-                    <span className="text-xs text-slate-500 font-medium w-16 text-right flex-shrink-0">
-                      {percentage}% ({count})
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* 4. Controls Toolbar: Search, Filters & Sorting */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
+        {/* 3. Controls Toolbar: Star Filters, Search & Sorting */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
           {/* Star Filter Chips */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1.5 lg:pb-0 scrollbar-none">
             <span className="text-xs font-semibold text-slate-500 flex items-center gap-1 mr-1 flex-shrink-0">
@@ -363,7 +278,7 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
                 setSelectedRating(null);
                 setVisibleCount(6);
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex-shrink-0 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex-shrink-0 cursor-pointer ${
                 selectedRating === null
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -383,7 +298,7 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
                     setSelectedRating(isSelected ? null : star);
                     setVisibleCount(6);
                   }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1 flex-shrink-0 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1 flex-shrink-0 cursor-pointer ${
                     isSelected
                       ? 'bg-amber-500 text-white shadow-xs'
                       : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -433,7 +348,7 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
                 aria-label="Sort reviews"
                 className="text-xs pl-3 pr-8 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-brand shadow-2xs cursor-pointer"
               >
-                <option value="helpful">Sort: Most Helpful</option>
+                <option value="helpful">Sort: Most Upvoted</option>
                 <option value="newest">Sort: Newest First</option>
                 <option value="oldest">Sort: Oldest First</option>
                 <option value="highest_rated">Sort: Highest Rated</option>
@@ -443,32 +358,7 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
           </div>
         </div>
 
-        {/* Active Filter Pill Badge */}
-        {selectedRating !== null && (
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-500">Filtered by:</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200/70 font-semibold">
-              <span>{selectedRating} Stars only</span>
-              <button
-                type="button"
-                onClick={() => setSelectedRating(null)}
-                className="text-amber-700 hover:text-amber-900 ml-1 font-bold"
-                title="Clear filter"
-              >
-                ✕
-              </button>
-            </span>
-            <button
-              type="button"
-              onClick={() => setSelectedRating(null)}
-              className="text-brand hover:underline font-semibold ml-2"
-            >
-              Show all reviews
-            </button>
-          </div>
-        )}
-
-        {/* 5. Reviews List Section */}
+        {/* 4. Reviews Feed (Clean Vertical Stream) */}
         {isLoading ? (
           <div className="py-20 text-center">
             <div className="w-8 h-8 border-2 border-brand/20 border-t-brand rounded-full animate-spin mx-auto mb-3" />
@@ -500,7 +390,7 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
                   setSelectedRating(null);
                   setSearchQuery('');
                 }}
-                className="mt-4 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition"
+                className="mt-4 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition cursor-pointer"
               >
                 Clear all filters
               </button>
@@ -508,16 +398,16 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
               <button
                 type="button"
                 onClick={() => setIsReviewModalOpen(true)}
-                className="mt-4 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-sm transition"
+                className="mt-4 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-sm transition cursor-pointer"
               >
                 Write the First Review
               </button>
             )}
           </div>
         ) : (
-          /* Reviews Grid */
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          /* Vertical Reviews Feed */
+          <div className="space-y-6">
+            <div className="space-y-6">
               {visibleReviews.map((rev) => {
                 const isOwnReview = Boolean(
                   currentUser &&
@@ -542,11 +432,11 @@ export const BookReviewsPage: React.FC<BookReviewsPageProps> = ({
 
             {/* Load More Button */}
             {hasMore && (
-              <div className="text-center pt-6">
+              <div className="text-center pt-4">
                 <button
                   type="button"
                   onClick={() => setVisibleCount((prev) => prev + 6)}
-                  className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold shadow-xs transition active:scale-95"
+                  className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold shadow-xs transition active:scale-95 cursor-pointer"
                 >
                   Load More Reviews ({reviews.length - visibleCount} remaining)
                 </button>

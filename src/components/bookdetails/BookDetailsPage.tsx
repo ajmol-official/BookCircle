@@ -635,11 +635,14 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-slate-400 text-xs">
-                  <span>👍 {rev.upvotesCount} helpful</span>
+                  <span className="flex items-center gap-1 font-medium">
+                    <span className="text-slate-500 font-bold">↑</span>
+                    <span>{rev.upvotesCount} upvotes</span>
+                  </span>
                   <button
                     type="button"
                     onClick={() => navigate(`/book/${book.id}/reviews`)}
-                    className="text-brand font-semibold hover:underline text-[11px]"
+                    className="text-brand font-semibold hover:underline text-[11px] cursor-pointer"
                   >
                     Read full review →
                   </button>
@@ -657,7 +660,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
                 Looking for more opinions on “{book.title}”?
               </h4>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Sort by helpfulness, filter by star ratings, and read all {totalReviewsCount} community reviews.
+                Sort by upvotes, filter by star ratings, and read all {totalReviewsCount} community reviews.
               </p>
             </div>
 

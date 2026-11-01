@@ -1253,12 +1253,11 @@ flowchart TD
 - **Main Flow:**
   1. User on `/book/:bookId` views ratings preview and clicks **"View All [X] Reviews ➔"**.
   2. Application navigates to `/book/:bookId/reviews`.
-  3. Sticky Header displays:
-     - Mini book cover thumbnail.
-     - Book title and author link.
-     - Overall average star rating and total review count.
-     - **"← Back to Book Details"** breadcrumb button.
-  4. User can browse paginated reviews, sort, and filter by rating.
+  3. Context Hero Banner displays:
+     - Book cover thumbnail, title, category badge, publication year, and author link.
+     - Overall average star rating and verified community review count.
+     - **"← Back to Book Details"** breadcrumb button and **"Write a Review"** CTA.
+  4. User browses a clean, vertically structured feed of reviews with comfortable line spacing and Quora-inspired information hierarchy.
   5. Clicking "← Back to Book Details" returns smoothly to `/book/:bookId` preserving previous scroll position.
 - **Decision Points & Branches:** Direct URL access (`/book/:bookId/reviews`) functions identically.
 - **Alternative Flows:** None.
@@ -1268,41 +1267,47 @@ flowchart TD
 
 ---
 
-#### `BC-REV-03`: Interactive 5-Star Rating Distribution Histogram Filter
+#### `BC-REV-03`: Direct Star Filter Chips & Search Sorting Toolbar
 - **Flow ID:** `BC-REV-03`
-- **Flow Name:** Rating Distribution Histogram Filtering
+- **Flow Name:** Direct Star Filter Chips & Search Sorting Toolbar
 - **User Role:** Any User
-- **Entry Point:** `/book/:bookId/reviews` $\rightarrow$ Rating Overview card.
+- **Entry Point:** `/book/:bookId/reviews` $\rightarrow$ Controls Toolbar.
 - **Preconditions:** Dedicated reviews page loaded.
 - **Main Flow:**
-  1. Top overview card renders 5 clickable histogram rows (5★, 4★, 3★, 2★, 1★) with progress bars, review counts, and percentages.
-  2. User clicks the "5 Stars" row.
-  3. Reviews list instantly filters to show only 5-star reviews.
-  4. Active filter chip appears: *"Filtered by: 5 Stars (14)"* alongside a *"Reset filter"* button.
-  5. User can change sorting (e.g. "Most Helpful") while maintaining the star filter.
-  6. User clicks "Reset filter"; full review list is restored.
-- **Decision Points & Branches:** Clicking a different star row switches filter immediately.
-- **Alternative Flows:** Clicking the active star row a second time deselects it and resets filter.
-- **Error & Empty States:** If a rating tier has 0 reviews, clicking it shows: *"No [X]-star reviews found. Reset filter to see all reviews."* with a 1-click reset button.
-- **Completion State:** Targeted reviews identified quickly.
+  1. Controls Toolbar presents direct filter chips: `All Stars (X)`, `5★ (X)`, `4★ (X)`, `3★ (X)`, `2★ (X)`, `1★ (X)`.
+  2. User clicks a star chip (e.g. `5★ (3)`).
+  3. Reviews feed instantly filters to matching reviews, and the chip highlights in solid amber (`bg-amber-500 text-white`).
+  4. Active filter state is shown directly on the chip without injecting any separate "Filtered by" summary banner, preserving vertical screen economy.
+  5. User can search keywords or change sort order (e.g. "Sort: Most Upvoted") while retaining the active star filter.
+  6. Clicking `All Stars` or clicking the active star chip again resets the filter.
+- **Decision Points & Branches:** Clicking a different star chip switches filter immediately.
+- **Alternative Flows:** None.
+- **Error & Empty States:** If a rating tier has 0 reviews, clicking it shows: *"No [X]-star reviews found"* with a 1-click "Clear all filters" button.
+- **Completion State:** Targeted reviews filtered quickly with zero redundant UI blocks.
 - **Related Pages & Components:** `src/components/reviews/BookReviewsPage.tsx`, `src/services/reviewService.ts`.
 
 ---
 
-#### `BC-REV-04`: Community Review Helpful Upvote & Self-Vote Guard with Auth Resumption
+#### `BC-REV-04`: Quora-Inspired Review Card & Upvote System
 - **Flow ID:** `BC-REV-04`
-- **Flow Name:** Community Review Helpful Upvote & Self-Vote Guard
+- **Flow Name:** Quora-Inspired Review Card & Upvote System
 - **User Role:** Authenticated User (Guest guided via auth)
-- **Entry Point:** "Helpful (X)" thumbs-up button on any review card.
-- **Preconditions:** Review rendered.
+- **Entry Point:** Upvote button on any review card.
+- **Preconditions:** Review rendered in vertical feed.
 - **Main Flow:**
-  1. User reads review card and clicks "Helpful (X)" button.
-  2. **Auth Check:** If user is a guest, `requireAuth()` captures the upvote intent and mounts `AuthModal`. Upon sign-in, the upvote executes automatically without user re-clicking.
-  3. **Self-Upvote Guard:** If user authored this review, button is non-interactive; hovering displays tooltip: *"You cannot upvote your own review."*
-  4. **Upvote Toggle Execution:**
-     - If user has not yet upvoted: Upvote count increments by 1; button highlights with emerald border and tinted background; floating toast confirms: `"Marked review as helpful."`
-     - If user clicks upvote again: Upvote count decrements by 1; button reverts to default neutral state; floating toast confirms: `"Removed helpful vote."`
-  5. Persistence: Upvote state saved to `localStorage` and Supabase `review_upvotes`.
+  1. Review card renders in a clean vertical layout:
+     - Reviewer header: Avatar, author name, verified reader badge, and review date.
+     - Star rating: 5 stars displayed clearly below the reviewer header (`[★ ★ ★ ★ ★] 5.0`).
+     - Review title: Bold serif headline.
+     - Review text: Generous line spacing (`leading-relaxed`) with "Read full review" toggle for long entries.
+     - Interaction area: Fixed bottom upvote button (`↑ Upvote 24`).
+  2. User clicks `↑ Upvote` button.
+  3. **Auth Check:** If user is a guest, `requireAuth()` captures the upvote intent and mounts `AuthModal`. Upon sign-in, the upvote executes automatically without user re-clicking.
+  4. **Self-Upvote Guard:** If user authored this review, button is non-interactive with tooltip: *"You cannot upvote your own review"* and label `Upvote X (Your review)`.
+  5. **Upvote Toggle Execution:**
+     - If not upvoted: Upvote count increments by 1; button transitions to active `↑ Upvoted X` with tinted brand styling; floating toast confirms: `"Upvoted review. Thank you!"`
+     - If clicked again: Upvote count decrements by 1; button reverts to default `↑ Upvote X`; floating toast confirms: `"Removed upvote."`
+  6. Persistence: Upvote state saved to `localStorage` and synchronized with Supabase.
 - **Decision Points & Branches:** Toggles on/off cleanly with optimistic UI update.
 - **Alternative Flows:** None.
 - **Error & Empty States:** Strict guard prevents duplicate votes or self-upvoting.

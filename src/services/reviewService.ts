@@ -465,22 +465,15 @@ class ReviewService {
     this.memoryReviews[reviewIndex] = updatedReview;
     this.saveToStorage();
 
-    // Async attempt Supabase synchronization if configured
+    // Non-blocking background attempt Supabase synchronization if configured
     if (isSupabaseConfigured()) {
-      try {
-        if (alreadyUpvoted) {
-          await supabase
-            .from('review_upvotes')
-            .delete()
-            .match({ review_id: reviewId, user_id: userId });
-        } else {
-          await supabase
-            .from('review_upvotes')
-            .insert({ review_id: reviewId, user_id: userId });
-        }
-      } catch (err) {
+      const syncAction = alreadyUpvoted
+        ? supabase.from('review_upvotes').delete().eq('review_id', reviewId).eq('user_id', userId)
+        : supabase.from('review_upvotes').insert({ review_id: reviewId, user_id: userId });
+      
+      Promise.resolve(syncAction).catch((err) => {
         console.warn('Supabase upvote sync skipped or offline:', err);
-      }
+      });
     }
 
     return { review: updatedReview, isUpvoted: !alreadyUpvoted };
