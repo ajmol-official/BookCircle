@@ -26,7 +26,7 @@ import { ProfilePage } from './components/profile/ProfilePage';
 import { PublicProfilePage } from './components/profile/PublicProfilePage';
 import { WishlistModal } from './components/profile/WishlistModal';
 import { InboxPage } from './components/inbox/InboxPage';
-import { SettingsModal } from './components/SettingsModal';
+import { SettingsPage } from './components/settings/SettingsPage';
 import { LogoutConfirmDialog } from './components/LogoutConfirmDialog';
 import { MobileNavBar } from './components/MobileNavBar';
 import { WelcomeOnboardingModal } from './components/onboarding/WelcomeOnboardingModal';
@@ -409,17 +409,28 @@ const BookCircleMain: React.FC = () => {
     if (path === '/messages') return 'messages';
     if (path === '/profile') return 'profile';
     if (path === '/readers') return 'readers';
+    if (path === '/settings') return 'settings';
     return '';
   }, [location.pathname]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedRadius, setSelectedRadius] = useState<string>('Within 5km');
+  const [selectedRadius, setSelectedRadius] = useState<string>(() => {
+    try {
+      const stored = localStorage.getItem('bookcircle_user_settings');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.radius) return parsed.radius;
+      }
+    } catch (e) {
+      // fallback
+    }
+    return 'Within 5km';
+  });
   const [selectedChatParticipant, setSelectedChatParticipant] = useState<string | null>(null);
 
   // Modals & Drawers state
   const [isCoffeeModalOpen, setIsCoffeeModalOpen] = useState<boolean>(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isWishlistModalOpen, setIsWishlistModalOpen] = useState<boolean>(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState<boolean>(false);
   const [selectedBorrowBook, setSelectedBorrowBook] = useState<Book | null>(null);
@@ -568,9 +579,11 @@ const BookCircleMain: React.FC = () => {
         ? '/profile'
         : tab === 'readers'
         ? '/readers'
+        : tab === 'settings'
+        ? '/settings'
         : `/${tab}`;
 
-    if (tab !== 'home' && tab !== 'books' && tab !== 'readers' && !isAuthenticated) {
+    if (tab !== 'home' && tab !== 'books' && tab !== 'readers' && tab !== 'settings' && !isAuthenticated) {
       requireAuth({
         title: 'Sign In Required',
         message: 'Sign in to access your personal shelf, incoming requests, and neighbor conversations.',
@@ -847,7 +860,7 @@ const BookCircleMain: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={handleTabChange}
         onOpenCoffeeModal={() => setIsCoffeeModalOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => navigate('/settings')}
         onRequestLogout={() => setIsLogoutDialogOpen(true)}
         onOpenWishlistModal={() => setIsWishlistModalOpen(true)}
         notifications={notifications}
@@ -1016,6 +1029,16 @@ const BookCircleMain: React.FC = () => {
           />
 
           <Route
+            path="/settings"
+            element={
+              <SettingsPage
+                onBack={() => navigate(-1)}
+                onRadiusChange={(r) => setSelectedRadius(r)}
+              />
+            }
+          />
+
+          <Route
             path="/readers"
             element={
               <ReadersBrowsePage
@@ -1144,8 +1167,6 @@ const BookCircleMain: React.FC = () => {
         onBookAdded={handleGlobalBookAdded}
       />
 
-      {/* Settings Modal */}
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
       {/* Wishlist & Return Alerts Modal */}
       <WishlistModal

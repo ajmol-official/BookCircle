@@ -275,6 +275,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center gap-1.5 p-1 rounded-full hover:bg-slate-200/50 transition-all group focus:outline-none focus:ring-2 focus:ring-brand/30"
                   aria-expanded={isProfileMenuOpen}
                   aria-haspopup="true"
+                  aria-label="User profile menu"
                 >
                   <div className="relative">
                     <img

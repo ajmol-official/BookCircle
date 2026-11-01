@@ -22,6 +22,7 @@ async function run() {
     { name: 'Activity', path: '/activity' },
     { name: 'Author Profile', path: '/author/arundhati-roy' },
     { name: 'Book Details', path: '/book/the-god-of-small-things' },
+    { name: 'Settings', path: '/settings' },
   ];
 
   const results = [];
@@ -159,3 +160,4 @@ run().catch((err) => {
   console.error('Fatal error during verification:', err);
   process.exit(1);
 });
+
