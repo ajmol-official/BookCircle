@@ -188,6 +188,26 @@ export const mockBooks: Book[] = [
     description: 'A story about the childhood experiences of fraternal twins whose lives are destroyed by the Love Laws.'
   },
   {
+    id: 'book-god-of-small-things-liam',
+    catalogId: 'the-god-of-small-things',
+    title: 'The God of Small Things',
+    author: 'Arundhati Roy',
+    coverImage: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
+    rating: 4.8,
+    reviewsCount: 312,
+    distance: '1.2 km',
+    ownersCount: 3,
+    category: 'Fiction',
+    status: 'lent_out',
+    ownerName: 'Liam Becker',
+    ownerAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+    ownerTrust: 'Tier 4 · Highly Reliable (28 lends)',
+    condition: 'Good',
+    availabilityMode: 'lending',
+    bookType: 'Original Copy',
+    description: 'A story about the childhood experiences of fraternal twins whose lives are destroyed by the Love Laws.'
+  },
+  {
     id: 'book-1',
     catalogId: 'the-night-circus',
     title: 'The Night Circus',

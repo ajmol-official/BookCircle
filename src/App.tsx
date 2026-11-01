@@ -49,6 +49,11 @@ import {
   generateAuthorSlug,
   getBooksByAuthor
 } from './data/authors';
+import {
+  findCatalogBook,
+  canonicalCatalogBooks,
+  getCatalogWorksForAuthor
+} from './data/canonicalCatalog';
 import type { Book, Reader } from './types';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { BookOpen01Icon, FavouriteIcon } from '@hugeicons/core-free-icons';
@@ -61,21 +66,71 @@ const BookDetailsRoute: React.FC<{
   onSelectOwner: (ownerName: string) => void;
   onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onSimulateReturn: (b: Book) => void;
-}> = ({ booksList, isInitialLoading, onRequestBorrow, onSelectOwner, onSelectAuthor, onSimulateReturn }) => {
+  onOpenAddBook?: (book?: Book) => void;
+}> = ({ booksList, isInitialLoading, onRequestBorrow, onSelectOwner, onSelectAuthor, onSimulateReturn, onOpenAddBook }) => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
 
-  const book = useMemo(() => {
+  // 1. Direct copy lookup in booksList
+  const matchedCopy = useMemo(() => {
     if (!bookId) return null;
+    const clean = decodeURIComponent(bookId).toLowerCase().trim();
     return (
       booksList.find(
         (b) =>
-          b.id === bookId ||
-          b.catalogId === bookId ||
-          b.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === bookId.toLowerCase()
+          b.id.toLowerCase() === clean ||
+          (b.catalogId && b.catalogId.toLowerCase() === clean) ||
+          b.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === clean
       ) || null
     );
   }, [booksList, bookId]);
+
+  // 2. Canonical catalog lookup (supports published books with 0 community copies)
+  const canonicalWork = useMemo(() => {
+    if (!bookId) return undefined;
+    return findCatalogBook(decodeURIComponent(bookId));
+  }, [bookId]);
+
+  // 3. Resolve active book metadata
+  const book = useMemo(() => {
+    if (matchedCopy) return matchedCopy;
+    if (canonicalWork) {
+      return {
+        id: canonicalWork.id,
+        catalogId: canonicalWork.id,
+        title: canonicalWork.title,
+        author: canonicalWork.author,
+        authorId: canonicalWork.authorId,
+        authorCountry: canonicalWork.authorCountry,
+        coverImage: canonicalWork.coverImage,
+        category: canonicalWork.category,
+        rating: canonicalWork.rating,
+        reviewsCount: canonicalWork.reviewsCount,
+        description: canonicalWork.synopsis,
+        publishedYear: canonicalWork.publishedYear,
+        status: 'available' as const,
+        distance: '',
+        ownersCount: 0,
+        ownerName: '',
+        ownerAvatar: '',
+        ownerTrust: '',
+        owner: { name: '', avatar: '', distance: '' }
+      };
+    }
+    return null;
+  }, [matchedCopy, canonicalWork]);
+
+  // 4. Calculate all community copies belonging to this title
+  const communityCopies = useMemo(() => {
+    if (!book) return [];
+    const targetTitle = book.title.toLowerCase().trim();
+    const targetCatalogId = (book.catalogId || book.id).toLowerCase().trim();
+    return booksList.filter(
+      (b) =>
+        (b.catalogId && b.catalogId.toLowerCase().trim() === targetCatalogId) ||
+        b.title.toLowerCase().trim() === targetTitle
+    );
+  }, [book, booksList]);
 
   if (!book) {
     if (isInitialLoading) {
@@ -109,10 +164,12 @@ const BookDetailsRoute: React.FC<{
   return (
     <BookDetailsPage
       book={book}
+      communityCopies={communityCopies}
       onRequestBorrow={onRequestBorrow}
       onSelectOwner={onSelectOwner}
       onSelectAuthor={onSelectAuthor}
       onSimulateReturn={onSimulateReturn}
+      onOpenAddBook={onOpenAddBook}
     />
   );
 };
@@ -199,7 +256,7 @@ const AuthorProfileRoute: React.FC<{
   onSelectAuthor: (authorName: string, authorId?: string) => void;
   onSelectOwner: (ownerName: string) => void;
   onQuickBorrow?: (book: Book) => void;
-  onOpenAddBook?: () => void;
+  onOpenAddBook?: (initialBook?: any) => void;
 }> = ({ booksList, onSelectBook, onSelectAuthor, onSelectOwner, onQuickBorrow, onOpenAddBook }) => {
   const { authorId } = useParams<{ authorId: string }>();
   const navigate = useNavigate();
@@ -211,7 +268,18 @@ const AuthorProfileRoute: React.FC<{
     const found = getAuthorBySlug(decoded) || getAuthorByName(decoded);
     if (found) return found;
 
-    // 2. Look through books in catalog
+    // 2. Look through canonical catalog books
+    const catalogBook = canonicalCatalogBooks.find(
+      (b) =>
+        (b.authorId && b.authorId.toLowerCase() === decoded.toLowerCase()) ||
+        generateAuthorSlug(b.author) === generateAuthorSlug(decoded) ||
+        b.author.toLowerCase().trim() === decoded.toLowerCase()
+    );
+    if (catalogBook) {
+      return getOrCreateAuthor(catalogBook.author, catalogBook.authorCountry);
+    }
+
+    // 3. Look through books in community listings
     const matchingBook = booksList.find(
       (b) =>
         generateAuthorSlug(b.author) === generateAuthorSlug(decoded) ||
@@ -222,7 +290,7 @@ const AuthorProfileRoute: React.FC<{
       return getOrCreateAuthor(matchingBook.author, matchingBook.authorCountry);
     }
 
-    // 3. Fallback: format slug to title case for unknown author
+    // 4. Fallback: format slug to title case for unknown author
     const formattedName = decoded
       .split(/[-_]+/)
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -230,7 +298,13 @@ const AuthorProfileRoute: React.FC<{
     return getOrCreateAuthor(formattedName);
   }, [authorId, booksList]);
 
-  const authorBooks = useMemo(() => {
+  // Compute canonical works for this author (published bibliography with live copy counts)
+  const authorWorks = useMemo(() => {
+    if (!author) return [];
+    return getCatalogWorksForAuthor(author.name, booksList);
+  }, [author, booksList]);
+
+  const authorCopies = useMemo(() => {
     if (!author) return [];
     return getBooksByAuthor(booksList, author.name);
   }, [booksList, author]);
@@ -238,12 +312,14 @@ const AuthorProfileRoute: React.FC<{
   return (
     <AuthorProfilePage
       author={author}
-      books={authorBooks}
+      works={authorWorks}
+      books={authorCopies}
+      onSelectWork={(work) => navigate(`/book/${encodeURIComponent(work.id)}`)}
       onSelectBook={onSelectBook}
       onSelectAuthor={onSelectAuthor}
       onSelectOwner={onSelectOwner}
       onQuickBorrow={onQuickBorrow}
-      onOpenAddBook={onOpenAddBook}
+      onOpenAddBook={() => onOpenAddBook?.({ author: author?.name })}
       onBack={() => navigate('/books')}
     />
   );
@@ -349,6 +425,24 @@ const BookCircleMain: React.FC = () => {
   const [selectedBorrowBook, setSelectedBorrowBook] = useState<Book | null>(null);
   const [selectedClaimBook, setSelectedClaimBook] = useState<Book | null>(null);
   const [isGlobalAddBookOpen, setIsGlobalAddBookOpen] = useState<boolean>(false);
+  const [addBookInitialData, setAddBookInitialData] = useState<{
+    title?: string;
+    author?: string;
+    catalogId?: string;
+    coverImage?: string;
+    category?: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+  } | null>(null);
+
+  const handleOpenAddBook = (initial?: {
+    title?: string;
+    author?: string;
+    catalogId?: string;
+    coverImage?: string;
+    category?: any;
+  }) => {
+    setAddBookInitialData(initial || null);
+    setIsGlobalAddBookOpen(true);
+  };
   const [globalToast, setGlobalToast] = useState<string | null>(null);
 
   // Dynamic books collection with live availability tracking
@@ -836,6 +930,7 @@ const BookCircleMain: React.FC = () => {
                 onSelectOwner={handleSelectOwner}
                 onSelectAuthor={handleSelectAuthor}
                 onSimulateReturn={handleSimulateReturn}
+                onOpenAddBook={handleOpenAddBook}
               />
             }
           />
@@ -849,7 +944,7 @@ const BookCircleMain: React.FC = () => {
                 onSelectAuthor={handleSelectAuthor}
                 onSelectOwner={handleSelectOwner}
                 onQuickBorrow={handleQuickBorrow}
-                onOpenAddBook={() => setIsGlobalAddBookOpen(true)}
+                onOpenAddBook={handleOpenAddBook}
               />
             }
           />
@@ -1041,7 +1136,11 @@ const BookCircleMain: React.FC = () => {
       {/* Global Add Book Modal */}
       <AddBookModal
         isOpen={isGlobalAddBookOpen}
-        onClose={() => setIsGlobalAddBookOpen(false)}
+        onClose={() => {
+          setIsGlobalAddBookOpen(false);
+          setAddBookInitialData(null);
+        }}
+        initialBook={addBookInitialData}
         onBookAdded={handleGlobalBookAdded}
       />
 

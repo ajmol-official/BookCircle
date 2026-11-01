@@ -21,6 +21,13 @@ import type { CatalogBook } from '../../types';
 interface AddBookModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialBook?: {
+    title?: string;
+    author?: string;
+    catalogId?: string;
+    coverImage?: string;
+    category?: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+  } | null;
   onBookAdded?: (bookData: {
     title: string;
     author: string;
@@ -92,7 +99,7 @@ const PRESET_COVERS = [
   }
 ];
 
-export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onBookAdded }) => {
+export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, initialBook, onBookAdded }) => {
   // Mode: 'search' (catalog search & select) vs 'manual' (enter details from scratch)
   const [mode, setMode] = useState<'search' | 'manual'>('search');
 
@@ -110,6 +117,17 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, onB
   const [isCustomUploaded, setIsCustomUploaded] = useState(false);
   const [condition, setCondition] = useState<string>('Like New');
   const [availability, setAvailability] = useState<'lending' | 'donation' | 'personal'>('lending');
+
+  // Pre-fill form when initialBook is provided
+  useEffect(() => {
+    if (isOpen && initialBook) {
+      if (initialBook.title) setManualTitle(initialBook.title);
+      if (initialBook.author) setAuthor(initialBook.author);
+      if (initialBook.coverImage) setCoverUrl(initialBook.coverImage);
+      if (initialBook.category) setCategory(initialBook.category);
+      setMode('manual');
+    }
+  }, [isOpen, initialBook]);
 
   // Drag & drop state
   const [isDragging, setIsDragging] = useState(false);

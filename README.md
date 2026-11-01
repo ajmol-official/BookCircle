@@ -50,7 +50,9 @@ Crafted with a warm, welcoming booklover palette based on the official Figma des
 ### 2. ✍️ Dedicated Author Profiles & Directory (`/author/:authorId`)
 - **Universal Author Name Interaction:** Author names are clickable across book cards, book details pages, browse lists, wishlist alerts, and shelves, navigating to `/author/:authorId`.
 - **Author Information Header:** Creator photo, verified badge, nationality flag, profession, demographic facts, short biography, and curated literary achievements (e.g. *Man Booker Prize*, *Pulitzer Prize*, *Alex Award*).
-- **Bibliography Showcase:** Live count and responsive grid of physical copies circulating in the community with in-author search and category filters.
+- **Consolidated Catalogue Cards (`BookCatalogueCard`):** Decouples published literary works from member copies. Multiple community copies of the same title collapse into one unique catalogue card (e.g. 24 member copies of *The God of Small Things* = 1 card) displaying genre, rating, total reviews, circulating copies, and currently available copies.
+- **Independent Known Bibliography:** An author's complete published works appear regardless of whether community copies currently exist in BookCircle.
+- **Dedicated Zero-Copies Book Details State:** Navigating to a published work with 0 copies displays full book metadata, a welcoming invitation to list a copy, and pre-fills `AddBookModal`, while safely suppressing Borrow/Claim actions.
 - **Graceful Fallbacks:** Monogram avatar badges for missing photos, tasteful biography curation notices, and empty states inviting neighbors to add copies.
 
 ### 3. 💬 Responsive Floating Chat Widget & Smart FAB Coordinator

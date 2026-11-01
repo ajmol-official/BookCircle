@@ -206,7 +206,28 @@ Visitors should never be forced to sign up before experiencing the value of Book
 
 ---
 
-## 10. Database Architecture & Privacy Enforcement (Supabase)
+## 10. Book Catalogue Cards & Community Copies Decoupling
+
+BookCircle maintains a strict architectural separation between **Published Literary Works** (canonical catalog entries) and **Community Copies** (physical copies listed by neighbors):
+
+### Architectural Principles
+1. **One Published Work, One Catalogue Card:** Multiple members listing copies of the same title (e.g. 24 neighbors sharing *The God of Small Things*) produce a single consolidated card on the Author Profile rather than 24 repetitive cards.
+2. **Independent Bibliography:** An author's published works exist independently of community copies circulating in the neighborhood. If an author has 10 published books and only 3 have active member listings, all 10 appear in their bibliography. Books with 0 copies show "No copies yet" and are not filtered out.
+3. **Dedicated Reusable `BookCatalogueCard`:**
+   - Displays cover, primary title, genre badge, average rating, review count, total community copies, and currently available copies.
+   - Primary CTA: **"Explore Copies"** (`/book/:bookId`).
+4. **Book Details Zero-Copies State:**
+   - When a user navigates to a published book with zero physical copies, the page loads the complete canonical metadata (cover, title, author, description, rating, and reviews).
+   - In place of owner listings, a welcoming empty state is presented:
+     - Heading: `No community copies available yet.`
+     - Subtitle: `Be the first to share this book with your neighbors! You can list your copy for lending or community donation.`
+     - Primary Action: `+ Share a Copy of this Book` (pre-filling title, author, cover, and category in `AddBookModal`).
+   - Borrow and Claim buttons are hidden when no copies exist.
+   - Wishlist toggle remains active so neighbors can save the book and be notified when someone lists a copy.
+
+---
+
+## 11. Database Architecture & Privacy Enforcement (Supabase)
 
 BookCircle integrates seamlessly with Supabase PostgreSQL with automated fallback to local state.
 
@@ -223,17 +244,18 @@ BookCircle integrates seamlessly with Supabase PostgreSQL with automated fallbac
 
 ---
 
-## 11. Automated Testing & End-to-End Verification
+## 12. Automated Testing & End-to-End Verification
 
 BookCircle features automated verification scripts powered by Playwright to ensure zero regressions across releases:
 
 | Script | Coverage | Viewports Tested |
 | :--- | :--- | :--- |
 | `scripts/verify-floating-chat.mjs` | Expanded, Minimized, Closed chat states, FAB coordinate shifting, message delivery, and mobile bottom-sheet | Desktop (1440px), Mobile (390px) |
-| `scripts/verify-author-profiles.mjs` | Cross-platform author clicks, `/author/:authorId` rendering, monogram fallback, in-author filter, follow button toggle | Desktop (1440px), Mobile (390px) |
+| `scripts/verify-author-profiles.mjs` | Cross-platform author clicks, `/author/:authorId` catalogue card deduplication, zero-copies state, prefilled add book modal | Desktop (1440px), Mobile (390px) |
 
 Run automated test suites via:
 ```bash
 node scripts/verify-floating-chat.mjs
 node scripts/verify-author-profiles.mjs
 ```
+

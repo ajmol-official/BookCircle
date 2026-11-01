@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -21,19 +21,23 @@ import { useAuth } from '../../context/AuthContext';
 
 interface BookDetailsPageProps {
   book: Book;
+  communityCopies?: Book[];
   onBack?: () => void;
   onRequestBorrow: (book: Book, ownerName?: string) => void;
   onSelectOwner?: (ownerName: string) => void;
   onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onSimulateReturn?: (book: Book) => void;
+  onOpenAddBook?: (book?: Book) => void;
 }
 
 export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   book,
+  communityCopies,
   onRequestBorrow,
   onSelectOwner,
   onSelectAuthor,
-  onSimulateReturn
+  onSimulateReturn,
+  onOpenAddBook
 }) => {
   const { toggleWishlist, isWishlisted } = useAuth();
   const bookWishlisted = isWishlisted(book.id);
@@ -118,65 +122,66 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
     }
   ]);
 
-  const nearbyOwners = book.title.toLowerCase().includes('god of small things')
-    ? [
+  // Map live community copies. When communityCopies is provided (even if empty []), use it.
+  const resolvedCopies = useMemo(() => {
+    if (communityCopies !== undefined) {
+      return communityCopies.map((copy) => ({
+        id: copy.id,
+        copyId: copy.id,
+        name: copy.ownerName || copy.owner?.name || 'Local Neighbor',
+        avatar: copy.ownerAvatar || copy.owner?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+        distance: copy.distance || copy.owner?.distance || '1.0 km',
+        memberSince: '2024',
+        statusText:
+          copy.status === 'available'
+            ? `Available now (${copy.condition || 'Very Good'})`
+            : copy.status === 'donation' || copy.availabilityMode === 'donation'
+            ? `Free to donate (${copy.condition || 'Good'})`
+            : copy.status === 'lent_out'
+            ? 'Currently lent out'
+            : copy.status === 'claimed'
+            ? 'Claimed by Neighbor'
+            : 'Unavailable',
+        isAvailable:
+          (copy.status === 'available' || copy.status === 'donation' || copy.availabilityMode === 'donation') &&
+          copy.status !== 'claimed' &&
+          copy.availabilityMode !== 'personal',
+        isDonation: copy.status === 'donation' || copy.availabilityMode === 'donation',
+        isPersonal: copy.availabilityMode === 'personal',
+        isClaimed: copy.status === 'claimed',
+        bookCopy: copy
+      }));
+    }
+
+    // Fallback if communityCopies prop not explicitly supplied:
+    if (book.ownerName || (book.owner && book.owner.name)) {
+      return [
         {
-          id: 'owner-arif',
-          name: 'Arif Ahmed',
-          avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=150',
-          distance: '1.2 km',
-          memberSince: '2023',
-          status: 'Available now (Like New)',
-          isAvailable: true
-        },
-        {
-          id: 'owner-rahim',
-          name: 'Rahim Chowdhury',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150',
-          distance: '0.6 km',
+          id: book.id,
+          copyId: book.id,
+          name: book.ownerName || book.owner?.name || 'Local Neighbor',
+          avatar: book.ownerAvatar || book.owner?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+          distance: book.distance || book.owner?.distance || '1.2 km',
           memberSince: '2024',
-          status: 'Available now (Very Good)',
-          isAvailable: true
-        }
-      ]
-    : [
-        {
-          id: 'owner-1',
-          name: 'Aisha Patel',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
-          distance: '0.4 km',
-          memberSince: '2023',
-          status: 'Available now',
-          isAvailable: true
-        },
-        {
-          id: 'owner-2',
-          name: 'Liam Becker',
-          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
-          distance: '1.2 km',
-          memberSince: '2024',
-          status: 'Borrowed out',
-          isAvailable: false
-        },
-        {
-          id: 'owner-3',
-          name: 'Maya Fischer',
-          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150',
-          distance: '2.1 km',
-          memberSince: '2022',
-          status: 'Available now',
-          isAvailable: true
-        },
-        {
-          id: 'owner-4',
-          name: 'Ethan Vogel',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150',
-          distance: '3.4 km',
-          memberSince: '2024',
-          status: 'Available now',
-          isAvailable: true
+          statusText:
+            book.status === 'available'
+              ? `Available now (${book.condition || 'Very Good'})`
+              : book.status === 'donation' || isDonation
+              ? `Free to donate (${book.condition || 'Good'})`
+              : book.status === 'lent_out'
+              ? 'Currently lent out'
+              : 'Unavailable',
+          isAvailable: (book.status === 'available' || isDonation) && !isClaimed && !isPersonal,
+          isDonation,
+          isPersonal,
+          isClaimed,
+          bookCopy: book
         }
       ];
+    }
+
+    return [];
+  }, [communityCopies, book, isDonation, isPersonal, isClaimed]);
 
   const handleNewReview = (newRev: { author: string; rating: number; text: string }) => {
     setReviews(prev => [
@@ -218,10 +223,12 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
             alt={book.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/75 backdrop-blur-md text-white flex items-center gap-1 shadow-sm">
-            <HugeiconsIcon icon={Location01Icon} size={12} className="text-amber-badge" />
-            <span className="text-[11px] font-medium">{book.distance}</span>
-          </div>
+          {(book.distance || (resolvedCopies.length > 0 && resolvedCopies[0].distance)) && (
+            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/75 backdrop-blur-md text-white flex items-center gap-1 shadow-sm">
+              <HugeiconsIcon icon={Location01Icon} size={12} className="text-amber-badge" />
+              <span className="text-[11px] font-medium">{book.distance || resolvedCopies[0].distance}</span>
+            </div>
+          )}
         </div>
 
         {/* Book Metadata */}
@@ -229,7 +236,12 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
           <div>
             <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
               <div className="flex items-center gap-2">
-                {isClaimed ? (
+                {resolvedCopies.length === 0 ? (
+                  <span className="px-3 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                    No community copies yet
+                  </span>
+                ) : isClaimed ? (
                   <span className="px-3 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                     Claimed by Neighbor
@@ -315,11 +327,13 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
           <div className="flex flex-wrap items-center gap-5 pt-4 border-t border-slate-100 text-xs sm:text-sm text-slate-600">
             <div className="flex items-center gap-1.5 font-medium">
               <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand" />
-              <span><strong>3</strong> in your area</span>
+              <span>
+                <strong>{resolvedCopies.length}</strong> {resolvedCopies.length === 1 ? 'copy' : 'copies'} in your area
+              </span>
             </div>
             <span className="text-slate-300">|</span>
             <div>
-              <strong className="text-slate-800">1,254</strong> in country
+              <strong className="text-slate-800">{resolvedCopies.length > 0 ? '1,254' : '0'}</strong> in country
             </div>
             <span className="text-slate-300">|</span>
             <div className="flex items-center gap-1.5 text-rose-600 font-medium">
@@ -362,7 +376,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
           )}
 
           {/* Lent-out Alert & Notification CTA Banner */}
-          {book.status === 'lent_out' && (
+          {resolvedCopies.length > 0 && book.status === 'lent_out' && (
             <div className="mt-3 p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -417,86 +431,113 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
             Available from nearby readers
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            3 owners within 5 km ready for pickup or exchange.
+            {resolvedCopies.length > 0
+              ? `${resolvedCopies.length} ${resolvedCopies.length === 1 ? 'owner' : 'owners'} within 5 km ready for pickup or exchange.`
+              : 'Community physical copies circulating in your neighborhood.'}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {nearbyOwners.map((owner) => (
-            <div
-              key={owner.id}
-              className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card flex flex-col justify-between group hover:shadow-card-hover transition-all"
-            >
-              <div>
-                <div
-                  onClick={() => onSelectOwner && onSelectOwner(owner.name)}
-                  className="flex items-center gap-3.5 mb-3 cursor-pointer group/owner"
-                  title={`View ${owner.name}'s profile & shelf`}
-                >
-                  <img
-                    src={owner.avatar}
-                    alt={owner.name}
-                    className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-100 group-hover/owner:ring-brand/40 group-hover/owner:scale-105 transition-all"
-                  />
-                  <div>
-                    <h4 className="font-serif text-base font-semibold text-slate-800 group-hover/owner:text-brand transition-colors flex items-center gap-1">
-                      <span>{owner.name}</span>
-                      <span className="text-[10px] text-brand font-sans font-medium">→</span>
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      {owner.distance} · Member {owner.memberSince}
-                    </p>
+        {resolvedCopies.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {resolvedCopies.map((copy) => (
+              <div
+                key={copy.id}
+                className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card flex flex-col justify-between group hover:shadow-card-hover transition-all"
+              >
+                <div>
+                  <div
+                    onClick={() => onSelectOwner && onSelectOwner(copy.name)}
+                    className="flex items-center gap-3.5 mb-3 cursor-pointer group/owner"
+                    title={`View ${copy.name}'s profile & shelf`}
+                  >
+                    <img
+                      src={copy.avatar}
+                      alt={copy.name}
+                      className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-100 group-hover/owner:ring-brand/40 group-hover/owner:scale-105 transition-all"
+                    />
+                    <div>
+                      <h4 className="font-serif text-base font-semibold text-slate-800 group-hover/owner:text-brand transition-colors flex items-center gap-1">
+                        <span>{copy.name}</span>
+                        <span className="text-[10px] text-brand font-sans font-medium">→</span>
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        {copy.distance} · Member {copy.memberSince}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    {copy.isAvailable ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                        <span>{copy.statusText}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-500">
+                        <span>{copy.statusText}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="mb-4">
-                  {owner.isAvailable ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                      <span>{owner.status}</span>
-                    </span>
+                <button
+                  disabled={!copy.isAvailable || copy.isClaimed || copy.isPersonal}
+                  onClick={() => onRequestBorrow(copy.bookCopy, copy.name)}
+                  className={`w-full py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 ${
+                    copy.isClaimed || copy.isPersonal
+                      ? 'bg-slate-100 text-slate-500 cursor-not-allowed shadow-none border border-slate-200'
+                      : copy.isDonation
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : copy.isAvailable
+                      ? 'bg-brand hover:bg-brand-dark text-white'
+                      : 'bg-slate-100 text-slate-500 cursor-not-allowed shadow-none'
+                  }`}
+                >
+                  {copy.isClaimed ? (
+                    <span>Claimed</span>
+                  ) : copy.isPersonal ? (
+                    <>
+                      <HugeiconsIcon icon={Bookmark02Icon} size={15} />
+                      <span>In Reader's Private Collection</span>
+                    </>
+                  ) : copy.isDonation ? (
+                    <>
+                      <HugeiconsIcon icon={GiftIcon} size={15} />
+                      <span>Claim Free Gift</span>
+                    </>
+                  ) : copy.isAvailable ? (
+                    <span>Request to Borrow</span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-500">
-                      <span>{owner.status}</span>
-                    </span>
+                    <span>Unavailable</span>
                   )}
-                </div>
+                </button>
               </div>
-
-              <button
-                disabled={!owner.isAvailable || isClaimed || isPersonal}
-                onClick={() => onRequestBorrow(book, owner.name)}
-                className={`w-full py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 ${
-                  isClaimed || isPersonal
-                    ? 'bg-slate-100 text-slate-500 cursor-not-allowed shadow-none border border-slate-200'
-                    : isDonation
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    : owner.isAvailable
-                    ? 'bg-brand hover:bg-brand-dark text-white'
-                    : 'bg-slate-100 text-slate-500 cursor-not-allowed shadow-none'
-                }`}
-              >
-                {isClaimed ? (
-                  <span>Claimed</span>
-                ) : isPersonal ? (
-                  <>
-                    <HugeiconsIcon icon={Bookmark02Icon} size={15} />
-                    <span>In Reader's Private Collection</span>
-                  </>
-                ) : isDonation ? (
-                  <>
-                    <HugeiconsIcon icon={GiftIcon} size={15} />
-                    <span>Claim Free Gift</span>
-                  </>
-                ) : owner.isAvailable ? (
-                  <span>Request to Borrow</span>
-                ) : (
-                  <span>Unavailable</span>
-                )}
-              </button>
+            ))}
+          </div>
+        ) : (
+          /* Dedicated Zero Community Copies Empty State */
+          <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-slate-200/90 shadow-card">
+            <div className="w-16 h-16 bg-purple-50 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <HugeiconsIcon icon={BookOpen01Icon} size={32} />
             </div>
-          ))}
-        </div>
+            <h3 className="font-serif text-xl sm:text-2xl font-bold text-slate-800 mb-2">
+              No community copies available yet.
+            </h3>
+            <p className="text-slate-500 text-sm max-w-md mx-auto mb-6">
+              Be the first to share this book with your neighbors! You can list your copy for lending or community donation.
+            </p>
+            {onOpenAddBook && (
+              <button
+                type="button"
+                onClick={() => onOpenAddBook(book)}
+                className="px-6 py-2.5 rounded-full bg-brand hover:bg-brand-dark text-white font-semibold transition active:scale-95 shadow-sm text-sm inline-flex items-center gap-2"
+              >
+                <HugeiconsIcon icon={BookOpen01Icon} size={16} />
+                <span>+ Share a Copy of this Book</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Community Reviews section */}

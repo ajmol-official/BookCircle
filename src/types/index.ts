@@ -22,6 +22,12 @@ export interface Book {
   availabilityMode?: 'lending' | 'donation' | 'personal';
   bookType?: 'Original Copy' | 'Translated Copy';
   wishlistCount?: number;
+  publishedYear?: string;
+  owner?: {
+    name: string;
+    avatar: string;
+    distance?: string;
+  };
 }
 
 export interface CatalogBook {
@@ -36,12 +42,29 @@ export interface CatalogBook {
   wishlistCount?: number;
   category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
   synopsis: string;
-  existingOwners: {
+  publishedYear?: string;
+  existingOwners?: {
     name: string;
     avatar: string;
     condition: string;
     distance?: string;
   }[];
+}
+
+export interface CatalogWork {
+  id: string; // Canonical Unique Book ID (e.g. 'the-god-of-small-things')
+  title: string;
+  author: string;
+  authorId?: string;
+  authorCountry?: string;
+  coverImage: string;
+  category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+  rating: number;
+  reviewsCount: number;
+  synopsis?: string;
+  publishedYear?: string;
+  totalCopies: number;
+  availableCopies: number;
 }
 
 export interface Reader {

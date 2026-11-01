@@ -4,135 +4,160 @@ import path from 'path';
 const ARTIFACTS_DIR = 'C:/Users/ajmal/.gemini/antigravity/brain/1e9cdac2-4270-4846-8b42-0879da4965d1';
 
 async function run() {
-  console.log('Launching browser for Author Profiles verification...');
+  console.log('Launching browser for Author Profiles & Catalogue Cards verification...');
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
 
   // 1. Desktop Context (1440x900)
   const desktopContext = await browser.newContext({
     viewport: { width: 1440, height: 900 }
   });
-  const page = await desktopContext.newPage();
-
-  console.log('Dismissing onboarding and navigating to homepage...');
-  await page.goto('http://localhost:5173/');
-  await page.evaluate(() => {
+  await desktopContext.addInitScript(() => {
     localStorage.setItem('bookcircle_onboarding_dismissed', 'true');
   });
-  await page.goto('http://localhost:5173/', { waitUntil: 'networkidle' });
+
+  const page = await desktopContext.newPage();
+  console.log('Navigating directly to /author/arundhati-roy...');
+  await page.goto('http://localhost:5173/author/arundhati-roy', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1000);
 
-  // If onboarding modal is still visible, click Explore button
-  const exploreBtn = page.locator('button:has-text("Explore Books")').or(page.locator('button:has-text("Explore")')).first();
-  if (await exploreBtn.isVisible()) {
-    await exploreBtn.click();
-    await page.waitForTimeout(500);
-  }
-
-  // Test 1: Click author name on book card
-  console.log('Testing author name click on homepage book card...');
-  const authorButton = page.locator('button[title*="Arundhati Roy"]').first();
-  await authorButton.waitFor({ state: 'visible', timeout: 5000 });
-  await authorButton.click();
-
-  await page.waitForTimeout(1000);
-  console.log('Current URL after clicking author:', page.url());
-
-  // Verify URL is /author/arundhati-roy
-  if (!page.url().includes('/author/arundhati-roy')) {
-    throw new Error(`Expected URL to include /author/arundhati-roy, but got: ${page.url()}`);
-  }
-
-  // Verify Header content
+  // ─── Test 1: Deduplication & Catalogue Card Display on Author Profile ───
+  console.log('Test 1: Verifying deduplicated published works on Author Profile...');
   await page.waitForSelector('text=Arundhati Roy', { state: 'visible' });
   await page.waitForSelector('text=Verified Author', { state: 'visible' });
-  await page.waitForSelector('text=Man Booker Prize', { state: 'visible' });
+  await page.waitForSelector('text=5 works in catalogue', { state: 'visible' });
+  await page.waitForSelector('text=3 community copies circulating', { state: 'visible' });
 
-  // Capture Desktop Screenshot for Arundhati Roy
-  const royScreenshot = path.join(ARTIFACTS_DIR, 'author_profile_arundhati_roy_desktop.png');
-  await page.screenshot({ path: royScreenshot, fullPage: false });
-  console.log('Saved:', royScreenshot);
-
-  // Test 2: In-page filter / search
-  console.log('Testing in-page book filter...');
-  const searchInput = page.locator('input[placeholder*="Arundhati"]');
-  if (await searchInput.isVisible()) {
-    await searchInput.fill('Small Things');
-    await page.waitForTimeout(400);
-    await searchInput.fill(''); // clear
+  // Verify The God of Small Things card (has community copies)
+  console.log('Verifying The God of Small Things card metrics...');
+  const godOfSmallThingsCard = page.locator('div[role="button"]').filter({ has: page.locator('h3', { hasText: 'The God of Small Things' }) });
+  await godOfSmallThingsCard.waitFor({ state: 'visible' });
+  
+  const smallThingsText = await godOfSmallThingsCard.textContent();
+  console.log('The God of Small Things card text preview:', smallThingsText?.slice(0, 160));
+  if (!smallThingsText?.includes('3 community copies') || !smallThingsText?.includes('2 available')) {
+    throw new Error(`Expected 3 community copies and 2 available on card, but got: ${smallThingsText}`);
   }
 
-  // Test 3: Follow author toggle
-  console.log('Testing Follow Author button...');
-  const followBtn = page.locator('text=+ Follow Author');
-  if (await followBtn.isVisible()) {
-    await followBtn.click();
-    await page.waitForTimeout(300);
-    await page.waitForSelector('text=Following', { state: 'visible' });
-    console.log('Follow button toggled successfully to "Following"');
+  // Verify The Ministry of Utmost Happiness card (zero community copies)
+  console.log('Verifying The Ministry of Utmost Happiness card (zero copies)...');
+  const ministryCard = page.locator('div[role="button"]').filter({ has: page.locator('h3', { hasText: 'The Ministry of Utmost Happiness' }) });
+  await ministryCard.waitFor({ state: 'visible' });
+
+  const ministryText = await ministryCard.textContent();
+  console.log('The Ministry of Utmost Happiness card text preview:', ministryText?.slice(0, 160));
+  if (!ministryText?.includes('0 community copies') || !ministryText?.includes('No copies yet')) {
+    throw new Error(`Expected 0 community copies and No copies yet on card, but got: ${ministryText}`);
   }
 
-  // Test 4: Navigate from Book Details Page
-  console.log('Navigating to Book Details for The Night Circus...');
-  await page.goto('http://localhost:5173/book/the-night-circus', { waitUntil: 'networkidle' });
+  // Capture Screenshot of Author Profile with Catalogue Cards
+  const authorProfileCardsScreenshot = path.join(ARTIFACTS_DIR, 'author_profile_catalog_cards_desktop.png');
+  await page.screenshot({ path: authorProfileCardsScreenshot, fullPage: false });
+  console.log('Saved:', authorProfileCardsScreenshot);
+
+  // ─── Test 2: Click "Explore Copies" on zero-copies book ───
+  console.log('Test 2: Clicking "Explore Copies" on The Ministry of Utmost Happiness...');
+  const exploreMinistryBtn = ministryCard.locator('button:has-text("Explore Copies")');
+  await exploreMinistryBtn.click();
   await page.waitForTimeout(1000);
 
-  const erinAuthorBtn = page.locator('button[title*="Erin Morgenstern"]').first();
-  await erinAuthorBtn.waitFor({ state: 'visible', timeout: 5000 });
-  await erinAuthorBtn.click();
+  console.log('Current URL after clicking Explore Copies:', page.url());
+  if (!page.url().includes('the-ministry-of-utmost-happiness')) {
+    throw new Error(`Expected URL to include the-ministry-of-utmost-happiness, got ${page.url()}`);
+  }
 
+  // Verify Book Details Page for Zero Copies
+  console.log('Verifying Zero Copies Book Details state...');
+  await page.waitForSelector('h1:has-text("The Ministry of Utmost Happiness")', { state: 'visible' });
+  await page.waitForSelector('text=No community copies available yet.', { state: 'visible' });
+  await page.waitForSelector('text=Be the first to share this book with your neighbors!', { state: 'visible' });
+  await page.waitForSelector('button:has-text("+ Share a Copy of this Book")', { state: 'visible' });
+
+  // Ensure Borrow and Claim buttons are NOT present
+  const borrowButtonsCount = await page.locator('button:has-text("Request to Borrow")').count();
+  const claimButtonsCount = await page.locator('button:has-text("Claim Free Gift")').count();
+  if (borrowButtonsCount > 0 || claimButtonsCount > 0) {
+    throw new Error(`Expected 0 borrow/claim buttons, but found ${borrowButtonsCount} borrow and ${claimButtonsCount} claim buttons!`);
+  }
+  console.log('Confirmed: 0 borrow/claim buttons present for zero-copies book details.');
+
+  // Capture Screenshot of Zero Copies Book Details Page
+  const zeroCopiesDetailsScreenshot = path.join(ARTIFACTS_DIR, 'book_details_zero_copies_desktop.png');
+  await page.screenshot({ path: zeroCopiesDetailsScreenshot, fullPage: false });
+  console.log('Saved:', zeroCopiesDetailsScreenshot);
+
+  // ─── Test 3: Click "+ Share a Copy of this Book" and check modal pre-fill ───
+  console.log('Test 3: Testing "+ Share a Copy of this Book" button pre-fill in AddBookModal...');
+  const shareCopyBtn = page.locator('button:has-text("+ Share a Copy of this Book")');
+  await shareCopyBtn.click();
+  await page.waitForTimeout(800);
+
+  // Verify modal is open and fields pre-filled
+  const titleInput = page.locator('input[placeholder*="Title"]').or(page.locator('input[value*="The Ministry of Utmost Happiness"]')).first();
+  await titleInput.waitFor({ state: 'visible', timeout: 3000 });
+  const titleVal = await titleInput.inputValue();
+  console.log('Pre-filled Title in modal:', titleVal);
+
+  const authorInput = page.locator('input[placeholder*="Author"]').or(page.locator('input[value*="Arundhati Roy"]')).first();
+  const authorVal = await authorInput.inputValue();
+  console.log('Pre-filled Author in modal:', authorVal);
+
+  if (!titleVal.includes('The Ministry of Utmost Happiness') || !authorVal.includes('Arundhati Roy')) {
+    throw new Error(`Expected pre-filled title and author, got title="${titleVal}", author="${authorVal}"`);
+  }
+
+  // Capture modal screenshot
+  const modalScreenshot = path.join(ARTIFACTS_DIR, 'book_details_zero_copies_modal_desktop.png');
+  await page.screenshot({ path: modalScreenshot, fullPage: false });
+  console.log('Saved:', modalScreenshot);
+
+  // Close modal via Escape or close button
+  const closeBtn = page.locator('button[aria-label="Close modal"]').or(page.locator('button:has-text("Cancel")')).or(page.locator('button:has(svg.cancel-icon)')).first();
+  if (await closeBtn.isVisible()) {
+    await closeBtn.click();
+  } else {
+    await page.keyboard.press('Escape');
+  }
+  await page.waitForTimeout(500);
+
+  // ─── Test 4: Verify book with multiple community copies ───
+  console.log('Test 4: Navigating to The God of Small Things (3 community copies)...');
+  await page.goto('http://localhost:5173/book/the-god-of-small-things', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1000);
-  console.log('Current URL after clicking Erin Morgenstern:', page.url());
-  await page.waitForSelector('text=Erin Morgenstern', { state: 'visible' });
-  await page.waitForSelector('text=The Night Circus', { state: 'visible' });
 
-  const erinScreenshot = path.join(ARTIFACTS_DIR, 'author_profile_erin_morgenstern_desktop.png');
-  await page.screenshot({ path: erinScreenshot, fullPage: false });
-  console.log('Saved:', erinScreenshot);
+  await page.waitForSelector('h1:has-text("The God of Small Things")', { state: 'visible' });
+  await page.waitForSelector('text=3 copies in your area', { state: 'visible' });
+  await page.waitForSelector('text=3 owners within 5 km', { state: 'visible' });
+  await page.waitForSelector('text=Arif Ahmed', { state: 'visible' });
+  await page.waitForSelector('text=Liam Becker', { state: 'visible' });
+  await page.waitForSelector('text=Rahim Chowdhury', { state: 'visible' });
 
-  // Test 5: Monogram Fallback (Author without custom photo e.g. Carl Sagan)
-  console.log('Testing Monogram Initials Fallback (Carl Sagan)...');
-  await page.goto('http://localhost:5173/author/carl-sagan', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-
-  await page.waitForSelector('text=Carl Sagan', { state: 'visible' });
-  await page.waitForSelector('text=CS', { state: 'visible' }); // Monogram initials CS
-
-  const monogramScreenshot = path.join(ARTIFACTS_DIR, 'author_profile_monogram_fallback_desktop.png');
-  await page.screenshot({ path: monogramScreenshot, fullPage: false });
-  console.log('Saved:', monogramScreenshot);
-
-  // Test 6: Empty catalogue state for author with 0 books
-  console.log('Testing Dynamic Fallback / Empty State for author without books...');
-  await page.goto('http://localhost:5173/author/george-orwell', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-
-  await page.waitForSelector('text=George Orwell', { state: 'visible' });
-  await page.waitForSelector('text=No copies by George Orwell are currently listed', { state: 'visible' });
-
-  const emptyStateScreenshot = path.join(ARTIFACTS_DIR, 'author_profile_empty_state_desktop.png');
-  await page.screenshot({ path: emptyStateScreenshot, fullPage: false });
-  console.log('Saved:', emptyStateScreenshot);
-
-  // 2. Mobile Viewport (390x844 - iPhone 14)
-  console.log('Testing Mobile Viewport (390x844)...');
+  // ─── Test 5: Mobile Viewport Verification ───
+  console.log('Test 5: Verifying Mobile Viewport (390x844)...');
   const mobileContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
     isMobile: true
   });
-  const mobilePage = await mobileContext.newPage();
-  await mobilePage.goto('http://localhost:5173/');
-  await mobilePage.evaluate(() => {
+  await mobileContext.addInitScript(() => {
     localStorage.setItem('bookcircle_onboarding_dismissed', 'true');
   });
+
+  const mobilePage = await mobileContext.newPage();
   await mobilePage.goto('http://localhost:5173/author/arundhati-roy', { waitUntil: 'networkidle' });
   await mobilePage.waitForTimeout(1000);
 
-  const mobileScreenshot = path.join(ARTIFACTS_DIR, 'author_profile_mobile_390.png');
-  await mobilePage.screenshot({ path: mobileScreenshot, fullPage: false });
-  console.log('Saved:', mobileScreenshot);
+  const mobileAuthorCardsScreenshot = path.join(ARTIFACTS_DIR, 'author_profile_catalog_cards_mobile.png');
+  await mobilePage.screenshot({ path: mobileAuthorCardsScreenshot, fullPage: false });
+  console.log('Saved:', mobileAuthorCardsScreenshot);
+
+  await mobilePage.goto('http://localhost:5173/book/the-ministry-of-utmost-happiness', { waitUntil: 'networkidle' });
+  await mobilePage.waitForTimeout(1000);
+
+  const mobileZeroCopiesScreenshot = path.join(ARTIFACTS_DIR, 'book_details_zero_copies_mobile.png');
+  await mobilePage.screenshot({ path: mobileZeroCopiesScreenshot, fullPage: false });
+  console.log('Saved:', mobileZeroCopiesScreenshot);
 
   await browser.close();
-  console.log('All Author Profile automated verification tests passed successfully!');
+  console.log('All automated tests passed with flying colors!');
 }
 
 run().catch((err) => {

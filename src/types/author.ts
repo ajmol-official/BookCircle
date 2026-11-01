@@ -37,3 +37,4 @@ export interface Author {
     wikipedia?: string;
   };
 }
+

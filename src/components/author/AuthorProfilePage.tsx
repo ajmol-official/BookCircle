@@ -13,13 +13,16 @@ import {
   FavouriteIcon
 } from '@hugeicons/core-free-icons';
 import type { Author } from '../../types/author';
-import type { Book } from '../../types';
-import { BookCard } from '../BookCard';
+import type { Book, CatalogWork } from '../../types';
+import { BookCatalogueCard } from './BookCatalogueCard';
+import { getCatalogWorksForAuthor } from '../../data/canonicalCatalog';
 
 interface AuthorProfilePageProps {
   author?: Author;
-  books: Book[];
-  onSelectBook: (book: Book) => void;
+  works?: CatalogWork[];
+  books?: Book[];
+  onSelectWork?: (work: CatalogWork) => void;
+  onSelectBook?: (book: Book) => void;
   onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onSelectOwner?: (ownerName: string) => void;
   onQuickBorrow?: (book: Book) => void;
@@ -29,11 +32,13 @@ interface AuthorProfilePageProps {
 
 export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
   author,
-  books,
+  works,
+  books = [],
+  onSelectWork,
   onSelectBook,
-  onSelectAuthor,
-  onSelectOwner,
-  onQuickBorrow,
+  onSelectAuthor: _onSelectAuthor,
+  onSelectOwner: _onSelectOwner,
+  onQuickBorrow: _onQuickBorrow,
   onOpenAddBook,
   onBack
 }) => {
@@ -79,34 +84,76 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  // Extract unique categories available from this author's books
+  // Canonical works list: an author's published bibliography exists independently of community copies
+  const catalogWorks = useMemo(() => {
+    if (works && works.length > 0) return works;
+    return getCatalogWorksForAuthor(author.name, books);
+  }, [works, author.name, books]);
+
+  // Total community copies circulating across all works
+  const totalCommunityCopies = useMemo(() => {
+    return catalogWorks.reduce((acc, w) => acc + w.totalCopies, 0);
+  }, [catalogWorks]);
+
+  // Extract unique categories available from this author's canonical works
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
-    books.forEach((b) => {
-      if (b.category) cats.add(b.category);
+    catalogWorks.forEach((w) => {
+      if (w.category) cats.add(w.category);
     });
     return ['All', ...Array.from(cats)];
-  }, [books]);
+  }, [catalogWorks]);
 
-  // Filter books by query and category
-  const filteredBooks = useMemo(() => {
-    return books.filter((b) => {
-      const matchCat = selectedCategory === 'All' || b.category.toLowerCase() === selectedCategory.toLowerCase();
+  // Filter canonical works by query and category
+  const filteredWorks = useMemo(() => {
+    return catalogWorks.filter((w) => {
+      const matchCat = selectedCategory === 'All' || w.category.toLowerCase() === selectedCategory.toLowerCase();
       const q = searchQuery.toLowerCase().trim();
       const matchQuery =
         !q ||
-        b.title.toLowerCase().includes(q) ||
-        (b.description && b.description.toLowerCase().includes(q));
+        w.title.toLowerCase().includes(q) ||
+        (w.synopsis && w.synopsis.toLowerCase().includes(q));
       return matchCat && matchQuery;
     });
-  }, [books, selectedCategory, searchQuery]);
+  }, [catalogWorks, selectedCategory, searchQuery]);
 
-  // Deduplicated unique titles count
-  const uniqueTitlesCount = useMemo(() => {
-    const titles = new Set<string>();
-    books.forEach((b) => titles.add((b.catalogId || b.title).toLowerCase().trim()));
-    return titles.size;
-  }, [books]);
+  // Primary action when clicking a catalogue card: navigate to the work's book details page
+  const handleSelectWork = (work: CatalogWork) => {
+    if (onSelectWork) {
+      onSelectWork(work);
+      return;
+    }
+    const matchingCopy = books.find(
+      (b) =>
+        (b.catalogId && b.catalogId === work.id) ||
+        b.title.toLowerCase().trim() === work.title.toLowerCase().trim()
+    );
+    if (matchingCopy) {
+      onSelectBook?.(matchingCopy);
+    } else {
+      onSelectBook?.({
+        id: work.id,
+        catalogId: work.id,
+        title: work.title,
+        author: work.author,
+        authorId: work.authorId,
+        authorCountry: work.authorCountry,
+        coverImage: work.coverImage,
+        category: work.category,
+        rating: work.rating,
+        reviewsCount: work.reviewsCount,
+        description: work.synopsis,
+        publishedYear: work.publishedYear,
+        status: 'available',
+        distance: '',
+        ownersCount: 0,
+        ownerName: '',
+        ownerAvatar: '',
+        ownerTrust: '',
+        owner: { name: '', avatar: '', distance: '' }
+      });
+    }
+  };
 
   // Handle Share author link
   const handleShare = () => {
@@ -275,11 +322,11 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
                 )}
                 <span className="text-slate-300">•</span>
                 <span>
-                  <strong className="text-slate-700 font-semibold">{uniqueTitlesCount}</strong> {uniqueTitlesCount === 1 ? 'title' : 'titles'} in BookCircle
+                  <strong className="text-slate-700 font-semibold">{catalogWorks.length}</strong> {catalogWorks.length === 1 ? 'work' : 'works'} in catalogue
                 </span>
                 <span className="text-slate-300">•</span>
                 <span>
-                  <strong className="text-slate-700 font-semibold">{books.length}</strong> community {books.length === 1 ? 'copy' : 'copies'}
+                  <strong className="text-slate-700 font-semibold">{totalCommunityCopies}</strong> community {totalCommunityCopies === 1 ? 'copy' : 'copies'} circulating
                 </span>
                 {author.followersCount !== undefined && author.followersCount > 0 && (
                   <>
@@ -352,21 +399,21 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
             <div>
               <div className="flex items-center gap-2.5">
                 <h2 className="font-serif text-xl sm:text-2xl font-bold text-slate-900">
-                  Books by {author.name}
+                  Published Works by {author.name}
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full bg-brand/10 text-brand text-xs font-bold font-mono">
-                  {filteredBooks.length}
+                  {filteredWorks.length}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Explore physical copies available to borrow or keep from neighbors in your local community.
+                Explore published bibliography. Click 'Explore Copies' to view community copies circulating nearby.
               </p>
             </div>
 
-            {/* Filter toolbar if books exist */}
-            {books.length > 0 && (
+            {/* Filter toolbar if works exist */}
+            {catalogWorks.length > 0 && (
               <div className="flex flex-wrap items-center gap-2.5">
-                {/* Search in Author's books */}
+                {/* Search in Author's works */}
                 <div className="relative min-w-[200px] sm:w-60">
                   <HugeiconsIcon
                     icon={Search01Icon}
@@ -377,7 +424,7 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={`Search ${author.name.split(' ')[0]}'s books...`}
+                    placeholder={`Search ${author.name.split(' ')[0]}'s works...`}
                     className="w-full pl-9 pr-3 py-1.5 text-xs rounded-full border border-slate-200/90 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all placeholder:text-slate-400"
                   />
                 </div>
@@ -405,17 +452,14 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
             )}
           </div>
 
-          {/* Book Cards Grid */}
-          {filteredBooks.length > 0 ? (
+          {/* Book Catalogue Cards Grid */}
+          {filteredWorks.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredBooks.map((book) => (
-                <BookCard
-                  key={book.id}
-                  book={book}
-                  onSelectBook={onSelectBook}
-                  onSelectAuthor={onSelectAuthor}
-                  onSelectOwner={onSelectOwner}
-                  onQuickBorrow={onQuickBorrow}
+              {filteredWorks.map((work) => (
+                <BookCatalogueCard
+                  key={work.id}
+                  work={work}
+                  onSelectWork={handleSelectWork}
                 />
               ))}
             </div>
@@ -426,16 +470,16 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
                 <HugeiconsIcon icon={BookOpen01Icon} size={32} />
               </div>
               <h3 className="font-serif text-xl font-bold text-slate-800 mb-2">
-                {books.length === 0
-                  ? `No copies by ${author.name} are currently listed in BookCircle`
-                  : 'No books match your search filter'}
+                {catalogWorks.length === 0
+                  ? `No published works by ${author.name} are currently in the catalogue`
+                  : 'No published works match your search filter'}
               </h3>
               <p className="text-slate-500 text-sm max-w-md mx-auto mb-6">
-                {books.length === 0
+                {catalogWorks.length === 0
                   ? `Be the first neighbor to list a book by ${author.name} on your shelf for lending or donation!`
-                  : 'Try clearing your search query or choosing another category to see available books.'}
+                  : 'Try clearing your search query or choosing another category to see available works.'}
               </p>
-              {books.length === 0 ? (
+              {catalogWorks.length === 0 ? (
                 onOpenAddBook && (
                   <button
                     type="button"
@@ -464,3 +508,4 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
     </div>
   );
 };
+
