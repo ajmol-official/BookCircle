@@ -9,6 +9,7 @@
 For exhaustive product specifications, UX architecture rationales, and technical diagrams, explore the dedicated documentation guides:
 
 - **[Platform Features & Architecture Specification (`docs/FEATURES.md`)](docs/FEATURES.md)** — In-depth breakdown of title catalog clustering, author directory, floating chat animations, handover wizards, return reliability tiers, and database privacy.
+- **[Comprehensive User Flow Map & Interaction Architecture (`docs/USER_FLOWS.md`)](docs/USER_FLOWS.md)** — Complete user journey flows, decision trees, Mermaid state/sequence diagrams, and safety guard mechanisms across all personas.
 - **[Author Profiles & Future Capabilities Roadmap (`docs/author-profiles-future-architecture.md`)](docs/author-profiles-future-architecture.md)** — Architectural separation of authors vs. members, profile claiming, verification badge workflows, and following systems.
 
 ---
