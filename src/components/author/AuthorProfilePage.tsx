@@ -169,7 +169,7 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF8F2] pb-24">
+    <div className="pt-4 sm:pt-8 pb-20 animate-in fade-in duration-200">
       {/* Toast Notification */}
       {shareToast && (
         <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 animate-fade-in">
@@ -178,34 +178,33 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
-        {/* Contextual Breadcrumb & Back Navigation */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
-            <button
-              type="button"
-              onClick={onBack}
-              className="hover:text-brand font-medium transition-colors"
-            >
-              Catalogue
-            </button>
-            <span className="text-slate-300">/</span>
-            <span className="text-slate-400 font-medium">Authors</span>
-            <span className="text-slate-300">/</span>
-            <span className="text-slate-800 font-semibold truncate max-w-[200px] sm:max-w-none">
-              {author.name}
-            </span>
-          </nav>
-
+      {/* Contextual Breadcrumb & Back Navigation */}
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-brand transition-colors bg-white px-3 sm:px-4 py-1.5 rounded-full border border-slate-200/80 shadow-xs hover:border-brand/30"
+            className="hover:text-brand font-medium transition-colors"
           >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-            <span>Back to Books</span>
+            Catalogue
           </button>
-        </div>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-400 font-medium">Authors</span>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-800 font-semibold truncate max-w-[200px] sm:max-w-none">
+            {author.name}
+          </span>
+        </nav>
+
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-brand transition-colors bg-white px-3 sm:px-4 py-1.5 rounded-full border border-slate-200/80 shadow-xs hover:border-brand/30"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
+          <span>Back to Books</span>
+        </button>
+      </div>
 
         {/* ─── SECTION A: Author Information Header Card ─── */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200/90 shadow-card mb-10 transition-all">
@@ -505,7 +504,6 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
           )}
         </div>
       </div>
-    </div>
   );
 };
 

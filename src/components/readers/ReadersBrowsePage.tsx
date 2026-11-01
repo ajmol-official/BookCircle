@@ -251,7 +251,7 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
   ]);
 
   return (
-    <div className="pt-4 sm:pt-8 pb-20 animate-in fade-in duration-200 max-w-[1248px] mx-auto px-4 sm:px-6">
+    <div className="pt-4 sm:pt-8 pb-20 animate-in fade-in duration-200">
       {/* ─────────────────────────────────────────────────────────────
           SECTION 1: HERO HEADER & UNIFIED COMMAND SEARCH BAR
       ───────────────────────────────────────────────────────────── */}
