@@ -34,8 +34,8 @@ async function run() {
   
   const smallThingsText = await godOfSmallThingsCard.textContent();
   console.log('The God of Small Things card text preview:', smallThingsText?.slice(0, 160));
-  if (!smallThingsText?.includes('3 community copies') || !smallThingsText?.includes('2 available')) {
-    throw new Error(`Expected 3 community copies and 2 available on card, but got: ${smallThingsText}`);
+  if (!smallThingsText?.includes('3 copies') || !smallThingsText?.includes('2 available')) {
+    throw new Error(`Expected "3 copies" and "2 available" on card, but got: ${smallThingsText}`);
   }
 
   // Verify The Ministry of Utmost Happiness card (zero community copies)
@@ -45,8 +45,11 @@ async function run() {
 
   const ministryText = await ministryCard.textContent();
   console.log('The Ministry of Utmost Happiness card text preview:', ministryText?.slice(0, 160));
-  if (!ministryText?.includes('0 community copies') || !ministryText?.includes('No copies yet')) {
-    throw new Error(`Expected 0 community copies and No copies yet on card, but got: ${ministryText}`);
+  if (!ministryText?.includes('0 Community copies')) {
+    throw new Error(`Expected "0 Community copies" on card, but got: ${ministryText}`);
+  }
+  if (ministryText?.includes('available')) {
+    throw new Error(`Expected no availability count for 0 community copies, but found availability in text: ${ministryText}`);
   }
 
   // Capture Screenshot of Author Profile with Catalogue Cards

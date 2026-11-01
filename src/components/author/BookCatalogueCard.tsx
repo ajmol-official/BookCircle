@@ -3,7 +3,6 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   StarIcon,
   BookOpen01Icon,
-  Book02Icon,
   ArrowRight01Icon
 } from '@hugeicons/core-free-icons';
 import type { CatalogWork } from '../../types';
@@ -34,11 +33,11 @@ export const BookCatalogueCard: React.FC<BookCatalogueCardProps> = ({
           onSelectWork(work);
         }
       }}
-      className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-brand/40 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none transition-all duration-300 flex flex-col justify-between cursor-pointer"
+      className="group bg-white rounded-2xl p-4 sm:p-4.5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-brand/40 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none transition-all duration-300 flex flex-col justify-between cursor-pointer"
     >
       <div>
         {/* Book Cover Image Container */}
-        <div className="relative w-full h-56 sm:h-60 rounded-xl overflow-hidden bg-slate-100 mb-4 shadow-inner">
+        <div className="relative w-full h-52 sm:h-56 rounded-xl overflow-hidden bg-slate-100 mb-3 shadow-inner">
           {/* Skeleton Pulse */}
           {!imageLoaded && !imageError && (
             <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse" />
@@ -111,7 +110,7 @@ export const BookCatalogueCard: React.FC<BookCatalogueCardProps> = ({
           </div>
 
           {/* Rating Row */}
-          <div className="flex items-center gap-1.5 mt-2">
+          <div className="flex items-center gap-1.5 mt-1.5">
             <div className="flex items-center text-amber-500">
               <HugeiconsIcon icon={StarIcon} size={15} className="fill-amber-400 text-amber-500" />
             </div>
@@ -123,43 +122,35 @@ export const BookCatalogueCard: React.FC<BookCatalogueCardProps> = ({
             </span>
           </div>
 
-          {/* Community Footprint Metrics Bar */}
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-            <div className="flex items-center gap-1.5">
-              <HugeiconsIcon icon={Book02Icon} size={14} className="text-brand/70" />
-              <span className="font-medium text-slate-700">
-                {hasCopies ? (
-                  <>
-                    <strong className="text-slate-900 font-semibold">{work.totalCopies}</strong> community {work.totalCopies === 1 ? 'copy' : 'copies'}
-                  </>
-                ) : (
-                  <span className="text-slate-400">0 community copies</span>
-                )}
-              </span>
-            </div>
-
+          {/* Compact Single-Line Copy Count & Availability Row */}
+          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-xs whitespace-nowrap min-h-[22px]">
             {hasCopies ? (
-              <span className={`text-[11px] font-semibold ${isAvailable ? 'text-emerald-700' : 'text-amber-700'}`}>
-                {isAvailable ? `${work.availableCopies} available` : 'Lent out'}
-              </span>
+              <>
+                <span className="text-slate-600 font-medium whitespace-nowrap">
+                  <strong className="text-slate-900 font-semibold">{work.totalCopies}</strong> {work.totalCopies === 1 ? 'copy' : 'copies'}
+                </span>
+                <span className={`text-[11px] font-semibold whitespace-nowrap shrink-0 ${isAvailable ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  {isAvailable ? `${work.availableCopies} available` : 'All copies lent'}
+                </span>
+              </>
             ) : (
-              <span className="text-[11px] text-slate-400 italic">
-                Be the first to share
+              <span className="text-slate-400 font-medium whitespace-nowrap">
+                0 Community copies
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Primary CTA: Explore Copies */}
-      <div className="mt-4 pt-3.5 border-t border-slate-100">
+      {/* Primary CTA: Explore Copies Directly Below */}
+      <div className="mt-2.5">
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onSelectWork(work);
           }}
-          className={`w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-98 ${
+          className={`w-full py-2 px-3 sm:py-2.5 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-98 ${
             hasCopies
               ? 'bg-brand hover:bg-brand/90 text-white shadow-brand/20'
               : 'bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200/80'

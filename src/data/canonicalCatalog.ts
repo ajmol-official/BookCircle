@@ -773,3 +773,4 @@ export function getCatalogWorksForAuthor(
 
   return Array.from(worksMap.values());
 }
+
