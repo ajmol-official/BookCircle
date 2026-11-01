@@ -22,6 +22,7 @@ import type { NotificationItem } from './components/NotificationDropdown';
 import { MyBooksPage } from './components/mybooks/MyBooksPage';
 import { ActivityPage } from './components/activity/ActivityPage';
 import { BookDetailsPage } from './components/bookdetails/BookDetailsPage';
+import { BookReviewsPage } from './components/reviews/BookReviewsPage';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { PublicProfilePage } from './components/profile/PublicProfilePage';
 import { WishlistModal } from './components/profile/WishlistModal';
@@ -172,6 +173,96 @@ const BookDetailsRoute: React.FC<{
       onOpenAddBook={onOpenAddBook}
     />
   );
+};
+
+// ─── BOOK REVIEWS ROUTE WRAPPER ───────────────────────────────────────
+const BookReviewsRoute: React.FC<{
+  booksList: Book[];
+  isInitialLoading?: boolean;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
+}> = ({ booksList, isInitialLoading, onSelectAuthor }) => {
+  const { bookId } = useParams<{ bookId: string }>();
+  const navigate = useNavigate();
+
+  // 1. Direct copy lookup in booksList
+  const matchedCopy = useMemo(() => {
+    if (!bookId) return null;
+    const clean = decodeURIComponent(bookId).toLowerCase().trim();
+    return (
+      booksList.find(
+        (b) =>
+          b.id.toLowerCase() === clean ||
+          (b.catalogId && b.catalogId.toLowerCase() === clean) ||
+          b.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === clean
+      ) || null
+    );
+  }, [booksList, bookId]);
+
+  // 2. Canonical catalog lookup
+  const canonicalWork = useMemo(() => {
+    if (!bookId) return undefined;
+    return findCatalogBook(decodeURIComponent(bookId));
+  }, [bookId]);
+
+  // 3. Resolve active book metadata
+  const book = useMemo(() => {
+    if (matchedCopy) return matchedCopy;
+    if (canonicalWork) {
+      return {
+        id: canonicalWork.id,
+        catalogId: canonicalWork.id,
+        title: canonicalWork.title,
+        author: canonicalWork.author,
+        authorId: canonicalWork.authorId,
+        authorCountry: canonicalWork.authorCountry,
+        coverImage: canonicalWork.coverImage,
+        category: canonicalWork.category,
+        rating: canonicalWork.rating,
+        reviewsCount: canonicalWork.reviewsCount,
+        description: canonicalWork.synopsis,
+        publishedYear: canonicalWork.publishedYear,
+        status: 'available' as const,
+        distance: '',
+        ownersCount: 0,
+        ownerName: '',
+        ownerAvatar: '',
+        ownerTrust: '',
+        owner: { name: '', avatar: '', distance: '' }
+      };
+    }
+    return null;
+  }, [matchedCopy, canonicalWork]);
+
+  if (!book) {
+    if (isInitialLoading) {
+      return (
+        <div className="py-32 text-center max-w-md mx-auto animate-pulse">
+          <div className="w-10 h-10 border-2 border-brand/20 border-t-brand rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm font-medium text-slate-500">Loading reviews...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="py-24 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand mx-auto flex items-center justify-center mb-4">
+          <HugeiconsIcon icon={BookOpen01Icon} size={30} />
+        </div>
+        <h2 className="text-xl font-bold font-serif text-slate-800">Book Not Found</h2>
+        <p className="text-sm text-slate-500 mt-2">
+          The book whose reviews you are trying to view could not be found.
+        </p>
+        <button
+          onClick={() => navigate('/books')}
+          className="mt-6 px-5 py-2.5 bg-brand hover:bg-brand-dark text-white text-xs font-semibold rounded-xl shadow-sm transition active:scale-95"
+        >
+          Explore All Books
+        </button>
+      </div>
+    );
+  }
+
+  return <BookReviewsPage book={book} onSelectAuthor={onSelectAuthor} />;
 };
 
 // ─── READER PROFILE ROUTE WRAPPER ─────────────────────────────────────
@@ -944,6 +1035,17 @@ const BookCircleMain: React.FC = () => {
                 onSelectAuthor={handleSelectAuthor}
                 onSimulateReturn={handleSimulateReturn}
                 onOpenAddBook={handleOpenAddBook}
+              />
+            }
+          />
+
+          <Route
+            path="/book/:bookId/reviews"
+            element={
+              <BookReviewsRoute
+                booksList={booksList}
+                isInitialLoading={isInitialLoading}
+                onSelectAuthor={handleSelectAuthor}
               />
             }
           />

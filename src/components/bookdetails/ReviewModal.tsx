@@ -11,7 +11,7 @@ interface ReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   bookTitle: string;
-  onReviewSubmitted: (review: { author: string; rating: number; text: string }) => void;
+  onReviewSubmitted: (review: { author: string; rating: number; text: string; title?: string }) => void;
 }
 
 export const ReviewModal: React.FC<ReviewModalProps> = ({
@@ -23,6 +23,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   const { currentUser } = useAuth();
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
+  const [reviewTitleText, setReviewTitleText] = useState<string>('');
   const [reviewText, setReviewText] = useState<string>('');
   const [submitted, setSubmitted] = useState<boolean>(false);
 
@@ -53,9 +54,11 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       onReviewSubmitted({
         author: currentUser?.displayName || 'Community Reader',
         rating,
+        title: reviewTitleText.trim() || undefined,
         text: reviewText.trim()
       });
       setSubmitted(false);
+      setReviewTitleText('');
       setReviewText('');
       onClose();
     }, 1500);
@@ -130,6 +133,20 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                   {rating}.0 out of 5
                 </span>
               </div>
+            </div>
+
+            {/* Review Headline (Optional) */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                Review Headline <span className="text-slate-400 font-normal lowercase">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={reviewTitleText}
+                onChange={(e) => setReviewTitleText(e.target.value)}
+                placeholder="e.g. A lyrical masterpiece about family and identity"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+              />
             </div>
 
             {/* Review text */}

@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -16,6 +17,8 @@ import {
   Bookmark02Icon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
+import type { Review } from '../../types/review';
+import { reviewService, normalizeCatalogKey } from '../../services/reviewService';
 import { ReviewModal } from './ReviewModal';
 import { useAuth } from '../../context/AuthContext';
 
@@ -39,7 +42,8 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   onSimulateReturn,
   onOpenAddBook
 }) => {
-  const { toggleWishlist, isWishlisted } = useAuth();
+  const navigate = useNavigate();
+  const { currentUser, toggleWishlist, isWishlisted } = useAuth();
   const bookWishlisted = isWishlisted(book.id);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -95,32 +99,30 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
     setTimeout(() => setToastMessage(null), 3500);
   };
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [reviews, setReviews] = useState([
-    {
-      id: 'rev-1',
-      author: 'Hana Yamada',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150',
-      rating: 5,
-      date: '2 weeks ago',
-      text: 'Tender and sprawling. I underlined whole paragraphs and passed it to my mother the moment I finished.'
-    },
-    {
-      id: 'rev-2',
-      author: 'Oliver West',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150',
-      rating: 5,
-      date: '1 month ago',
-      text: 'A patient book that rewards patient reading. The middle section dragged for me but the last hundred pages hit hard.'
-    },
-    {
-      id: 'rev-3',
-      author: 'Fatima Noor',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150',
-      rating: 5,
-      date: '2 months ago',
-      text: 'History as tenderness. I don’t think I’ll forget Sunja for a long time.'
+
+  const catalogKey = useMemo(() => {
+    return normalizeCatalogKey(book.catalogId || book.title || book.id);
+  }, [book]);
+
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [totalReviewsCount, setTotalReviewsCount] = useState<number>(book.reviewsCount || 0);
+
+  const loadReviews = useCallback(async () => {
+    try {
+      const [res, dist] = await Promise.all([
+        reviewService.getReviews(catalogKey, { sortBy: 'helpful', limit: 3 }),
+        reviewService.getRatingDistribution(catalogKey),
+      ]);
+      setReviews(res.reviews);
+      setTotalReviewsCount(dist.total > 0 ? dist.total : (book.reviewsCount || 0));
+    } catch (e) {
+      console.warn('Failed to load reviews in details page:', e);
     }
-  ]);
+  }, [catalogKey, book.reviewsCount]);
+
+  useEffect(() => {
+    loadReviews();
+  }, [loadReviews]);
 
   // Map live community copies. When communityCopies is provided (even if empty []), use it.
   const resolvedCopies = useMemo(() => {
@@ -183,18 +185,23 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
     return [];
   }, [communityCopies, book, isDonation, isPersonal, isClaimed]);
 
-  const handleNewReview = (newRev: { author: string; rating: number; text: string }) => {
-    setReviews(prev => [
-      {
-        id: `rev-${Date.now()}`,
+  const handleNewReview = async (newRev: { author: string; rating: number; text: string }) => {
+    try {
+      await reviewService.addReview({
+        bookCatalogId: catalogKey,
+        bookTitle: book.title,
+        userId: currentUser?.id,
         author: newRev.author,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+        avatar: currentUser?.avatar,
         rating: newRev.rating,
-        date: 'Just now',
-        text: newRev.text
-      },
-      ...prev
-    ]);
+        text: newRev.text,
+      });
+      setToastMessage('Review published to the community shelf!');
+      setTimeout(() => setToastMessage(null), 3500);
+      await loadReviews();
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+    }
   };
 
   return (
@@ -318,9 +325,13 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
             <span className="font-serif font-bold text-lg text-slate-800">
               {book.rating}
             </span>
-            <span className="text-sm text-slate-500">
-              {book.reviewsCount || 124} community reviews
-            </span>
+            <button
+              type="button"
+              onClick={() => navigate(`/book/${book.id}/reviews`)}
+              className="text-sm text-slate-500 hover:text-brand hover:underline cursor-pointer transition"
+            >
+              {totalReviewsCount || book.reviewsCount || 124} community reviews
+            </button>
           </div>
 
           {/* Stats Bar row with Wishlist Counter */}
@@ -542,64 +553,124 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
 
       {/* Community Reviews section */}
       <div className="mt-12">
-        <div className="flex items-end justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
           <div>
             <h2 className="font-serif text-2xl font-semibold text-slate-800">
               Community reviews
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              {reviews.length} readers have shared their thoughts
+              {totalReviewsCount > 0
+                ? `${totalReviewsCount} reader${totalReviewsCount === 1 ? '' : 's'} have shared their thoughts`
+                : 'No reviews yet for this title'}
             </p>
           </div>
 
-          <button
-            onClick={() => setIsReviewModalOpen(true)}
-            className="flex items-center gap-1.5 text-sm font-semibold text-brand hover:text-brand-dark px-3 py-1.5 rounded-lg hover:bg-brand/5 transition"
-          >
-            <span>Write a review</span>
-            <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
-          </button>
+          <div className="flex items-center gap-3">
+            {totalReviewsCount > 0 && (
+              <button
+                type="button"
+                onClick={() => navigate(`/book/${book.id}/reviews`)}
+                className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-brand hover:text-brand-dark px-3 py-1.5 rounded-lg hover:bg-brand/5 transition"
+              >
+                <span>View all {totalReviewsCount} reviews</span>
+                <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
+              </button>
+            )}
+
+            <button
+              onClick={() => setIsReviewModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-700 hover:text-brand px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-white transition"
+            >
+              <span>Write a review</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {reviews.map((rev) => (
-            <div
-              key={rev.id}
-              className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-card flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={rev.avatar}
-                      alt={rev.author}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <h4 className="font-serif text-sm font-semibold text-slate-800">{rev.author}</h4>
-                      <p className="text-[11px] text-slate-500">{rev.date}</p>
+        {reviews.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-white border border-slate-200/90 shadow-card text-center">
+            <p className="text-sm text-slate-600">No community reviews yet. Be the first to share your experience!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {reviews.slice(0, 3).map((rev) => (
+              <div
+                key={rev.id}
+                className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-card flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={rev.avatar}
+                        alt={rev.author}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div>
+                        <h4 className="font-serif text-sm font-semibold text-slate-800">{rev.author}</h4>
+                        <p className="text-[11px] text-slate-500">{rev.date}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center text-amber-500">
+                      {[...Array(rev.rating)].map((_, i) => (
+                        <HugeiconsIcon
+                          key={i}
+                          icon={StarIcon}
+                          size={14}
+                          className="fill-amber-400 text-amber-500"
+                        />
+                      ))}
                     </div>
                   </div>
 
-                  <div className="flex items-center text-amber-500">
-                    {[...Array(rev.rating)].map((_, i) => (
-                      <HugeiconsIcon
-                        key={i}
-                        icon={StarIcon}
-                        size={14}
-                        className="fill-amber-400 text-amber-500"
-                      />
-                    ))}
-                  </div>
+                  {rev.title && (
+                    <h5 className="font-serif text-xs font-semibold text-slate-900 mb-1 line-clamp-1">
+                      {rev.title}
+                    </h5>
+                  )}
+
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed italic line-clamp-4">
+                    “{rev.text}”
+                  </p>
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed italic">
-                  “{rev.text}”
-                </p>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-slate-400 text-xs">
+                  <span>👍 {rev.upvotesCount} helpful</span>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/book/${book.id}/reviews`)}
+                    className="text-brand font-semibold hover:underline text-[11px]"
+                  >
+                    Read full review →
+                  </button>
+                </div>
               </div>
+            ))}
+          </div>
+        )}
+
+        {/* View All Reviews Prompt Card */}
+        {totalReviewsCount > 0 && (
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-slate-200/90 shadow-card">
+            <div>
+              <h4 className="font-serif text-base font-semibold text-slate-900">
+                Looking for more opinions on “{book.title}”?
+              </h4>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Sort by helpfulness, filter by star ratings, and read all {totalReviewsCount} community reviews.
+              </p>
             </div>
-          ))}
-        </div>
+
+            <button
+              type="button"
+              onClick={() => navigate(`/book/${book.id}/reviews`)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95 flex-shrink-0"
+            >
+              <span>View All {totalReviewsCount} Reviews</span>
+              <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Share your experience Dotted Card matching Figma */}

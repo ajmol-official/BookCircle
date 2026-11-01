@@ -497,3 +497,44 @@ create policy "Users can view own wishlist" on public.wishlists for select using
 create policy "Users can add to own wishlist" on public.wishlists for insert with check (auth.uid() = user_id);
 create policy "Users can remove from own wishlist" on public.wishlists for delete using (auth.uid() = user_id);
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 8. REVIEWS & REVIEW UPVOTES (Community Book Ratings & Helpfulness)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create table if not exists public.reviews (
+  id text primary key,
+  book_catalog_id text not null,
+  user_id text,
+  author_name text not null,
+  author_avatar text,
+  rating integer not null check (rating >= 1 and rating <= 5),
+  title text,
+  text text not null,
+  upvotes_count integer default 0,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_reviews_book_catalog_id on public.reviews(book_catalog_id);
+create index if not exists idx_reviews_rating on public.reviews(rating);
+create index if not exists idx_reviews_upvotes_count on public.reviews(upvotes_count desc);
+
+create table if not exists public.review_upvotes (
+  id uuid default gen_random_uuid() primary key,
+  review_id text not null references public.reviews(id) on delete cascade,
+  user_id text not null,
+  created_at timestamptz default now(),
+  constraint uq_review_user unique (review_id, user_id)
+);
+
+create index if not exists idx_review_upvotes_user on public.review_upvotes(user_id);
+create index if not exists idx_review_upvotes_review on public.review_upvotes(review_id);
+
+alter table public.reviews enable row level security;
+alter table public.review_upvotes enable row level security;
+
+create policy "Public can view reviews" on public.reviews for select using (true);
+create policy "Authenticated users can create reviews" on public.reviews for insert with check (true);
+create policy "Public can view review upvotes" on public.review_upvotes for select using (true);
+create policy "Authenticated users can manage review upvotes" on public.review_upvotes for all using (true);
+
+
