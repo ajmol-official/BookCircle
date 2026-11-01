@@ -26,6 +26,7 @@ import { getAuthorCountry, getCountryFlag } from '../../utils/countryData';
 interface BooksBrowsePageProps {
   books: Book[];
   onSelectBook: (book: Book) => void;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onQuickBorrow?: (book: Book) => void;
   onSelectOwner?: (ownerName: string) => void;
   onBack?: () => void;
@@ -42,6 +43,7 @@ const CONDITIONS = ['Like New', 'Very Good', 'Good', 'Fair'] as const;
 export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
   books,
   onSelectBook,
+  onSelectAuthor,
   onQuickBorrow,
   onSelectOwner,
 }) => {
@@ -543,6 +545,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                 key={book.id}
                 book={book}
                 onSelectBook={onSelectBook}
+                onSelectAuthor={onSelectAuthor}
                 onQuickBorrow={onQuickBorrow}
                 onSelectOwner={onSelectOwner}
               />
@@ -590,7 +593,19 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                         )}
                       </div>
                       <p className="text-xs text-slate-500 font-medium mt-0.5">
-                        by {book.author} <span className="text-slate-400">({getCountryFlag(authorCountry)} {authorCountry})</span>
+                        by{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSelectAuthor) onSelectAuthor(book.author, book.authorId);
+                          }}
+                          className="font-medium text-slate-700 hover:text-brand hover:underline inline-flex items-center gap-1 transition-colors rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand/40 cursor-pointer"
+                          title={`View ${book.author}'s author profile`}
+                        >
+                          {book.author}
+                        </button>{' '}
+                        <span className="text-slate-400">({getCountryFlag(authorCountry)} {authorCountry})</span>
                       </p>
                       
                       {/* Secondary Metadata Row */}

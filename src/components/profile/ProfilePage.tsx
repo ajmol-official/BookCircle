@@ -19,10 +19,11 @@ import { useAuth } from '../../context/AuthContext';
 
 interface ProfilePageProps {
   onSelectBook: (book: Book) => void;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   myBooks: Book[];
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelectAuthor, myBooks }) => {
   const navigate = useNavigate();
   const { currentUser, updateProfile } = useAuth();
 
@@ -399,7 +400,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, myBooks 
                     <h4 className="font-serif text-base font-semibold text-slate-800 line-clamp-1 group-hover:text-brand transition-colors">
                       {book.title}
                     </h4>
-                    <p className="text-xs text-slate-500">{book.author}</p>
+                    <p className="text-xs text-slate-500">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onSelectAuthor) onSelectAuthor(book.author, book.authorId);
+                        }}
+                        className="hover:text-brand hover:underline font-medium text-slate-500 inline-flex items-center gap-1 transition-colors rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand/40 cursor-pointer"
+                        title={`View ${book.author}'s author profile`}
+                      >
+                        {book.author}
+                      </button>
+                    </p>
                   </div>
 
                   <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">

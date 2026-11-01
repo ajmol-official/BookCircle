@@ -23,6 +23,7 @@ interface PublicProfilePageProps {
   allBooks: Book[];
   onBack?: () => void;
   onSelectBook: (book: Book) => void;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onRequestBorrow: (book: Book, ownerName?: string) => void;
   onSendMessage?: (ownerName: string) => void;
 }
@@ -31,6 +32,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
   reader,
   allBooks,
   onSelectBook,
+  onSelectAuthor,
   onRequestBorrow,
   onSendMessage
 }) => {
@@ -492,7 +494,17 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                         {book.title}
                       </h3>
                       <p className="text-xs text-slate-500 font-medium mt-0.5">
-                        {book.author}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSelectAuthor) onSelectAuthor(book.author, book.authorId);
+                          }}
+                          className="hover:text-brand hover:underline font-medium text-slate-500 inline-flex items-center gap-1 transition-colors rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand/40 cursor-pointer"
+                          title={`View ${book.author}'s author profile`}
+                        >
+                          {book.author}
+                        </button>
                       </p>
 
                       {/* Brief description / owner note */}

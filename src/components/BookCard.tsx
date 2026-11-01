@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 interface BookCardProps {
   book: Book;
   onSelectBook: (book: Book) => void;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onQuickBorrow?: (book: Book) => void;
   onSelectOwner?: (ownerName: string) => void;
 }
@@ -21,6 +22,7 @@ interface BookCardProps {
 export const BookCard: React.FC<BookCardProps> = ({
   book,
   onSelectBook,
+  onSelectAuthor,
   onQuickBorrow,
   onSelectOwner
 }) => {
@@ -122,9 +124,21 @@ export const BookCard: React.FC<BookCardProps> = ({
           <h3 className="font-serif text-base sm:text-lg font-semibold text-slate-800 line-clamp-1 group-hover:text-brand transition-colors">
             {book.title}
           </h3>
-          <p className="text-xs text-slate-500 font-medium">
-            {book.author}
-          </p>
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onSelectAuthor) {
+                  onSelectAuthor(book.author, book.authorId);
+                }
+              }}
+              className="text-xs text-slate-500 hover:text-brand font-medium hover:underline text-left inline-flex items-center gap-1 transition-colors w-fit focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand/40 rounded py-0.5 -my-0.5 cursor-pointer"
+              title={`View ${book.author}'s author profile`}
+            >
+              <span>{book.author}</span>
+            </button>
+          </div>
 
           {/* Owner info row (Secondary hierarchy) */}
           <div className="flex items-center justify-between gap-2 mt-2 pt-1">

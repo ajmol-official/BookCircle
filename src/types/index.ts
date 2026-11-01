@@ -1,8 +1,11 @@
+export * from './author';
+
 export interface Book {
   id: string;
   catalogId?: string; // Canonical Unique Book Title ID for shared reviews and ratings
   title: string;
   author: string;
+  authorId?: string; // Canonical Author ID / slug
   authorCountry?: string;
   coverImage: string;
   rating: number;
@@ -25,6 +28,7 @@ export interface CatalogBook {
   id: string; // Unique Book ID (e.g. 'the-god-of-small-things')
   title: string;
   author: string;
+  authorId?: string;
   authorCountry?: string;
   coverImage: string;
   rating: number;

@@ -22,6 +22,7 @@ import type { Book } from '../../types';
 
 interface MyBooksPageProps {
   myBooks?: Book[];
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onUpdateBookStatus?: (bookId: string, newMode: 'lending' | 'donation' | 'personal') => void;
   onDeleteBook?: (bookId: string) => void;
   onBookAdded?: (newBook: any) => void;
@@ -39,6 +40,7 @@ interface MyBooksPageProps {
 
 export const MyBooksPage: React.FC<MyBooksPageProps> = ({
   myBooks: propMyBooks,
+  onSelectAuthor,
   onUpdateBookStatus,
   onDeleteBook,
   onBookAdded,
@@ -453,7 +455,16 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
                     <h4 className="font-serif text-base sm:text-lg font-semibold text-slate-800">
                       {book.title}
                     </h4>
-                    <p className="text-xs text-slate-500 font-medium">{book.author}</p>
+                    <p className="text-xs text-slate-500 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => onSelectAuthor?.(book.author, book.authorId)}
+                        className="hover:text-brand hover:underline font-medium text-slate-500 inline-flex items-center gap-1 transition-colors rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand/40 cursor-pointer"
+                        title={`View ${book.author}'s author profile`}
+                      >
+                        {book.author}
+                      </button>
+                    </p>
 
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {/* Status Badges */}

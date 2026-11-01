@@ -24,6 +24,7 @@ interface BookDetailsPageProps {
   onBack?: () => void;
   onRequestBorrow: (book: Book, ownerName?: string) => void;
   onSelectOwner?: (ownerName: string) => void;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onSimulateReturn?: (book: Book) => void;
 }
 
@@ -31,6 +32,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   book,
   onRequestBorrow,
   onSelectOwner,
+  onSelectAuthor,
   onSimulateReturn
 }) => {
   const { toggleWishlist, isWishlisted } = useAuth();
@@ -277,7 +279,15 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
               {book.title}
             </h1>
             <p className="text-base text-slate-500 font-medium mt-1">
-              by <span className="text-slate-700 font-semibold">{book.author}</span>
+              by{' '}
+              <button
+                type="button"
+                onClick={() => onSelectAuthor?.(book.author, book.authorId)}
+                className="text-slate-800 font-semibold hover:text-brand hover:underline inline-flex items-center gap-1 transition-colors rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand/40 cursor-pointer"
+                title={`View ${book.author}'s author profile`}
+              >
+                <span>{book.author}</span>
+              </button>
             </p>
           </div>
 

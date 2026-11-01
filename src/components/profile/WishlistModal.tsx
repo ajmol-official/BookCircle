@@ -23,6 +23,7 @@ interface WishlistModalProps {
   wishlistBookIds: string[];
   allBooks: Book[];
   onSelectBook: (book: Book) => void;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onRequestBorrow: (book: Book, ownerName?: string) => void;
   onRemoveWishlist: (bookId: string) => void;
   onSimulateReturn?: (book: Book) => void;
@@ -34,6 +35,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   wishlistBookIds,
   allBooks,
   onSelectBook,
+  onSelectAuthor,
   onRequestBorrow,
   onRemoveWishlist,
   onSimulateReturn
@@ -227,7 +229,19 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                             {book.title}
                           </h4>
                           <p className="text-xs text-slate-500 truncate">
-                            by <span className="text-slate-700 font-medium">{book.author}</span>
+                            by{' '}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onClose();
+                                if (onSelectAuthor) onSelectAuthor(book.author, book.authorId);
+                              }}
+                              className="text-slate-700 font-medium hover:text-brand hover:underline inline-flex items-center gap-1 transition-colors cursor-pointer"
+                              title={`View ${book.author}'s author profile`}
+                            >
+                              {book.author}
+                            </button>
                           </p>
 
                           <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1">

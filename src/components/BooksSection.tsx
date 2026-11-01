@@ -7,6 +7,7 @@ import { BookCard } from './BookCard';
 interface BooksSectionProps {
   books: Book[];
   onSelectBook: (book: Book) => void;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onQuickBorrow?: (book: Book) => void;
   onSelectOwner?: (ownerName: string) => void;
   onSeeAll?: () => void;
@@ -16,6 +17,7 @@ interface BooksSectionProps {
 export const BooksSection: React.FC<BooksSectionProps> = ({
   books,
   onSelectBook,
+  onSelectAuthor,
   onQuickBorrow,
   onSelectOwner,
   onSeeAll,
@@ -55,6 +57,7 @@ export const BooksSection: React.FC<BooksSectionProps> = ({
               key={book.id}
               book={book}
               onSelectBook={onSelectBook}
+              onSelectAuthor={onSelectAuthor}
               onQuickBorrow={onQuickBorrow}
               onSelectOwner={onSelectOwner}
             />

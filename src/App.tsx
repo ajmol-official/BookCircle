@@ -34,6 +34,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { ProfileSetupModal } from './components/auth/ProfileSetupModal';
 import { ReadersBrowsePage } from './components/readers/ReadersBrowsePage';
 import { BooksBrowsePage } from './components/books/BooksBrowsePage';
+import { AuthorProfilePage } from './components/author/AuthorProfilePage';
 import { NotFoundPage } from './components/NotFoundPage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -41,6 +42,13 @@ import { ExchangeProvider, useExchanges } from './context/ExchangeContext';
 import { MessagingProvider, useMessaging } from './context/MessagingContext';
 import { FloatingChatWidget } from './components/chat/FloatingChatWidget';
 import { mockBooks, mockReaders } from './data/mockData';
+import {
+  getAuthorBySlug,
+  getAuthorByName,
+  getOrCreateAuthor,
+  generateAuthorSlug,
+  getBooksByAuthor
+} from './data/authors';
 import type { Book, Reader } from './types';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { BookOpen01Icon, FavouriteIcon } from '@hugeicons/core-free-icons';
@@ -51,8 +59,9 @@ const BookDetailsRoute: React.FC<{
   isInitialLoading?: boolean;
   onRequestBorrow: (b: Book, owner?: string) => void;
   onSelectOwner: (ownerName: string) => void;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onSimulateReturn: (b: Book) => void;
-}> = ({ booksList, isInitialLoading, onRequestBorrow, onSelectOwner, onSimulateReturn }) => {
+}> = ({ booksList, isInitialLoading, onRequestBorrow, onSelectOwner, onSelectAuthor, onSimulateReturn }) => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
 
@@ -102,6 +111,7 @@ const BookDetailsRoute: React.FC<{
       book={book}
       onRequestBorrow={onRequestBorrow}
       onSelectOwner={onSelectOwner}
+      onSelectAuthor={onSelectAuthor}
       onSimulateReturn={onSimulateReturn}
     />
   );
@@ -112,9 +122,10 @@ const ReaderProfileRoute: React.FC<{
   readersList: Reader[];
   booksList: Book[];
   onSelectBook: (book: Book) => void;
+  onSelectAuthor?: (authorName: string, authorId?: string) => void;
   onRequestBorrow: (b: Book, owner?: string) => void;
   onSendMessage: (ownerName: string) => void;
-}> = ({ readersList, booksList, onSelectBook, onRequestBorrow, onSendMessage }) => {
+}> = ({ readersList, booksList, onSelectBook, onSelectAuthor, onRequestBorrow, onSendMessage }) => {
   const { readerId } = useParams<{ readerId: string }>();
   const navigate = useNavigate();
 
@@ -174,8 +185,66 @@ const ReaderProfileRoute: React.FC<{
       reader={reader}
       allBooks={booksList}
       onSelectBook={onSelectBook}
+      onSelectAuthor={onSelectAuthor}
       onRequestBorrow={onRequestBorrow}
       onSendMessage={onSendMessage}
+    />
+  );
+};
+
+// ─── AUTHOR PROFILE ROUTE WRAPPER ─────────────────────────────────────
+const AuthorProfileRoute: React.FC<{
+  booksList: Book[];
+  onSelectBook: (book: Book) => void;
+  onSelectAuthor: (authorName: string, authorId?: string) => void;
+  onSelectOwner: (ownerName: string) => void;
+  onQuickBorrow?: (book: Book) => void;
+  onOpenAddBook?: () => void;
+}> = ({ booksList, onSelectBook, onSelectAuthor, onSelectOwner, onQuickBorrow, onOpenAddBook }) => {
+  const { authorId } = useParams<{ authorId: string }>();
+  const navigate = useNavigate();
+
+  const author = useMemo(() => {
+    if (!authorId) return undefined;
+    const decoded = decodeURIComponent(authorId).trim();
+    // 1. Direct slug or ID lookup
+    const found = getAuthorBySlug(decoded) || getAuthorByName(decoded);
+    if (found) return found;
+
+    // 2. Look through books in catalog
+    const matchingBook = booksList.find(
+      (b) =>
+        generateAuthorSlug(b.author) === generateAuthorSlug(decoded) ||
+        b.author.toLowerCase().trim() === decoded.toLowerCase()
+    );
+
+    if (matchingBook) {
+      return getOrCreateAuthor(matchingBook.author, matchingBook.authorCountry);
+    }
+
+    // 3. Fallback: format slug to title case for unknown author
+    const formattedName = decoded
+      .split(/[-_]+/)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    return getOrCreateAuthor(formattedName);
+  }, [authorId, booksList]);
+
+  const authorBooks = useMemo(() => {
+    if (!author) return [];
+    return getBooksByAuthor(booksList, author.name);
+  }, [booksList, author]);
+
+  return (
+    <AuthorProfilePage
+      author={author}
+      books={authorBooks}
+      onSelectBook={onSelectBook}
+      onSelectAuthor={onSelectAuthor}
+      onSelectOwner={onSelectOwner}
+      onQuickBorrow={onQuickBorrow}
+      onOpenAddBook={onOpenAddBook}
+      onBack={() => navigate('/books')}
     />
   );
 };
@@ -374,6 +443,11 @@ const BookCircleMain: React.FC = () => {
 
   const handleSelectBook = (book: Book) => {
     navigate(`/book/${book.id}`);
+  };
+
+  const handleSelectAuthor = (authorNameOrSlug: string, authorId?: string) => {
+    const slug = authorId || generateAuthorSlug(authorNameOrSlug);
+    navigate(`/author/${encodeURIComponent(slug)}`);
   };
 
   const handleBrowseReader = (reader: Reader) => {
@@ -724,6 +798,7 @@ const BookCircleMain: React.FC = () => {
                 <BooksSection
                   books={filteredBooks}
                   onSelectBook={handleSelectBook}
+                  onSelectAuthor={handleSelectAuthor}
                   onQuickBorrow={handleQuickBorrow}
                   onSelectOwner={handleSelectOwner}
                   onSeeAll={() => navigate('/books')}
@@ -744,6 +819,7 @@ const BookCircleMain: React.FC = () => {
               <BooksBrowsePage
                 books={booksList}
                 onSelectBook={handleSelectBook}
+                onSelectAuthor={handleSelectAuthor}
                 onQuickBorrow={handleQuickBorrow}
                 onSelectOwner={handleSelectOwner}
               />
@@ -758,7 +834,22 @@ const BookCircleMain: React.FC = () => {
                 isInitialLoading={isInitialLoading}
                 onRequestBorrow={handleDetailsRequestBorrow}
                 onSelectOwner={handleSelectOwner}
+                onSelectAuthor={handleSelectAuthor}
                 onSimulateReturn={handleSimulateReturn}
+              />
+            }
+          />
+
+          <Route
+            path="/author/:authorId"
+            element={
+              <AuthorProfileRoute
+                booksList={booksList}
+                onSelectBook={handleSelectBook}
+                onSelectAuthor={handleSelectAuthor}
+                onSelectOwner={handleSelectOwner}
+                onQuickBorrow={handleQuickBorrow}
+                onOpenAddBook={() => setIsGlobalAddBookOpen(true)}
               />
             }
           />
@@ -770,6 +861,7 @@ const BookCircleMain: React.FC = () => {
                 key="my-books-shelf"
                 initialSubTab="shelf"
                 myBooks={currentUserShelfBooks}
+                onSelectAuthor={handleSelectAuthor}
                 onUpdateBookStatus={handleUpdateBookStatus}
                 onDeleteBook={handleDeleteBook}
                 onBookAdded={handleGlobalBookAdded}
@@ -822,6 +914,7 @@ const BookCircleMain: React.FC = () => {
             element={
               <ProfilePage
                 onSelectBook={handleSelectBook}
+                onSelectAuthor={handleSelectAuthor}
                 myBooks={currentUserShelfBooks}
               />
             }
@@ -844,6 +937,7 @@ const BookCircleMain: React.FC = () => {
                 readersList={readersList}
                 booksList={booksList}
                 onSelectBook={handleSelectBook}
+                onSelectAuthor={handleSelectAuthor}
                 onRequestBorrow={handleDetailsRequestBorrow}
                 onSendMessage={(name) => {
                   handleOpenFloatingChat(name);
@@ -964,6 +1058,7 @@ const BookCircleMain: React.FC = () => {
           setIsWishlistModalOpen(false);
           handleSelectBook(book);
         }}
+        onSelectAuthor={handleSelectAuthor}
         onRequestBorrow={(book, ownerName) => {
           handleDetailsRequestBorrow(book, ownerName);
         }}
