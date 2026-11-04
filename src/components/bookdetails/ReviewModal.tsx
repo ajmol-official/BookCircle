@@ -12,20 +12,38 @@ interface ReviewModalProps {
   onClose: () => void;
   bookTitle: string;
   onReviewSubmitted: (review: { author: string; rating: number; text: string; title?: string }) => void;
+  initialRating?: number;
+  initialTitle?: string;
+  initialText?: string;
+  isEditing?: boolean;
 }
 
 export const ReviewModal: React.FC<ReviewModalProps> = ({
   isOpen,
   onClose,
   bookTitle,
-  onReviewSubmitted
+  onReviewSubmitted,
+  initialRating,
+  initialTitle,
+  initialText,
+  isEditing = false,
 }) => {
   const { currentUser } = useAuth();
-  const [rating, setRating] = useState<number>(5);
+  const [rating, setRating] = useState<number>(initialRating || 5);
   const [hoverRating, setHoverRating] = useState<number>(0);
-  const [reviewTitleText, setReviewTitleText] = useState<string>('');
-  const [reviewText, setReviewText] = useState<string>('');
+  const [reviewTitleText, setReviewTitleText] = useState<string>(initialTitle || '');
+  const [reviewText, setReviewText] = useState<string>(initialText || '');
   const [submitted, setSubmitted] = useState<boolean>(false);
+
+  // Sync initial state when modal opens or initial values change
+  useEffect(() => {
+    if (isOpen) {
+      setRating(initialRating || 5);
+      setReviewTitleText(initialTitle || '');
+      setReviewText(initialText || '');
+      setSubmitted(false);
+    }
+  }, [isOpen, initialRating, initialTitle, initialText]);
 
   // Lock body scroll and listen for Escape key when open
   useEffect(() => {
@@ -82,10 +100,12 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
 
         <div>
           <h3 className="font-serif text-2xl font-semibold text-slate-800">
-            Review “{bookTitle}”
+            {isEditing ? `Update Review for “${bookTitle}”` : `Review “${bookTitle}”`}
           </h3>
           <p className="mt-1 text-xs sm:text-sm text-slate-500">
-            Share what moved, challenged, or delighted you. Your review helps neighbors find their next read.
+            {isEditing
+              ? 'Update your rating or reflections on this book for the community.'
+              : 'Share what moved, challenged, or delighted you. Your review helps neighbors find their next read.'}
           </p>
         </div>
 
@@ -95,7 +115,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={28} />
             </div>
             <h4 className="font-serif text-xl font-semibold text-slate-800">
-              Review Published!
+              {isEditing ? 'Review Updated!' : 'Review Published!'}
             </h4>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
               Thank you for contributing to the community shelf.
@@ -177,7 +197,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                 type="submit"
                 className="flex-1 py-3 rounded-xl bg-brand hover:bg-brand-dark active:scale-[0.98] text-white font-semibold text-xs sm:text-sm shadow-md transition"
               >
-                Post Review
+                {isEditing ? 'Save Changes' : 'Post Review'}
               </button>
             </div>
 

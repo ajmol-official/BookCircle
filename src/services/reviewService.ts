@@ -541,6 +541,75 @@ class ReviewService {
 
     return newReview;
   }
+
+  /**
+   * Find an existing review by a user for a specific book.
+   * Matches by catalogId, book title, or slug, and either userId or author name.
+   */
+  async getUserReviewForBook(
+    bookIdentifier: string,
+    userId?: string,
+    authorName?: string
+  ): Promise<Review | null> {
+    this.loadFromStorage();
+    const catalogKey = normalizeCatalogKey(bookIdentifier);
+
+    const found = this.memoryReviews.find((r) => {
+      const matchBook =
+        r.bookCatalogId === catalogKey ||
+        normalizeCatalogKey(r.bookCatalogId) === catalogKey ||
+        (r.bookTitle && normalizeCatalogKey(r.bookTitle) === catalogKey);
+
+      if (!matchBook) return false;
+
+      if (userId && r.userId && r.userId === userId) return true;
+      if (authorName && r.author && r.author.trim().toLowerCase() === authorName.trim().toLowerCase()) return true;
+      return false;
+    });
+
+    return found || null;
+  }
+
+  /**
+   * Update an existing user review.
+   */
+  async updateReview(
+    reviewId: string,
+    params: { rating?: number; title?: string; text?: string }
+  ): Promise<Review | null> {
+    this.loadFromStorage();
+    const index = this.memoryReviews.findIndex((r) => r.id === reviewId);
+    if (index === -1) return null;
+
+    const current = this.memoryReviews[index];
+    const updated: Review = {
+      ...current,
+      ...(params.rating !== undefined ? { rating: Math.max(1, Math.min(5, params.rating)) } : {}),
+      ...(params.title !== undefined ? { title: params.title.trim() || undefined } : {}),
+      ...(params.text !== undefined ? { text: params.text.trim() } : {}),
+      date: 'Updated recently',
+    };
+
+    this.memoryReviews[index] = updated;
+    this.saveToStorage();
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase
+          .from('reviews')
+          .update({
+            rating: updated.rating,
+            title: updated.title || null,
+            text: updated.text,
+          })
+          .eq('id', reviewId);
+      } catch (err) {
+        console.warn('Supabase review update skipped or offline:', err);
+      }
+    }
+
+    return updated;
+  }
 }
 
 export const reviewService = new ReviewService();

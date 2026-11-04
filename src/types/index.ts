@@ -186,6 +186,7 @@ export interface ExchangeTransaction {
   borrowerFeedback?: string;
   borrowerRatedAt?: string;
   conditionIssue?: boolean;
+  originalCondition?: 'Like New' | 'Very Good' | 'Good' | 'Fair';
   conditionVerified?: 'Like New' | 'Good' | 'Minor Wear' | 'Damaged';
   conditionNotes?: string;
   disputeReason?: string;

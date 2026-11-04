@@ -8,7 +8,6 @@ import {
   BubbleChatIcon,
   BookOpen01Icon,
   StarIcon,
-  ShieldCheckIcon,
   AlertCircleIcon,
   Notification01Icon,
   Cancel01Icon,
@@ -16,6 +15,11 @@ import {
 import { useExchanges } from '../../context/ExchangeContext';
 import { useAuth } from '../../context/AuthContext';
 import { ReturnWizardModal, type BorrowedBookItem, type ReturnHandoverDetails } from '../borrow/ReturnWizardModal';
+import { InspectReturnModal } from './InspectReturnModal';
+import { RecordDirectReturnModal } from './RecordDirectReturnModal';
+import { RateReaderModal } from './RateReaderModal';
+import { ReviewModal } from '../bookdetails/ReviewModal';
+import { reviewService } from '../../services/reviewService';
 import type { ExchangeTransaction } from '../../types';
 
 interface ActivityPageProps {
@@ -176,10 +180,33 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
   // Return Wizard Modal State
   const [returnModalTarget, setReturnModalTarget] = useState<ExchangeTransaction | null>(null);
 
-  // Condition Inspection Modal State (when lender confirms receipt)
-  const [inspectingExchange, setInspectingExchange] = useState<ExchangeTransaction | null>(null);
-  const [conditionSelected, setConditionSelected] = useState<'Like New' | 'Good' | 'Minor Wear' | 'Damaged'>('Good');
-  const [conditionNotes, setConditionNotes] = useState('');
+  // Dedicated Return Flow Modals (Requirement 1 & 2)
+  const [inspectingReturnTarget, setInspectingReturnTarget] = useState<ExchangeTransaction | null>(null);
+  const [directReturnTarget, setDirectReturnTarget] = useState<ExchangeTransaction | null>(null);
+
+  // Post-Return Feedback States (Requirement 3 & 4)
+  const [rateReaderTarget, setRateReaderTarget] = useState<ExchangeTransaction | null>(null);
+  const [bookReviewTarget, setBookReviewTarget] = useState<ExchangeTransaction | null>(null);
+  const [existingUserReview, setExistingUserReview] = useState<{ id: string; rating: number; title?: string; text: string } | null>(null);
+  const [dismissedPromptIds, setDismissedPromptIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('bookcircle_dismissed_prompts');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [reviewedBookIds, setReviewedBookIds] = useState<Set<string>>(new Set());
+
+  const handleDismissPrompt = (promptKey: string) => {
+    setDismissedPromptIds((prev) => {
+      const next = new Set(prev).add(promptKey);
+      try {
+        localStorage.setItem('bookcircle_dismissed_prompts', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
 
   // Rating Modal State (for history)
   const [ratingTarget, setRatingTarget] = useState<ExchangeTransaction | null>(null);
@@ -221,7 +248,10 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
   useEffect(() => {
     const isAnyModalOpen = Boolean(
       returnModalTarget ||
-      inspectingExchange ||
+      inspectingReturnTarget ||
+      directReturnTarget ||
+      rateReaderTarget ||
+      bookReviewTarget ||
       ratingTarget ||
       disputeTarget ||
       declineTarget ||
@@ -236,7 +266,10 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setReturnModalTarget(null);
-        setInspectingExchange(null);
+        setInspectingReturnTarget(null);
+        setDirectReturnTarget(null);
+        setRateReaderTarget(null);
+        setBookReviewTarget(null);
         setRatingTarget(null);
         setDisputeTarget(null);
         setDeclineTarget(null);
@@ -252,7 +285,10 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     };
   }, [
     returnModalTarget,
-    inspectingExchange,
+    inspectingReturnTarget,
+    directReturnTarget,
+    rateReaderTarget,
+    bookReviewTarget,
     ratingTarget,
     disputeTarget,
     declineTarget,
@@ -260,6 +296,104 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     error,
     clearError,
   ]);
+
+  // Handler to open borrower book review
+  const handleOpenBorrowerReview = async (exchange: ExchangeTransaction) => {
+    const catalogId = exchange.catalogId || exchange.bookId;
+    const existing = await reviewService.getUserReviewForBook(
+      catalogId,
+      currentUserId,
+      currentUser?.displayName
+    );
+    if (existing) {
+      setExistingUserReview({
+        id: existing.id,
+        rating: existing.rating,
+        title: existing.title,
+        text: existing.text,
+      });
+    } else {
+      setExistingUserReview(null);
+    }
+    setBookReviewTarget(exchange);
+  };
+
+  const handleBorrowerReviewSubmitted = async (review: { author: string; rating: number; text: string; title?: string }) => {
+    if (!bookReviewTarget) return;
+    const catalogId = bookReviewTarget.catalogId || bookReviewTarget.bookId;
+
+    if (existingUserReview) {
+      await reviewService.updateReview(existingUserReview.id, {
+        rating: review.rating,
+        title: review.title,
+        text: review.text,
+      });
+      showToast(`Updated review for “${bookReviewTarget.bookTitle}”!`);
+    } else {
+      await reviewService.addReview({
+        bookCatalogId: catalogId,
+        bookTitle: bookReviewTarget.bookTitle,
+        userId: currentUserId,
+        author: review.author,
+        avatar: currentUser?.avatar,
+        rating: review.rating,
+        title: review.title,
+        text: review.text,
+      });
+      showToast(`Review for “${bookReviewTarget.bookTitle}” published to community shelf!`);
+    }
+
+    setReviewedBookIds((prev) => new Set(prev).add(catalogId));
+    handleDismissPrompt(`borrower-prompt-${bookReviewTarget.id}`);
+    setBookReviewTarget(null);
+  };
+
+  // Handler for lender rating reader
+  const handleRateReaderSubmitted = async (data: {
+    punctuality: 'On Time' | 'Slight Delay' | 'Late';
+    bookCare: 'Excellent Care' | 'Minor Wear' | 'Damaged';
+    overallRating: number;
+    comment: string;
+  }) => {
+    if (!rateReaderTarget) return;
+
+    const formattedFeedback = `Return: ${data.punctuality} · Book Care: ${data.bookCare}${
+      data.comment ? ` — “${data.comment}”` : ''
+    }`;
+
+    await submitRating(rateReaderTarget.id, 'lender', data.overallRating, formattedFeedback);
+    handleDismissPrompt(`lender-prompt-${rateReaderTarget.id}`);
+    showToast(`Thank you! Your feedback for ${rateReaderTarget.borrowerName} has been recorded.`);
+    setRateReaderTarget(null);
+  };
+
+  // Handler for lender confirming return receipt
+  const handleConfirmInspectReceipt = async (
+    condition: 'Like New' | 'Good' | 'Minor Wear' | 'Damaged',
+    notes?: string
+  ) => {
+    if (!inspectingReturnTarget) return;
+    const target = inspectingReturnTarget;
+    await confirmReturnReceipt(target.id, condition, notes);
+    setInspectingReturnTarget(null);
+    showToast(`Confirmed receipt for “${target.bookTitle}”! Loan completed and moved to History.`);
+    // Automatically present optional reader feedback opportunity
+    setRateReaderTarget(target);
+  };
+
+  // Handler for lender confirming direct return
+  const handleConfirmDirectReturn = async (
+    condition: 'Like New' | 'Good' | 'Minor Wear' | 'Damaged',
+    notes?: string
+  ) => {
+    if (!directReturnTarget) return;
+    const target = directReturnTarget;
+    await confirmReturnReceipt(target.id, condition, notes);
+    setDirectReturnTarget(null);
+    showToast(`Direct return recorded for “${target.bookTitle}”! Loan closed and moved to History.`);
+    // Automatically present optional reader feedback opportunity
+    setRateReaderTarget(target);
+  };
 
   // Execute Action from Confirmation Modal
   const handleExecuteConfirmedAction = async (target: ActionConfirmationTarget) => {
@@ -283,7 +417,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
         break;
       case 'borrower_return_handover':
         await confirmReturnHandedBack(exchange.id);
-        showToast(`Confirmed handing back “${exchange.bookTitle}” to ${exchange.ownerName}!`);
+        showToast("You've handed back the book. Waiting for the lender to confirm receipt.");
         break;
       case 'add_to_collection':
         await addDonationToPrivateCollection(exchange);
@@ -409,6 +543,53 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     if (historyFilter === 'gift') return list.filter((e) => e.exchangeType === 'gift');
     return list;
   }, [userHistoryList, historyFilter, currentUserId, currentUserDisplayName]);
+
+  // Check which books in history the current user has already reviewed
+  useEffect(() => {
+    let isMounted = true;
+    const checkReviews = async () => {
+      const reviewed = new Set<string>();
+      for (const ex of userHistoryList) {
+        if (!isOwner(ex) && ex.exchangeType === 'borrow') {
+          const catId = ex.catalogId || ex.bookId;
+          const rev = await reviewService.getUserReviewForBook(
+            catId,
+            currentUserId,
+            currentUser?.displayName
+          );
+          if (rev) reviewed.add(catId);
+        }
+      }
+      if (isMounted) setReviewedBookIds(reviewed);
+    };
+    checkReviews();
+    return () => {
+      isMounted = false;
+    };
+  }, [userHistoryList, currentUserId, currentUser?.displayName]);
+
+  // Find optional post-return feedback opportunities
+  const pendingLenderFeedback = useMemo(() => {
+    return userHistoryList.find(
+      (ex) =>
+        isOwner(ex) &&
+        ex.exchangeType === 'borrow' &&
+        (ex.status === 'completed' || (ex.status as string) === 'returned') &&
+        !ex.lenderRating &&
+        !dismissedPromptIds.has(`lender-prompt-${ex.id}`)
+    );
+  }, [userHistoryList, currentUserId, dismissedPromptIds]);
+
+  const pendingBorrowerFeedback = useMemo(() => {
+    return userHistoryList.find(
+      (ex) =>
+        !isOwner(ex) &&
+        ex.exchangeType === 'borrow' &&
+        (ex.status === 'completed' || (ex.status as string) === 'returned') &&
+        !reviewedBookIds.has(ex.catalogId || ex.bookId) &&
+        !dismissedPromptIds.has(`borrower-prompt-${ex.id}`)
+    );
+  }, [userHistoryList, currentUserId, reviewedBookIds, dismissedPromptIds]);
 
   // Handle return handover scheduling callback
   const handleReturnScheduledCallback = async (details: ReturnHandoverDetails) => {
@@ -586,6 +767,41 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {activeTab === 'lending' && (
         <div className="mt-8 space-y-10">
+          {/* Post-Return Reader Feedback Prompt (Requirement 3.B) */}
+          {pendingLenderFeedback && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50/70 border border-amber-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
+              <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0">
+                  <HugeiconsIcon icon={StarIcon} size={20} className="fill-amber-400" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-serif text-base font-semibold text-slate-900 truncate">
+                    How was your experience with this reader?
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">
+                    You've received <strong>“{pendingLenderFeedback.bookTitle}”</strong> back from {pendingLenderFeedback.borrowerName}. Share your experience to help build a trustworthy book-sharing community.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleDismissPrompt(`lender-prompt-${pendingLenderFeedback.id}`)}
+                  className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold transition"
+                >
+                  Skip for Now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRateReaderTarget(pendingLenderFeedback)}
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition active:scale-95"
+                >
+                  Rate Reader
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* SECTION 1: Pending Requests (Action Required) */}
           {pendingLendingRequests.length > 0 && (
             <div className="space-y-4">
@@ -895,10 +1111,11 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                       </button>
 
                       <button
-                        onClick={() => setInspectingExchange(loan)}
-                        className="px-3.5 py-2 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition flex-1 sm:flex-initial text-center"
+                        type="button"
+                        onClick={() => setDirectReturnTarget(loan)}
+                        className="px-3.5 py-2 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition flex-1 sm:flex-initial text-center active:scale-95"
                       >
-                        Mark Returned
+                        Record Direct Return
                       </button>
                     </div>
                   </div>
@@ -948,7 +1165,8 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                     </div>
 
                     <button
-                      onClick={() => setInspectingExchange(item)}
+                      type="button"
+                      onClick={() => setInspectingReturnTarget(item)}
                       className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
                     >
                       Inspect Condition & Confirm Receipt
@@ -1000,6 +1218,41 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {activeTab === 'borrowing' && (
         <div className="mt-8 space-y-10">
+          {/* Post-Return Book Review Prompt (Requirement 3.A) */}
+          {pendingBorrowerFeedback && (
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50/70 border border-purple-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
+              <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center flex-shrink-0">
+                  <HugeiconsIcon icon={BookOpen01Icon} size={20} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-serif text-base font-semibold text-slate-900 truncate">
+                    How was your reading experience?
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">
+                    You've finished reading <strong>“{pendingBorrowerFeedback.bookTitle}”</strong>! Share your thoughts to help other readers discover their next favourite book.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleDismissPrompt(`borrower-prompt-${pendingBorrowerFeedback.id}`)}
+                  className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold transition"
+                >
+                  Skip for Now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenBorrowerReview(pendingBorrowerFeedback)}
+                  className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95"
+                >
+                  Write a Review
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* SECTION 1: Requests Sent (Awaiting Owner Decision) */}
           {sentBorrowRequests.length > 0 && (
             <div className="space-y-4">
@@ -1318,9 +1571,9 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
 
                       <div className="w-full sm:w-auto flex justify-end pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                         {borrowerConfirmed ? (
-                          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 w-full sm:w-auto justify-center">
-                            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
-                            <span>Handed back · Awaiting owner confirmation</span>
+                          <div className="flex items-center gap-2 text-xs font-medium text-amber-900 bg-amber-50 px-3.5 py-2 rounded-xl border border-amber-200/90 w-full sm:w-auto">
+                            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="text-amber-700 flex-shrink-0" />
+                            <span>You've handed back the book. Waiting for the lender to confirm receipt.</span>
                           </div>
                         ) : (
                           <button
@@ -1538,12 +1791,75 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                       )
                     )}
 
-                    {/* Independent Dual Rating */}
+                    {/* Post-Return Feedback Entry Points in History (Requirement 4) */}
                     {(() => {
-                      const userAlreadyRated = userIsLender ? Boolean(item.lenderRating) : Boolean(item.borrowerRating);
-                      const userScore = userIsLender ? item.lenderRating : item.borrowerRating;
+                      if (userIsLender) {
+                        // Lender view: Rate Reader
+                        if (item.lenderRating) {
+                          return (
+                            <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                              <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} className="text-emerald-600" />
+                                Reader Rated:
+                              </span>
+                              <div className="flex items-center text-amber-500">
+                                {[...Array(5)].map((_, i) => (
+                                  <HugeiconsIcon
+                                    key={i}
+                                    icon={StarIcon}
+                                    size={12}
+                                    className={i < Math.floor(item.lenderRating || 5) ? 'fill-amber-400 text-amber-500' : 'text-slate-200'}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[11px] font-semibold text-slate-700">({item.lenderRating}.0)</span>
+                            </div>
+                          );
+                        }
 
-                      if (userAlreadyRated) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => setRateReaderTarget(item)}
+                            className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 text-xs font-semibold transition active:scale-95 flex items-center gap-1.5"
+                          >
+                            <HugeiconsIcon icon={StarIcon} size={13} className="fill-amber-400 text-amber-500" />
+                            <span>Rate Reader</span>
+                          </button>
+                        );
+                      }
+
+                      // Borrower view
+                      if (item.exchangeType === 'borrow') {
+                        const hasReviewed = reviewedBookIds.has(item.catalogId || item.bookId) || Boolean(item.borrowerRating);
+                        if (hasReviewed) {
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenBorrowerReview(item)}
+                              className="flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-xl font-semibold transition"
+                              title="Click to view or update your review"
+                            >
+                              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} className="text-emerald-600" />
+                              <span>✓ Book Reviewed</span>
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenBorrowerReview(item)}
+                            className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200/80 text-xs font-semibold transition active:scale-95 flex items-center gap-1.5"
+                          >
+                            <HugeiconsIcon icon={BookOpen01Icon} size={14} />
+                            <span>Write Book Review</span>
+                          </button>
+                        );
+                      }
+
+                      // Gift / Free claim exchange view
+                      if (item.borrowerRating) {
                         return (
                           <div className="flex items-center gap-1.5 text-xs text-slate-600">
                             <span className="text-[11px] text-slate-500">You rated:</span>
@@ -1553,7 +1869,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                                   key={i}
                                   icon={StarIcon}
                                   size={12}
-                                  className={i < Math.floor(userScore || 5) ? 'fill-amber-400 text-amber-500' : 'text-slate-200'}
+                                  className={i < Math.floor(item.borrowerRating || 5) ? 'fill-amber-400 text-amber-500' : 'text-slate-200'}
                                 />
                               ))}
                             </div>
@@ -1563,6 +1879,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
 
                       return (
                         <button
+                          type="button"
                           onClick={() => {
                             setRatingTarget(item);
                             setRatingScore(5);
@@ -1572,7 +1889,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                           }}
                           className="px-3 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/60 text-xs font-semibold transition"
                         >
-                          Rate {partnerRole}
+                          Rate Donor
                         </button>
                       );
                     })()}
@@ -1596,116 +1913,49 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
       />
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* CONDITION INSPECTION & CONFIRM RECEIPT MODAL (LENDER)               */}
+      {/* DEDICATED RETURN INSPECTION MODAL (LENDER)                          */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {inspectingExchange && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="condition-inspection-title"
-            className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4">
-              <HugeiconsIcon icon={ShieldCheckIcon} size={24} />
-            </div>
+      <InspectReturnModal
+        isOpen={Boolean(inspectingReturnTarget)}
+        exchange={inspectingReturnTarget}
+        onClose={() => setInspectingReturnTarget(null)}
+        onConfirm={handleConfirmInspectReceipt}
+        onNavigateToMessages={onNavigateToMessages}
+      />
 
-            <h3 id="condition-inspection-title" className="font-serif text-xl sm:text-2xl font-semibold text-slate-900">
-              Confirm Receipt & Book Condition
-            </h3>
-            <p className="mt-1 text-xs sm:text-sm text-slate-500">
-              You are confirming that <strong>“{inspectingExchange.bookTitle}”</strong> was received back from{' '}
-              {inspectingExchange.borrowerName}.
-            </p>
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* DEDICATED RECORD DIRECT RETURN MODAL (LENDER)                       */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <RecordDirectReturnModal
+        isOpen={Boolean(directReturnTarget)}
+        exchange={directReturnTarget}
+        onClose={() => setDirectReturnTarget(null)}
+        onConfirm={handleConfirmDirectReturn}
+      />
 
-            <div className="mt-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-2">
-                  Condition of Returned Copy
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {(['Like New', 'Good', 'Minor Wear', 'Damaged'] as const).map((cond) => (
-                    <button
-                      key={cond}
-                      type="button"
-                      onClick={() => setConditionSelected(cond)}
-                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition ${
-                        conditionSelected === cond
-                          ? 'border-brand bg-brand/5 text-brand shadow-xs'
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {cond}
-                    </button>
-                  ))}
-                </div>
-              </div>
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* DEDICATED RATE READER MODAL (LENDER -> BORROWER FEEDBACK)          */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <RateReaderModal
+        isOpen={Boolean(rateReaderTarget)}
+        exchange={rateReaderTarget}
+        onClose={() => setRateReaderTarget(null)}
+        onSubmit={handleRateReaderSubmitted}
+      />
 
-              {conditionSelected === 'Damaged' && (
-                <div className="space-y-2">
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900 leading-relaxed flex items-start gap-2.5">
-                    <HugeiconsIcon icon={AlertCircleIcon} size={16} className="text-amber-700 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="block font-semibold">Condition Recorded:</strong>
-                      Recording damage logs this in the permanent exchange audit history for transparency, while safely completing the return so your book is unlocked in your library.
-                    </div>
-                  </div>
-                  {onNavigateToMessages && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const borrower = inspectingExchange.borrowerName;
-                        const title = inspectingExchange.bookTitle;
-                        onNavigateToMessages(borrower, title);
-                      }}
-                      className="inline-flex items-center gap-1.5 text-xs text-brand hover:text-brand-dark font-medium underline-offset-2 hover:underline pt-0.5"
-                    >
-                      <HugeiconsIcon icon={BubbleChatIcon} size={14} />
-                      <span>Optional: Message {inspectingExchange.borrowerName} about this issue</span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Optional Notes / Feedback
-                </label>
-                <textarea
-                  rows={2}
-                  value={conditionNotes}
-                  onChange={(e) => setConditionNotes(e.target.value)}
-                  placeholder="e.g. Returned cleanly with no bent pages, thanks!"
-                  className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand"
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setInspectingExchange(null)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await confirmReturnReceipt(inspectingExchange.id, conditionSelected, conditionNotes);
-                  showToast(`Confirmed receipt for “${inspectingExchange.bookTitle}”! Moved to History.`);
-                  setInspectingExchange(null);
-                  setConditionNotes('');
-                }}
-                className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95"
-              >
-                Complete Return
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* DEDICATED BOOK REVIEW MODAL (BORROWER -> BOOK REVIEW)               */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <ReviewModal
+        isOpen={Boolean(bookReviewTarget)}
+        onClose={() => setBookReviewTarget(null)}
+        bookTitle={bookReviewTarget?.bookTitle || 'Book'}
+        onReviewSubmitted={handleBorrowerReviewSubmitted}
+        initialRating={existingUserReview?.rating}
+        initialTitle={existingUserReview?.title}
+        initialText={existingUserReview?.text}
+        isEditing={Boolean(existingUserReview)}
+      />
 
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* RATING & REVIEW MODAL (HISTORY)                                     */}

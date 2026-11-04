@@ -732,30 +732,50 @@ flowchart TD
 
 ---
 
-#### `BC-BORROW-06`: Book Return Receipt, Condition Inspection & Reciprocal 5-Tier Rating
+#### `BC-BORROW-06`: Book Return Receipt, Condition Inspection & Independent Post-Return Feedback
 - **Flow ID:** `BC-BORROW-06`
-- **Flow Name:** Book Return Receipt, Condition Inspection & Rating
+- **Flow Name:** Book Return Receipt, Condition Inspection & Independent Post-Return Feedback
 - **User Role:** Borrower and Lender
 - **Entry Point:** Physical return meetup $\rightarrow$ `/activity`.
-- **Preconditions:** Exchange status is `return_scheduled` or `return_in_progress`.
+- **Preconditions:** Exchange status is `return_scheduled` or `return_in_progress` (or active loan via Direct Return).
 - **Main Flow:**
-  1. Parties meet at return location.
-  2. Borrower hands book to Lender and taps "Confirm Book Handed Back". Status moves to `return_in_progress`.
-  3. Lender inspects book condition:
-     - Selects condition: "Like New", "Good", "Minor Wear", or "Damaged".
-     - Adds condition notes if wear exists.
-  4. Lender taps "Confirm Book Received Back".
-  5. Exchange status transitions to `completed`.
-  6. Book's copy status in library reverts from `lent_out` back to `available`.
-  7. **Reciprocal Review Screen:**
-     - Borrower rates Lender (Communication, friendliness: 1–5 stars).
-     - Lender rates Borrower (Punctuality, book care: 1–5 stars).
-  8. If returned on or before due date, Borrower receives verified on-time return credit, updating their **5-Tier Return Reliability** score.
-- **Decision Points & Branches:** If condition damaged, Lender can flag condition issue, initiating dispute protocol.
-- **Alternative Flows:** If borrower failed to return on time, reliability score decreases proportionally.
-- **Error & Empty States:** Transaction archived to History tab.
-- **Completion State:** Book safely back on shelf; exchange archived; reputation updated.
-- **Related Pages & Components:** `src/components/borrow/ReturnWizardModal.tsx`, `src/components/activity/ActivityPage.tsx`, `src/services/exchangeService.ts`.
+  1. **Borrower Handover:**
+     - Borrower meets Lender at return location.
+     - Borrower clicks **"I Handed Back the Book"**.
+     - Status moves to `return_in_progress` (waiting for receipt confirmation; loan is NOT completed yet).
+     - Borrower sees confirmation message: *"You've handed back the book. Waiting for the lender to confirm receipt."*
+  2. **Lender Inspection & Confirmation (`InspectReturnModal`):**
+     - Lender navigates to Activity $\rightarrow$ Lending $\rightarrow$ "Returns to Review".
+     - Lender clicks **"Inspect & Confirm Receipt"**.
+     - Dedicated inspection modal opens, displaying:
+       - Book details, borrower profile, and meetup context.
+       - **Original Condition recorded when borrowed** (e.g., Like New, Good).
+       - Returned condition selector: *Like New*, *Good*, *Minor Wear*, *Damaged*.
+       - Optional notes / feedback.
+     - Lender clicks **"Confirm Receipt & Close Loan"**.
+     - Transaction transitions to `completed`, borrowing history updates, and book availability reverts to `available` (or `donation`).
+  3. **Alternative Direct Return Flow (`RecordDirectReturnModal`):**
+     - When parties return a book outside the scheduled wizard, Lender clicks **"Record Direct Return"** on Active Loans.
+     - Confirmation modal displays handover notice, baseline original condition, returned condition selector, and a mandatory confirmation checkbox: *"I confirm that I have physically received this book back from [Borrower]"*.
+     - Button **"Confirm Direct Return & Close Loan"** is enabled only upon explicit confirmation.
+  4. **Independent Post-Return Feedback 1: Borrower $\rightarrow$ Book Review:**
+     - Prompt banner displayed to Borrower: *"How was your reading experience? You've finished reading this book! Share your thoughts to help other readers discover their next favourite book."*
+     - Actions: **Write a Review** & **Skip for Now**.
+     - Opens existing `ReviewModal`; automatically links review to book catalog. Allows star rating and written review.
+     - If already reviewed, presents option to update review without duplicate submissions.
+  5. **Independent Post-Return Feedback 2: Lender $\rightarrow$ Reader Feedback (`RateReaderModal`):**
+     - Prompt banner displayed to Lender: *"How was your experience with this reader? Share your experience to help build a trustworthy book-sharing community."*
+     - Actions: **Rate Reader** & **Skip for Now**.
+     - Evaluates 3 criteria: Return Punctuality (*On Time*, *Slight Delay*, *Late*), Book Care (*Excellent Care*, *Minor Wear*, *Damaged*), and Overall Borrowing Experience (1–5 stars), plus optional comment.
+     - Associated with completed transaction and borrower; updates trust and community reliability without altering the book's star rating.
+  6. **Revisit Access in Activity History:**
+     - Both feedback opportunities are optional and independent.
+     - If skipped, users can complete them later in **Activity $\rightarrow$ History**:
+       - Borrower sees **"Write Book Review"** (or **"✓ Book Reviewed"**).
+       - Lender sees **"Rate Reader"** (or **"✓ Reader Rated"**).
+- **Decision Points & Branches:** If condition damaged, logged into audit history; optional direct messaging link provided.
+- **Completion State:** Book back in library, loan completed, independent reading and community feedback recorded.
+- **Related Pages & Components:** `src/components/activity/ActivityPage.tsx`, `src/components/activity/InspectReturnModal.tsx`, `src/components/activity/RecordDirectReturnModal.tsx`, `src/components/activity/RateReaderModal.tsx`, `src/components/bookdetails/ReviewModal.tsx`, `src/services/exchangeService.ts`, `src/services/reviewService.ts`.
 
 ---
 
