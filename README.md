@@ -190,4 +190,4 @@ BookCircle/
 ---
 
 ## 🎯 Design Reference
-- Designed and prototyped based on the **[BookCircle Figma Design System](https://www.figma.com/design/NJ2gxx7CEzkMX5RUUGQSgL/BookCircle-v2?node-id=0-1)**.
+- Designed and prototyped based on the **[BookCircle Figma Design System](https://www.figma.com/design/ejGJixA6YOVR2aLQ8SUn9I/Book-Circle-3?node-id=23-1031&t=ByU12VvsPrvpCOcx-0)**.
