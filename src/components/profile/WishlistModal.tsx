@@ -16,6 +16,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { modalBackdropVariants, modalContentVariants } from '../../animations/motionVariants';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface WishlistModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   onRemoveWishlist,
   onSimulateReturn
 }) => {
+  useBodyScrollLock(isOpen);
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'available' | 'lent_out'>('all');
 

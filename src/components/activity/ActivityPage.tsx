@@ -20,6 +20,7 @@ import { RecordDirectReturnModal } from './RecordDirectReturnModal';
 import { RateReaderModal } from './RateReaderModal';
 import { ReviewModal } from '../bookdetails/ReviewModal';
 import { reviewService } from '../../services/reviewService';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type { ExchangeTransaction } from '../../types';
 
 interface ActivityPageProps {
@@ -244,24 +245,25 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
   const [actionConfirmTarget, setActionConfirmTarget] = useState<ActionConfirmationTarget | null>(null);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
-  // Modal Scroll Lock and Escape Listener
-  useEffect(() => {
-    const isAnyModalOpen = Boolean(
-      returnModalTarget ||
-      inspectingReturnTarget ||
-      directReturnTarget ||
-      rateReaderTarget ||
-      bookReviewTarget ||
-      ratingTarget ||
-      disputeTarget ||
-      declineTarget ||
-      actionConfirmTarget ||
-      error
-    );
-    if (!isAnyModalOpen) return;
+  const isAnyModalOpen = Boolean(
+    returnModalTarget ||
+    inspectingReturnTarget ||
+    directReturnTarget ||
+    rateReaderTarget ||
+    bookReviewTarget ||
+    ratingTarget ||
+    disputeTarget ||
+    declineTarget ||
+    actionConfirmTarget ||
+    error
+  );
 
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+  // Manage body scroll locking centrally and safely
+  useBodyScrollLock(isAnyModalOpen);
+
+  // Escape key listener for modals/dialogs
+  useEffect(() => {
+    if (!isAnyModalOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -280,22 +282,9 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [
-    returnModalTarget,
-    inspectingReturnTarget,
-    directReturnTarget,
-    rateReaderTarget,
-    bookReviewTarget,
-    ratingTarget,
-    disputeTarget,
-    declineTarget,
-    actionConfirmTarget,
-    error,
-    clearError,
-  ]);
+  }, [isAnyModalOpen, clearError]);
 
   // Handler to open borrower book review
   const handleOpenBorrowerReview = async (exchange: ExchangeTransaction) => {

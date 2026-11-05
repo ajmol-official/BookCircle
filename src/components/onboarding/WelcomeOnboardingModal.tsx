@@ -10,6 +10,7 @@ import {
   ArrowRight01Icon
 } from '@hugeicons/core-free-icons';
 import { modalBackdropVariants, modalContentVariants } from '../../animations/motionVariants';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface WelcomeOnboardingModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const WelcomeOnboardingModal: React.FC<WelcomeOnboardingModalProps> = ({
   onExplore,
   onGetStarted,
 }) => {
+  useBodyScrollLock(isOpen);
   return (
     <AnimatePresence>
       {isOpen && (

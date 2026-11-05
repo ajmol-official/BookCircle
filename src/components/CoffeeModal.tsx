@@ -7,6 +7,7 @@ import {
   Tick01Icon
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '../context/AuthContext';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface CoffeeModalProps {
   isOpen: boolean;
@@ -19,10 +20,12 @@ export const CoffeeModal: React.FC<CoffeeModalProps> = ({ isOpen, onClose }) => 
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
-  // Lock body scroll and listen for Escape key when open
+  // Safely lock body scroll
+  useBodyScrollLock(isOpen);
+
+  // Listen for Escape key when open
   useEffect(() => {
     if (!isOpen) return;
-    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -30,7 +33,6 @@ export const CoffeeModal: React.FC<CoffeeModalProps> = ({ isOpen, onClose }) => 
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);

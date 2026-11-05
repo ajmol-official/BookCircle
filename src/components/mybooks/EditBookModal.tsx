@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Cancel01Icon, BookOpen01Icon } from '@hugeicons/core-free-icons';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type { Book } from '../../types';
 
 interface EditBookModalProps {
@@ -41,10 +42,12 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
     }
   }, [book]);
 
+  // Safely lock body scroll
+  useBodyScrollLock(isOpen);
+
+  // Handle escape key
   useEffect(() => {
     if (!isOpen) return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -54,7 +57,6 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);

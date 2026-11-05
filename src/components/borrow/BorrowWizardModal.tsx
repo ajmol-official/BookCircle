@@ -16,6 +16,7 @@ import {
   SentIcon,
   Clock01Icon,
 } from '@hugeicons/core-free-icons';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type { Book } from '../../types';
 
 export interface OwnerOption {
@@ -108,6 +109,8 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
   const [borrowNote, setBorrowNote] = useState(
     'Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.'
   );
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (owners[0]) {

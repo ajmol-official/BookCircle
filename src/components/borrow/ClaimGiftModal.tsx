@@ -18,6 +18,7 @@ import {
   SparklesIcon,
   Clock01Icon,
 } from '@hugeicons/core-free-icons';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type { Book } from '../../types';
 
 export interface OwnerOption {
@@ -84,6 +85,8 @@ export const ClaimGiftModal: React.FC<ClaimGiftModalProps> = ({
   const [claimNote, setClaimNote] = useState(
     'Thank you so much for offering this book as a community gift! I will read and cherish it, and pass the kindness forward.'
   );
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (owners[0]) {

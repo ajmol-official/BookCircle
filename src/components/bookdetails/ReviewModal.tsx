@@ -6,6 +6,7 @@ import {
   CheckmarkCircle02Icon
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -45,10 +46,12 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     }
   }, [isOpen, initialRating, initialTitle, initialText]);
 
-  // Lock body scroll and listen for Escape key when open
+  // Lock body scroll safely
+  useBodyScrollLock(isOpen);
+
+  // Listen for Escape key when open
   useEffect(() => {
     if (!isOpen) return;
-    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -56,7 +59,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);

@@ -8,6 +8,7 @@ import {
   BubbleChatIcon,
   StarIcon
 } from '@hugeicons/core-free-icons';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface ReturnReliabilityModalProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ export const ReturnReliabilityModal: React.FC<ReturnReliabilityModalProps> = ({
   onTimeCount = 32,
   totalReturns = 32
 }) => {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   const tiers = [

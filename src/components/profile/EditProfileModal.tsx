@@ -8,6 +8,7 @@ import {
   Image01Icon,
   Tick01Icon,
 } from '@hugeicons/core-free-icons';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 export const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
@@ -91,10 +92,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     }
   }, [isOpen, userProfile]);
 
+  // Safely lock body scroll
+  useBodyScrollLock(isOpen);
+
+  // Handle escape key
   useEffect(() => {
     if (!isOpen) return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -104,7 +107,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);

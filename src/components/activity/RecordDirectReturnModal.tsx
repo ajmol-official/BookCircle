@@ -5,6 +5,7 @@ import {
   AlertCircleIcon,
   BookOpen01Icon,
 } from '@hugeicons/core-free-icons';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type { ExchangeTransaction } from '../../types';
 
 interface RecordDirectReturnModalProps {
@@ -39,10 +40,12 @@ export const RecordDirectReturnModal: React.FC<RecordDirectReturnModalProps> = (
     }
   }, [isOpen, exchange]);
 
-  // Lock body scroll and listen for Escape key
+  // Lock body scroll safely
+  useBodyScrollLock(isOpen);
+
+  // Listen for Escape key
   useEffect(() => {
     if (!isOpen) return;
-    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isSubmitting) onClose();
@@ -50,7 +53,6 @@ export const RecordDirectReturnModal: React.FC<RecordDirectReturnModalProps> = (
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, isSubmitting, onClose]);

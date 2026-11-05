@@ -15,6 +15,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '../../context/AuthContext';
 import { modalBackdropVariants, modalContentVariants } from '../../animations/motionVariants';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 export const AuthModal: React.FC = () => {
   const {
@@ -26,6 +27,8 @@ export const AuthModal: React.FC = () => {
     signUpWithEmail,
     loginWithDemo,
   } = useAuth();
+
+  useBodyScrollLock(isAuthModalOpen);
 
   // Tab: 'signin' | 'signup'
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');

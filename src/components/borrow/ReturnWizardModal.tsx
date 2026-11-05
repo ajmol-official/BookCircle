@@ -15,6 +15,7 @@ import {
   SentIcon,
   Clock01Icon,
 } from '@hugeicons/core-free-icons';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 export interface BorrowedBookItem {
   id: string;
@@ -87,6 +88,8 @@ export const ReturnWizardModal: React.FC<ReturnWizardModalProps> = ({
   // Success state
   const [isSuccess, setIsSuccess] = useState(false);
   const [trackingCode] = useState(() => `RET-${Math.floor(1000 + Math.random() * 9000)}-BC`);
+
+  useBodyScrollLock(isOpen);
 
   // Reset states when opened
   useEffect(() => {

@@ -9,6 +9,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '../../context/AuthContext';
 import { modalBackdropVariants, modalContentVariants } from '../../animations/motionVariants';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
@@ -21,6 +22,7 @@ const PRESET_AVATARS = [
 
 export const ProfileSetupModal: React.FC = () => {
   const { isProfileSetupOpen, setIsProfileSetupOpen, currentUser, updateProfile } = useAuth();
+  useBodyScrollLock(isProfileSetupOpen);
 
   const [displayName, setDisplayName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(PRESET_AVATARS[0]);

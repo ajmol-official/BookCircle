@@ -38,6 +38,7 @@ import { BooksBrowsePage } from './components/books/BooksBrowsePage';
 import { AuthorProfilePage } from './components/author/AuthorProfilePage';
 import { NotFoundPage } from './components/NotFoundPage';
 import { ScrollToTop } from './components/common/ScrollToTop';
+import { forceResetBodyScroll } from './hooks/useBodyScrollLock';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ExchangeProvider, useExchanges } from './context/ExchangeContext';
 import { MessagingProvider, useMessaging } from './context/MessagingContext';
@@ -460,8 +461,14 @@ const BookCircleMain: React.FC = () => {
     openFloatingChat(name, bookTitle);
   };
 
-  // Scroll to top upon route change
+  // Scroll to top upon route change and safely unlock body scroll if no dialogs remain
   useEffect(() => {
+    const hasModalInDom = Boolean(
+      document.querySelector('[role="dialog"], [role="alertdialog"]')
+    );
+    if (!hasModalInDom) {
+      forceResetBodyScroll();
+    }
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [location.pathname]);
 

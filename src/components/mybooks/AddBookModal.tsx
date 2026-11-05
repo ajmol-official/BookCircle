@@ -16,6 +16,7 @@ import {
   Upload01Icon
 } from '@hugeicons/core-free-icons';
 import { mockCatalogBooks } from '../../data/mockData';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type { CatalogBook } from '../../types';
 
 interface AddBookModalProps {
@@ -147,10 +148,12 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Safely lock body scroll
+  useBodyScrollLock(isOpen);
+
+  // Handle escape key
   useEffect(() => {
     if (!isOpen) return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -160,7 +163,6 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);

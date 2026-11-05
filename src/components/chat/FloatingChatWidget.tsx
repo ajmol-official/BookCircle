@@ -11,6 +11,7 @@ import {
   CheckmarkCircle02Icon,
 } from '@hugeicons/core-free-icons';
 import { useMessaging } from '../../context/MessagingContext';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface SafeAvatarProps {
   src?: string;
@@ -84,16 +85,9 @@ export const FloatingChatWidget: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Lock body scroll on mobile bottom sheet
-  useEffect(() => {
-    if (isMobile && activeFloatingChat?.state === 'expanded') {
-      const original = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = original;
-      };
-    }
-  }, [isMobile, activeFloatingChat]);
+  // Safely lock body scroll on mobile bottom sheet
+  const isMobileExpanded = Boolean(isMobile && activeFloatingChat?.state === 'expanded');
+  useBodyScrollLock(isMobileExpanded);
 
   // Auto-scroll when new messages arrive (unless user explicitly scrolled up)
   const messageCount = activeConversation?.messages?.length ?? 0;
