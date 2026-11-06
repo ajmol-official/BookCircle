@@ -37,6 +37,7 @@ import { ReadersBrowsePage } from './components/readers/ReadersBrowsePage';
 import { BooksBrowsePage } from './components/books/BooksBrowsePage';
 import { AuthorProfilePage } from './components/author/AuthorProfilePage';
 import { NotFoundPage } from './components/NotFoundPage';
+import { WhoWeArePage } from './components/about/WhoWeArePage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { forceResetBodyScroll } from './hooks/useBodyScrollLock';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -1174,6 +1175,17 @@ const BookCircleMain: React.FC = () => {
           />
 
           <Route
+            path="/who-we-are"
+            element={
+              <WhoWeArePage
+                onExploreBooks={() => navigate('/books')}
+                onSupportMission={() => setIsCoffeeModalOpen(true)}
+                onGoHome={() => navigate('/')}
+              />
+            }
+          />
+
+          <Route
             path="*"
             element={
               <NotFoundPage
@@ -1197,6 +1209,13 @@ const BookCircleMain: React.FC = () => {
               <span>· Connecting local readers, one book at a time.</span>
             </div>
             <div className="flex items-center gap-6">
+              <button
+                onClick={() => navigate('/who-we-are')}
+                className="hover:text-brand transition"
+              >
+                Who We Are
+              </button>
+              <span className="text-slate-300">|</span>
               <button
                 onClick={() => setIsCoffeeModalOpen(true)}
                 className="hover:text-brand flex items-center gap-1 transition"
