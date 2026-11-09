@@ -12,6 +12,7 @@ import { HeaderSection } from './components/HeaderSection';
 import { CategoryPills } from './components/CategoryPills';
 import { BooksSection } from './components/BooksSection';
 import { ReadersSection } from './components/ReadersSection';
+import { WritersSection } from './components/WritersSection';
 import { CoffeeModal } from './components/CoffeeModal';
 import { BorrowWizardModal, type BorrowHandoverDetails } from './components/borrow/BorrowWizardModal';
 import { ClaimGiftModal, type ClaimGiftDetails } from './components/borrow/ClaimGiftModal';
@@ -1009,6 +1010,10 @@ const BookCircleMain: React.FC = () => {
                   onSelectOwner={handleSelectOwner}
                   onSeeAll={() => navigate('/books')}
                   selectedRadius={selectedRadius}
+                />
+                <WritersSection
+                  books={booksList}
+                  onSelectAuthor={handleSelectAuthor}
                 />
                 <ReadersSection
                   readers={readersList}
