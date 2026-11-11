@@ -12,11 +12,13 @@ import {
   Bookmark02Icon,
   ArrowRight01Icon,
   Settings01Icon,
+  SparklesIcon,
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { EditProfileModal } from './EditProfileModal';
 import { ReturnReliabilityModal } from './ReturnReliabilityModal';
 import { useAuth } from '../../context/AuthContext';
+import { useWriter } from '../../context/WriterContext';
 
 interface ProfilePageProps {
   onSelectBook: (book: Book) => void;
@@ -27,6 +29,7 @@ interface ProfilePageProps {
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelectAuthor, myBooks }) => {
   const navigate = useNavigate();
   const { currentUser, updateProfile } = useAuth();
+  const { activeWriterProfile, openWriterDashboard, openWriterOnboarding } = useWriter();
 
   const [profile, setProfile] = useState({
     name: currentUser?.displayName || 'Reader',
@@ -171,7 +174,25 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-end md:self-auto">
+        <div className="flex items-center gap-2.5 self-end md:self-auto flex-wrap">
+          {currentUser?.writerStatus === 'approved' || activeWriterProfile ? (
+            <button
+              onClick={openWriterDashboard}
+              className="flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200 text-xs sm:text-sm font-semibold transition-all shadow-2xs"
+            >
+              <HugeiconsIcon icon={SparklesIcon} size={17} />
+              <span>Writer Dashboard</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => openWriterOnboarding()}
+              className="flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl border border-purple-200 hover:border-brand hover:bg-purple-50 text-brand text-xs sm:text-sm font-semibold transition-all shadow-2xs"
+            >
+              <HugeiconsIcon icon={SparklesIcon} size={17} />
+              <span>Become a Writer</span>
+            </button>
+          )}
+
           <button
             onClick={() => setIsEditModalOpen(true)}
             className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl border border-slate-300 hover:border-brand hover:bg-brand/5 text-slate-700 hover:text-brand text-xs sm:text-sm font-semibold transition-all"

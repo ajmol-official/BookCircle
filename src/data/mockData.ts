@@ -669,7 +669,11 @@ export const mockReaders: Reader[] = [
     trustScore: '100% on schedule · 42/42 returned on time',
     bio: 'Passionate reader of world history, literary fiction, and philosophy. I love keeping physical books circulating among neighbors rather than letting them gather dust. Several copies on my shelf are also marked as Free Community Donations to keep forever!',
     favoriteGenres: ['All', 'History', 'Fiction', 'Science', 'Non-fiction', 'Poetry'],
-    verified: true
+    verified: true,
+    preferredHandoverLocations: [
+      { id: 'spot-rahim-1', name: 'Camden Coffee Roasters', instructions: 'Main entrance foyer · Usually weekdays 5pm - 7pm' },
+      { id: 'spot-rahim-2', name: 'Primrose Hill Community Library', instructions: 'Front reception desk · Saturdays 10am - 1pm' }
+    ]
   },
   {
     id: 'reader-1',
@@ -689,7 +693,11 @@ export const mockReaders: Reader[] = [
     trustScore: '98% on schedule · 28/28 on time',
     bio: 'Architect and avid collector of fantasy and nature writing. Always happy to meet at local cafes for friendly handovers!',
     favoriteGenres: ['All', 'Fiction', 'Science'],
-    verified: true
+    verified: true,
+    preferredHandoverLocations: [
+      { id: 'spot-priya-1', name: 'Belsize Library Cafe', instructions: 'Indoor reading nook · Weekday afternoons' },
+      { id: 'spot-priya-2', name: 'Hampstead Heath South Gate Kiosk', instructions: 'Outside seating area · Sundays 11am - 2pm' }
+    ]
   },
   {
     id: 'reader-2',
@@ -708,7 +716,8 @@ export const mockReaders: Reader[] = [
     trustScore: '95% on schedule · 19/19 on time',
     bio: 'Environmental educator. Huge fan of modern natural history, botany, and European fiction.',
     favoriteGenres: ['All', 'Fiction', 'Science'],
-    verified: true
+    verified: true,
+    preferredHandoverLocations: []
   },
   {
     id: 'reader-3',
@@ -727,7 +736,10 @@ export const mockReaders: Reader[] = [
     trustScore: '93% on schedule · 23/23 on time',
     bio: 'High school literature teacher. Passionate about historical fiction and translation literature.',
     favoriteGenres: ['All', 'History', 'Fiction'],
-    verified: true
+    verified: true,
+    preferredHandoverLocations: [
+      { id: 'spot-amira-1', name: 'Highgate Village Bookshop & Cafe', instructions: 'Patio benches · Tuesday & Thursday 4pm - 6pm' }
+    ]
   },
   {
     id: 'reader-4',

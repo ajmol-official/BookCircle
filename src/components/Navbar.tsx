@@ -12,10 +12,13 @@ import {
   Settings01Icon,
   ArrowDown01Icon,
   HelpCircleIcon,
-  FavouriteIcon
+  FavouriteIcon,
+  SparklesIcon,
+  ShieldCheckIcon
 } from '@hugeicons/core-free-icons';
 import { NotificationDropdown, type NotificationItem } from './NotificationDropdown';
 import { useAuth } from '../context/AuthContext';
+import { useWriter } from '../context/WriterContext';
 import { dropdownVariants } from '../animations/motionVariants';
 
 interface NavbarProps {
@@ -58,6 +61,15 @@ export const Navbar: React.FC<NavbarProps> = ({
     requireAuth,
     wishlist
   } = useAuth();
+
+  const {
+    experienceMode,
+    setExperienceMode,
+    openWriterOnboarding,
+    openWriterDashboard,
+    openAdminReview,
+    activeWriterProfile,
+  } = useWriter();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -200,6 +212,22 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Section Actions */}
         <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Active Writer Mode Badge & Quick Switch */}
+          {experienceMode === 'writer' && activeWriterProfile && (
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200/80 text-xs text-brand font-medium shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
+              <span>Writer Mode · <strong>{activeWriterProfile.name}</strong></span>
+              <button
+                type="button"
+                onClick={() => setExperienceMode('reader')}
+                className="text-[11px] text-slate-500 hover:text-brand underline font-normal ml-1"
+                title="Switch back to reader mode"
+              >
+                Switch
+              </button>
+            </div>
+          )}
+
           {/* Buy Us a Coffee Button */}
           <button
             onClick={onOpenCoffeeModal}
@@ -447,6 +475,152 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </span>
                         )}
                       </button>
+
+                      {/* --- Writer Capabilities & Mode Switcher --- */}
+                      {currentUser?.writerStatus === 'approved' || activeWriterProfile ? (
+                        <>
+                          {/* Mode Switcher */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsProfileMenuOpen(false);
+                              setExperienceMode(experienceMode === 'writer' ? 'reader' : 'writer');
+                            }}
+                            className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-purple-50/70 hover:text-brand transition group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-xl bg-purple-100 text-brand flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition">
+                                <HugeiconsIcon icon={SparklesIcon} size={18} />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-slate-800 group-hover:text-brand">
+                                  {experienceMode === 'writer' ? 'Switch to Reader' : 'Switch to Writer'}
+                                </p>
+                                <p className="text-[11px] text-slate-500">
+                                  {experienceMode === 'writer' ? 'Return to reader view' : 'Access your author dashboard'}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold bg-purple-100 text-brand px-2 py-0.5 rounded-full">
+                              {experienceMode === 'writer' ? 'Writer' : 'Reader'}
+                            </span>
+                          </button>
+
+                          {/* Writer Dashboard */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsProfileMenuOpen(false);
+                              openWriterDashboard();
+                            }}
+                            className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-purple-50/70 hover:text-brand transition group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-xl bg-purple-50 text-brand flex items-center justify-center flex-shrink-0">
+                                <HugeiconsIcon icon={BookOpen01Icon} size={18} />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-slate-800 group-hover:text-brand">Writer Dashboard</p>
+                                <p className="text-[11px] text-slate-500">Manage bibliography & profile</p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                              Verified
+                            </span>
+                          </button>
+                        </>
+                      ) : currentUser?.writerStatus === 'pending' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            openWriterOnboarding();
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-purple-50/70 hover:text-brand transition group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-purple-50 text-brand flex items-center justify-center flex-shrink-0">
+                              <HugeiconsIcon icon={SparklesIcon} size={18} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-800 group-hover:text-brand">Writer Application</p>
+                              <p className="text-[11px] text-slate-500">Editorial review in progress</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Under Review
+                          </span>
+                        </button>
+                      ) : currentUser?.writerStatus === 'changes_requested' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            openWriterOnboarding();
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-amber-50/70 hover:text-amber-900 transition group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                              <HugeiconsIcon icon={SparklesIcon} size={18} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-800 group-hover:text-amber-900">Writer Application</p>
+                              <p className="text-[11px] text-slate-500">Action needed on claim</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                            Action Needed
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            openWriterOnboarding();
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-purple-50/70 hover:text-brand transition group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-purple-50 text-brand flex items-center justify-center flex-shrink-0 group-hover:bg-purple-100 transition">
+                              <HugeiconsIcon icon={SparklesIcon} size={18} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-800 group-hover:text-brand">Become a Writer</p>
+                              <p className="text-[11px] text-slate-500">Create official writer profile</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-semibold text-brand bg-purple-100 px-2 py-0.5 rounded-full">
+                            New
+                          </span>
+                        </button>
+                      )}
+
+                      {/* Editorial Admin Portal (Only visible if authorized admin) */}
+                      {(currentUser?.isAdmin || currentUser?.email?.toLowerCase().includes('admin')) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            openAdminReview();
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-slate-100 transition group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center flex-shrink-0">
+                              <HugeiconsIcon icon={ShieldCheckIcon} size={18} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-800">Editorial Review</p>
+                              <p className="text-[11px] text-slate-500">Admin: Review writer claims</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold bg-purple-100 text-brand px-2 py-0.5 rounded-full">
+                            Admin
+                          </span>
+                        </button>
+                      )}
 
                       {/* 6. How It Works Guide */}
                       <button

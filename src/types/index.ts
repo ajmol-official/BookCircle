@@ -1,5 +1,9 @@
+export * from './auth';
 export * from './author';
 export * from './review';
+export * from './writer';
+
+import type { HandoverLocation } from './auth';
 
 export interface Book {
   id: string;
@@ -87,6 +91,7 @@ export interface Reader {
   bio?: string;
   favoriteGenres?: string[];
   verified?: boolean;
+  preferredHandoverLocations?: HandoverLocation[];
 }
 
 // ─── UNIFIED EXCHANGE LIFECYCLE & ACTIVITY TYPES ─────────────────────────────

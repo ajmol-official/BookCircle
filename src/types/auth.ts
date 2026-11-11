@@ -1,3 +1,11 @@
+import type { WriterStatus } from './writer';
+
+export interface HandoverLocation {
+  id: string;
+  name: string;
+  instructions?: string;
+}
+
 export interface User {
   id: string;
   email?: string;
@@ -20,6 +28,12 @@ export interface User {
     push: boolean;
     whatsapp: boolean;
   };
+  writerStatus?: WriterStatus;
+  writerProfileId?: string;
+  writerApplicationId?: string;
+  isAdmin?: boolean;
+  experienceMode?: 'reader' | 'writer';
+  preferredHandoverLocations?: HandoverLocation[];
 }
 
 export interface AuthSession {

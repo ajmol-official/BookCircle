@@ -16,6 +16,8 @@ import type { Author } from '../../types/author';
 import type { Book, CatalogWork } from '../../types';
 import { BookCatalogueCard } from './BookCatalogueCard';
 import { getCatalogWorksForAuthor } from '../../data/canonicalCatalog';
+import { useWriter } from '../../context/WriterContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface AuthorProfilePageProps {
   author?: Author;
@@ -42,6 +44,8 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
   onOpenAddBook,
   onBack
 }) => {
+  const { openWriterOnboarding, openWriterDashboard } = useWriter();
+  const { currentUser } = useAuth();
   const [photoError, setPhotoError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -269,7 +273,18 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
                 </div>
 
                 {/* Follow & Share Actions */}
-                <div className="flex items-center gap-2 self-start">
+                <div className="flex items-center gap-2 self-start flex-wrap">
+                  {author.claimedUserId === currentUser?.id && (
+                    <button
+                      type="button"
+                      onClick={openWriterDashboard}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-purple-50 text-brand border border-purple-200 text-xs font-semibold hover:bg-purple-100 transition shadow-xs"
+                    >
+                      <HugeiconsIcon icon={SparklesIcon} size={14} />
+                      <span>Manage Profile</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={handleToggleFollow}
@@ -385,6 +400,23 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
                     <HugeiconsIcon icon={Globe02Icon} size={14} />
                     <span>Official Author Website ↗</span>
                   </a>
+                </div>
+              )}
+
+              {/* Unclaimed Author Profile Claim Invitation Banner */}
+              {!author.isClaimed && (
+                <div className="mt-5 pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <p className="text-slate-500">
+                    Are you <strong>{author.name}</strong> or their official literary representative?
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openWriterOnboarding(author)}
+                    className="text-brand font-semibold hover:underline inline-flex items-center gap-1 self-start sm:self-auto"
+                  >
+                    <span>Claim this official profile</span>
+                    <span>→</span>
+                  </button>
                 </div>
               )}
             </div>

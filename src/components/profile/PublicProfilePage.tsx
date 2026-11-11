@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Location01Icon,
@@ -14,7 +15,7 @@ import {
   Search01Icon,
   LockIcon
 } from '@hugeicons/core-free-icons';
-import type { Book, Reader } from '../../types';
+import type { Book, Reader, HandoverLocation } from '../../types';
 import { ReturnReliabilityModal } from './ReturnReliabilityModal';
 import { useAuth } from '../../context/AuthContext';
 
@@ -36,6 +37,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
   onRequestBorrow,
   onSendMessage
 }) => {
+  const navigate = useNavigate();
   const [activeSubTab, setActiveSubTab] = useState<'shelf' | 'reviews' | 'about'>('shelf');
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'lending' | 'donation' | 'personal' | 'lent_out'>('all');
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
@@ -52,6 +54,49 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
           reader.name &&
           currentUser.displayName.toLowerCase().trim() === reader.name.toLowerCase().trim()))
   );
+
+  // Resolve preferred handover locations for this reader (maximum 2 locations)
+  const handoverSpots = useMemo<HandoverLocation[]>(() => {
+    // 1. If viewing own profile, resolve from currentUser or stored user settings
+    if (isOwnProfile) {
+      if (currentUser?.preferredHandoverLocations && currentUser.preferredHandoverLocations.length > 0) {
+        return currentUser.preferredHandoverLocations.slice(0, 2);
+      }
+      try {
+        const stored = localStorage.getItem('bookcircle_user_settings');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed.preferredHandoverLocations) && parsed.preferredHandoverLocations.length > 0) {
+            return parsed.preferredHandoverLocations.slice(0, 2);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+      return currentUser?.preferredHandoverLocations?.slice(0, 2) || [];
+    }
+
+    // 2. If viewing another reader's profile
+    if (reader.preferredHandoverLocations) {
+      return reader.preferredHandoverLocations.slice(0, 2);
+    }
+
+    // 3. Fallback for mock readers if not explicitly set on object
+    if (reader.name.toLowerCase().includes('rahim')) {
+      return [
+        { id: 'spot-rahim-1', name: 'Camden Coffee Roasters', instructions: 'Main entrance foyer · Usually weekdays 5pm - 7pm' },
+        { id: 'spot-rahim-2', name: 'Primrose Hill Community Library', instructions: 'Front reception desk · Saturdays 10am - 1pm' }
+      ];
+    }
+    if (reader.name.toLowerCase().includes('priya')) {
+      return [
+        { id: 'spot-priya-1', name: 'Belsize Library Cafe', instructions: 'Indoor reading nook · Weekday afternoons' },
+        { id: 'spot-priya-2', name: 'Hampstead Heath South Gate Kiosk', instructions: 'Outside seating area · Sundays 11am - 2pm' }
+      ];
+    }
+
+    return [];
+  }, [isOwnProfile, currentUser, reader]);
 
   // Filter books owned by this reader
   const readerBooks = useMemo(() => {
@@ -686,27 +731,63 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
           </div>
 
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card space-y-4">
-            <h3 className="font-serif text-xl font-semibold text-slate-800">
-              Preferred Handover Spots
-            </h3>
-            <p className="text-xs text-slate-500">
-              Safe, public spots in our neighborhood where {reader.name.split(' ')[0]} prefers to meet for book handovers:
-            </p>
-
-            <div className="space-y-3 pt-1">
-              {[
-                { name: 'Camden Coffee Roasters', desc: 'Main entrance foyer · Usually weekdays 5pm - 7pm' },
-                { name: 'Primrose Hill Community Library', desc: 'Front reception desk · Saturdays 10am - 1pm' }
-              ].map((spot, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h5 className="text-xs font-semibold text-slate-800">{spot.name}</h5>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{spot.desc}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-serif text-xl font-semibold text-slate-800">
+                Preferred Handover Spots
+              </h3>
+              {isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/settings')}
+                  className="text-xs font-semibold text-brand hover:text-brand-dark hover:underline transition"
+                >
+                  Edit in Settings
+                </button>
+              )}
             </div>
+
+            {handoverSpots.length > 0 ? (
+              <>
+                <p className="text-xs text-slate-500">
+                  Safe, public spots in our neighborhood where {reader.name.split(' ')[0]} prefers to meet for book handovers:
+                </p>
+
+                <div className="space-y-3 pt-1">
+                  {handoverSpots.map((spot, i) => (
+                    <div key={spot.id || i} className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition">
+                      <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand flex-shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <h5 className="text-xs sm:text-sm font-semibold text-slate-800">{spot.name}</h5>
+                        {spot.instructions && (
+                          <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{spot.instructions}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="p-6 rounded-2xl bg-slate-50/80 border border-dashed border-slate-200 text-center space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+                  <HugeiconsIcon icon={Location01Icon} size={20} />
+                </div>
+                <p className="text-xs font-semibold text-slate-700">No preferred handover spots added yet</p>
+                <p className="text-[11px] text-slate-500 max-w-xs mx-auto leading-relaxed">
+                  {isOwnProfile
+                    ? 'Add up to 2 preferred handover locations in Settings so neighbors know where to meet you for book handovers.'
+                    : `${reader.name.split(' ')[0]} has not listed specific handover spots. Meetup locations can be coordinated when requesting a book.`}
+                </p>
+                {isOwnProfile && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/settings')}
+                    className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand text-white text-xs font-semibold hover:bg-brand-dark transition shadow-2xs"
+                  >
+                    <span>Add in Settings</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

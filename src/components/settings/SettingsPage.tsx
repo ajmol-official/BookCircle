@@ -13,9 +13,13 @@ import {
   Mail01Icon,
   UserCircle02Icon,
   AlertCircleIcon,
-  SparklesIcon
+  SparklesIcon,
+  Add01Icon,
+  PencilEdit02Icon,
+  Delete02Icon,
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '../../context/AuthContext';
+import type { HandoverLocation } from '../../types';
 
 export interface UserSettings {
   // Notifications
@@ -33,6 +37,9 @@ export interface UserSettings {
   // Discovery
   radius: string;
   showLocation: boolean;
+
+  // Preferred Handover Locations (Maximum 2)
+  preferredHandoverLocations: HandoverLocation[];
 }
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
@@ -46,6 +53,18 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   showRecentActivity: false,
   radius: 'Within 5km',
   showLocation: true,
+  preferredHandoverLocations: [
+    {
+      id: 'loc-1',
+      name: 'Camden Coffee Roasters',
+      instructions: 'Main entrance foyer · Usually weekdays 5pm - 7pm',
+    },
+    {
+      id: 'loc-2',
+      name: 'Primrose Hill Community Library',
+      instructions: 'Front reception desk · Saturdays 10am - 1pm',
+    },
+  ],
 };
 
 const STORAGE_KEY = 'bookcircle_user_settings';
@@ -95,25 +114,52 @@ const ToggleRow: React.FC<ToggleRowProps> = ({ id, label, description, value, on
 );
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onRadiusChange }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, updateProfile } = useAuth();
 
   // Load initial settings from localStorage or fallback to defaults
   const [savedSettings, setSavedSettings] = useState<UserSettings>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        return { ...DEFAULT_USER_SETTINGS, ...JSON.parse(stored) };
+        const parsed = JSON.parse(stored);
+        const locations =
+          currentUser?.preferredHandoverLocations ??
+          parsed.preferredHandoverLocations ??
+          DEFAULT_USER_SETTINGS.preferredHandoverLocations;
+        return {
+          ...DEFAULT_USER_SETTINGS,
+          ...parsed,
+          preferredHandoverLocations: Array.isArray(locations) ? locations.slice(0, 2) : [],
+        };
       }
     } catch (e) {
       console.warn('Failed to parse saved settings:', e);
     }
-    return DEFAULT_USER_SETTINGS;
+    return {
+      ...DEFAULT_USER_SETTINGS,
+      preferredHandoverLocations:
+        currentUser?.preferredHandoverLocations ?? DEFAULT_USER_SETTINGS.preferredHandoverLocations,
+    };
   });
 
   const [settings, setSettings] = useState<UserSettings>(savedSettings);
   const [savedToast, setSavedToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<'all' | 'notifications' | 'privacy' | 'discovery' | 'account'>('all');
+  const [activeSection, setActiveSection] = useState<'all' | 'notifications' | 'privacy' | 'discovery' | 'handover' | 'account'>('all');
+
+  // Handover Location Form States
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
+
+  // Form inputs for Add
+  const [newLocationName, setNewLocationName] = useState('');
+  const [newLocationInstructions, setNewLocationInstructions] = useState('');
+  const [addError, setAddError] = useState<string | null>(null);
+
+  // Form inputs for Edit
+  const [editLocationName, setEditLocationName] = useState('');
+  const [editLocationInstructions, setEditLocationInstructions] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Sync state if savedSettings changed
   useEffect(() => {
@@ -131,13 +177,118 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onRadiusChan
     }
   };
 
-  const handleSave = () => {
+  // Handover Location Handlers
+  const handleStartAdd = () => {
+    if (settings.preferredHandoverLocations.length >= 2) {
+      return;
+    }
+    setNewLocationName('');
+    setNewLocationInstructions('');
+    setAddError(null);
+    setEditingLocationId(null);
+    setIsAddingLocation(true);
+  };
+
+  const handleCancelAdd = () => {
+    setIsAddingLocation(false);
+    setNewLocationName('');
+    setNewLocationInstructions('');
+    setAddError(null);
+  };
+
+  const handleConfirmAdd = () => {
+    if (!newLocationName.trim()) {
+      setAddError('Please enter a location name');
+      return;
+    }
+    if (settings.preferredHandoverLocations.length >= 2) {
+      setAddError('You can add up to 2 preferred handover locations');
+      return;
+    }
+
+    const newLoc: HandoverLocation = {
+      id: `loc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name: newLocationName.trim(),
+      instructions: newLocationInstructions.trim() || undefined,
+    };
+
+    setSettings((prev) => ({
+      ...prev,
+      preferredHandoverLocations: [...prev.preferredHandoverLocations, newLoc].slice(0, 2),
+    }));
+
+    setIsAddingLocation(false);
+    setNewLocationName('');
+    setNewLocationInstructions('');
+    setAddError(null);
+  };
+
+  const handleStartEdit = (loc: HandoverLocation) => {
+    setIsAddingLocation(false);
+    setEditingLocationId(loc.id);
+    setEditLocationName(loc.name);
+    setEditLocationInstructions(loc.instructions || '');
+    setEditError(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingLocationId(null);
+    setEditLocationName('');
+    setEditLocationInstructions('');
+    setEditError(null);
+  };
+
+  const handleConfirmEdit = (id: string) => {
+    if (!editLocationName.trim()) {
+      setEditError('Location name cannot be empty');
+      return;
+    }
+
+    setSettings((prev) => ({
+      ...prev,
+      preferredHandoverLocations: prev.preferredHandoverLocations.map((loc) =>
+        loc.id === id
+          ? {
+              ...loc,
+              name: editLocationName.trim(),
+              instructions: editLocationInstructions.trim() || undefined,
+            }
+          : loc
+      ),
+    }));
+
+    setEditingLocationId(null);
+    setEditLocationName('');
+    setEditLocationInstructions('');
+    setEditError(null);
+  };
+
+  const handleRemoveLocation = (id: string) => {
+    if (editingLocationId === id) {
+      setEditingLocationId(null);
+    }
+    setSettings((prev) => ({
+      ...prev,
+      preferredHandoverLocations: prev.preferredHandoverLocations.filter((loc) => loc.id !== id),
+    }));
+  };
+
+  const handleSave = async () => {
     setIsSaving(true);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
       setSavedSettings(settings);
       if (onRadiusChange && settings.radius) {
         onRadiusChange(settings.radius);
+      }
+      if (currentUser && updateProfile) {
+        try {
+          await updateProfile({
+            preferredHandoverLocations: settings.preferredHandoverLocations,
+          });
+        } catch (err) {
+          console.warn('Could not sync handover locations to profile:', err);
+        }
       }
       setSavedToast(true);
       setTimeout(() => {
@@ -374,6 +525,29 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onRadiusChan
               <button
                 type="button"
                 onClick={() => {
+                  setActiveSection('handover');
+                  scrollToSection('section-handover');
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition text-left ${
+                  activeSection === 'handover'
+                    ? 'bg-purple-50/80 text-brand'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-purple-100 text-brand flex items-center justify-center">
+                    <HugeiconsIcon icon={Location01Icon} size={15} />
+                  </div>
+                  <span>Handover Spots</span>
+                </div>
+                <span className="text-[11px] font-mono font-medium text-slate-400">
+                  {settings.preferredHandoverLocations.length}/2 spots
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
                   setActiveSection('account');
                   scrollToSection('section-account');
                 }}
@@ -572,6 +746,259 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onRadiusChan
                 value={settings.showLocation}
                 onChange={() => toggle('showLocation')}
               />
+            </div>
+          </section>
+
+          {/* ─────────────────────────────────────────────────────────────
+              SECTION: PREFERRED HANDOVER LOCATIONS
+          ───────────────────────────────────────────────────────────── */}
+          <section id="section-handover" aria-labelledby="heading-handover">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-brand flex items-center justify-center flex-shrink-0">
+                  <HugeiconsIcon icon={Location01Icon} size={18} />
+                </div>
+                <div>
+                  <h2 id="heading-handover" className="font-serif text-xl sm:text-2xl font-bold text-slate-900">
+                    Preferred Handover Locations
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                    Choose up to 2 safe, public meetup spots in your neighborhood for book handovers.
+                  </p>
+                </div>
+              </div>
+
+              {/* Counter Badge */}
+              <span
+                className={`text-xs font-semibold px-3 py-1 rounded-full border flex-shrink-0 ${
+                  settings.preferredHandoverLocations.length >= 2
+                    ? 'bg-purple-50 text-brand border-brand/20'
+                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                }`}
+              >
+                {settings.preferredHandoverLocations.length} of 2 added
+              </span>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-card p-5 sm:p-7 space-y-4">
+              <p className="text-xs text-slate-500 leading-relaxed">
+                These locations are displayed under the <strong className="text-slate-700">About & Meetup Spots</strong> tab on your public profile. We recommend safe, bustling public places like neighborhood cafes or local libraries.
+              </p>
+
+              {/* List of Saved Locations */}
+              <div className="space-y-3">
+                {settings.preferredHandoverLocations.map((loc, idx) => {
+                  const isEditing = editingLocationId === loc.id;
+                  if (isEditing) {
+                    return (
+                      <div
+                        key={loc.id}
+                        className="p-4 sm:p-5 rounded-2xl bg-purple-50/50 border border-brand/30 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-brand uppercase tracking-wider">
+                            Edit Location #{idx + 1}
+                          </span>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            Location Name <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={editLocationName}
+                            onChange={(e) => {
+                              setEditLocationName(e.target.value);
+                              if (editError) setEditError(null);
+                            }}
+                            placeholder="e.g. Camden Coffee Roasters, Central Library Steps"
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-brand focus:ring-1 focus:ring-brand text-xs sm:text-sm text-slate-800 bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            Meeting Details & Instructions (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={editLocationInstructions}
+                            onChange={(e) => setEditLocationInstructions(e.target.value)}
+                            placeholder="e.g. Main entrance foyer · Usually weekdays 5pm - 7pm"
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-brand focus:ring-1 focus:ring-brand text-xs sm:text-sm text-slate-800 bg-white"
+                          />
+                        </div>
+
+                        {editError && (
+                          <p className="text-xs text-rose-600 font-medium">{editError}</p>
+                        )}
+
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            className="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold transition"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmEdit(loc.id)}
+                            className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95"
+                          >
+                            Update Location
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={loc.id}
+                      className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start justify-between gap-3 group hover:border-brand/30 hover:bg-slate-50/90 transition"
+                    >
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <HugeiconsIcon icon={Location01Icon} size={18} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-slate-800 text-xs sm:text-sm truncate">
+                              {loc.name}
+                            </h4>
+                            <span className="text-[10px] font-mono text-slate-400 bg-slate-200/60 px-1.5 py-0.5 rounded">
+                              Spot {idx + 1}
+                            </span>
+                          </div>
+                          {loc.instructions && (
+                            <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
+                              {loc.instructions}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(loc)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:text-brand hover:border-brand/40 hover:bg-brand/5 text-xs font-semibold transition"
+                          title="Edit this location"
+                        >
+                          <HugeiconsIcon icon={PencilEdit02Icon} size={14} />
+                          <span className="hidden sm:inline">Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLocation(loc.id)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 text-xs font-semibold transition"
+                          title="Remove this location"
+                        >
+                          <HugeiconsIcon icon={Delete02Icon} size={14} />
+                          <span className="hidden sm:inline">Remove</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Empty State if no locations saved */}
+                {settings.preferredHandoverLocations.length === 0 && !isAddingLocation && (
+                  <div className="p-6 rounded-2xl bg-slate-50/70 border border-dashed border-slate-200 text-center space-y-1.5">
+                    <p className="text-xs font-semibold text-slate-700">No preferred handover spots yet</p>
+                    <p className="text-[11px] text-slate-500">
+                      Add up to 2 locations so neighbors know your preferred meetup spots when requesting books.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Add New Location Form / Button */}
+              {isAddingLocation ? (
+                <div className="p-4 sm:p-5 rounded-2xl bg-purple-50/50 border border-brand/30 space-y-3 mt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-brand uppercase tracking-wider">
+                      Add Handover Location ({settings.preferredHandoverLocations.length + 1}/2)
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Location Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newLocationName}
+                      onChange={(e) => {
+                        setNewLocationName(e.target.value);
+                        if (addError) setAddError(null);
+                      }}
+                      placeholder="e.g. Camden Coffee Roasters, Central Library Steps"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-brand focus:ring-1 focus:ring-brand text-xs sm:text-sm text-slate-800 bg-white"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Meeting Details & Instructions (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newLocationInstructions}
+                      onChange={(e) => setNewLocationInstructions(e.target.value)}
+                      placeholder="e.g. Main entrance foyer · Usually weekdays 5pm - 7pm"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-brand focus:ring-1 focus:ring-brand text-xs sm:text-sm text-slate-800 bg-white"
+                    />
+                  </div>
+
+                  {addError && (
+                    <p className="text-xs text-rose-600 font-medium">{addError}</p>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleCancelAdd}
+                      className="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmAdd}
+                      className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5"
+                    >
+                      <HugeiconsIcon icon={Tick01Icon} size={15} />
+                      <span>Save Location</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {settings.preferredHandoverLocations.length < 2 ? (
+                    <button
+                      type="button"
+                      onClick={handleStartAdd}
+                      className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-slate-200 hover:border-brand hover:bg-brand/5 text-slate-700 hover:text-brand font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2 group active:scale-[0.99]"
+                    >
+                      <div className="w-6 h-6 rounded-lg bg-brand/10 text-brand flex items-center justify-center group-hover:bg-brand group-hover:text-white transition">
+                        <HugeiconsIcon icon={Add01Icon} size={14} />
+                      </div>
+                      <span>Add Preferred Handover Location ({settings.preferredHandoverLocations.length}/2)</span>
+                    </button>
+                  ) : (
+                    <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center gap-2.5 text-xs text-amber-800">
+                      <HugeiconsIcon icon={AlertCircleIcon} size={16} className="text-amber-600 flex-shrink-0" />
+                      <span>
+                        Maximum of 2 preferred handover locations reached. Edit or remove an existing location to add another.
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </section>
 

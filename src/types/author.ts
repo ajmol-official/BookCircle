@@ -14,6 +14,7 @@ export interface Author {
   id: string; // Unique Author identifier
   slug: string; // URL-safe slug e.g. 'arundhati-roy'
   name: string; // Full name
+  penName?: string; // Optional pen name or pseudonym
   photo?: string; // Portrait / photo URL
   nationality?: string; // Country or nationality e.g. 'Indian', 'American', 'South Korean'
   countryFlag?: string; // Country flag emoji e.g. '🇮🇳'

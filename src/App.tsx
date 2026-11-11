@@ -42,8 +42,12 @@ import { WhoWeArePage } from './components/about/WhoWeArePage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { forceResetBodyScroll } from './hooks/useBodyScrollLock';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { WriterProvider, useWriter } from './context/WriterContext';
 import { ExchangeProvider, useExchanges } from './context/ExchangeContext';
 import { MessagingProvider, useMessaging } from './context/MessagingContext';
+import { WriterOnboardingModal } from './components/writer/WriterOnboardingModal';
+import { WriterDashboardModal } from './components/writer/WriterDashboardModal';
+import { AdminWriterReviewModal } from './components/writer/AdminWriterReviewModal';
 import { FloatingChatWidget } from './components/chat/FloatingChatWidget';
 import { mockBooks, mockReaders } from './data/mockData';
 import {
@@ -354,15 +358,28 @@ const AuthorProfileRoute: React.FC<{
 }> = ({ booksList, onSelectBook, onSelectAuthor, onSelectOwner, onQuickBorrow, onOpenAddBook }) => {
   const { authorId } = useParams<{ authorId: string }>();
   const navigate = useNavigate();
+  const { allAuthors } = useWriter();
 
   const author = useMemo(() => {
     if (!authorId) return undefined;
     const decoded = decodeURIComponent(authorId).trim();
-    // 1. Direct slug or ID lookup
+    const normalized = decoded.toLowerCase();
+
+    // 1. Check in allAuthors (includes approved / updated / custom authors)
+    const authorMatch = allAuthors.find(
+      (a) =>
+        a.slug.toLowerCase() === normalized ||
+        a.id.toLowerCase() === normalized ||
+        a.name.toLowerCase().trim() === normalized ||
+        generateAuthorSlug(a.name) === normalized
+    );
+    if (authorMatch) return authorMatch;
+
+    // 2. Direct slug or ID lookup in default authors
     const found = getAuthorBySlug(decoded) || getAuthorByName(decoded);
     if (found) return found;
 
-    // 2. Look through canonical catalog books
+    // 3. Look through canonical catalog books
     const catalogBook = canonicalCatalogBooks.find(
       (b) =>
         (b.authorId && b.authorId.toLowerCase() === decoded.toLowerCase()) ||
@@ -373,7 +390,7 @@ const AuthorProfileRoute: React.FC<{
       return getOrCreateAuthor(catalogBook.author, catalogBook.authorCountry);
     }
 
-    // 3. Look through books in community listings
+    // 4. Look through books in community listings
     const matchingBook = booksList.find(
       (b) =>
         generateAuthorSlug(b.author) === generateAuthorSlug(decoded) ||
@@ -384,13 +401,13 @@ const AuthorProfileRoute: React.FC<{
       return getOrCreateAuthor(matchingBook.author, matchingBook.authorCountry);
     }
 
-    // 4. Fallback: format slug to title case for unknown author
+    // 5. Fallback: format slug to title case for unknown author
     const formattedName = decoded
       .split(/[-_]+/)
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' ');
     return getOrCreateAuthor(formattedName);
-  }, [authorId, booksList]);
+  }, [authorId, booksList, allAuthors]);
 
   // Compute canonical works for this author (published bibliography with live copy counts)
   const authorWorks = useMemo(() => {
@@ -458,6 +475,7 @@ const BookCircleMain: React.FC = () => {
 
   const { actionRequiredTotal, createBorrowRequest, createGiftClaim } = useExchanges();
   const { openFloatingChat, totalUnreadCount } = useMessaging();
+  const { isAdminReviewOpen, closeAdminReview } = useWriter();
 
   const handleOpenFloatingChat = (name: string, bookTitle?: string) => {
     openFloatingChat(name, bookTitle);
@@ -1191,6 +1209,18 @@ const BookCircleMain: React.FC = () => {
           />
 
           <Route
+            path="/admin/writers"
+            element={
+              <div className="py-12 px-4 max-w-4xl mx-auto text-center">
+                <AdminWriterReviewModal
+                  isOpen={true}
+                  onClose={() => navigate('/')}
+                />
+              </div>
+            }
+          />
+
+          <Route
             path="*"
             element={
               <NotFoundPage
@@ -1301,6 +1331,21 @@ const BookCircleMain: React.FC = () => {
       />
 
 
+      {/* Writer Onboarding Modal */}
+      <WriterOnboardingModal />
+
+      {/* Writer Dashboard Modal */}
+      <WriterDashboardModal
+        booksList={booksList}
+        onNavigateToAuthorProfile={(authorSlug) => navigate(`/author/${authorSlug}`)}
+      />
+
+      {/* Admin Writer Review Modal */}
+      <AdminWriterReviewModal
+        isOpen={isAdminReviewOpen}
+        onClose={closeAdminReview}
+      />
+
       {/* Wishlist & Return Alerts Modal */}
       <WishlistModal
         isOpen={isWishlistModalOpen}
@@ -1337,11 +1382,13 @@ const BookCircleMain: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <ExchangeProvider>
-        <MessagingProvider>
-          <BookCircleMain />
-        </MessagingProvider>
-      </ExchangeProvider>
+      <WriterProvider>
+        <ExchangeProvider>
+          <MessagingProvider>
+            <BookCircleMain />
+          </MessagingProvider>
+        </ExchangeProvider>
+      </WriterProvider>
     </AuthProvider>
   );
 };
