@@ -7,8 +7,6 @@ import {
   Coffee02Icon,
   Notification01Icon,
   UserCircle02Icon,
-  BubbleChatIcon,
-  Clock01Icon,
   Logout01Icon,
   Settings01Icon,
   ArrowDown01Icon,
@@ -67,7 +65,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     experienceMode,
     setExperienceMode,
     openWriterOnboarding,
-    openWriterDashboard,
     openAdminReview,
     activeWriterProfile,
   } = useWriter();
@@ -402,78 +399,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                       </button>
 
-                      {/* 2. Messages */}
-                      <button
-                        type="button"
-                        onClick={() => handleSelectMenuItem('messages')}
-                        className={`w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition ${
-                          activeTab === 'messages'
-                            ? 'bg-brand/10 text-brand font-semibold'
-                            : 'text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
-                            <HugeiconsIcon icon={BubbleChatIcon} size={18} />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-slate-800">Messages</p>
-                            <p className="text-[11px] text-slate-500">Chat with borrowers & lenders</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-bold bg-brand text-white px-2 py-0.5 rounded-full">
-                          1 new
-                        </span>
-                      </button>
-
-                      {/* 3. Activity Hub */}
-                      <button
-                        type="button"
-                        onClick={() => handleSelectMenuItem('activity')}
-                        className={`w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition ${
-                          activeTab === 'activity'
-                            ? 'bg-brand/10 text-brand font-semibold'
-                            : 'text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0">
-                            <HugeiconsIcon icon={Clock01Icon} size={18} />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-slate-800">Activity Hub</p>
-                            <p className="text-[11px] text-slate-500">Borrowing, lending & returns</p>
-                          </div>
-                        </div>
-                        {activityBadgeCount && activityBadgeCount > 0 ? (
-                          <span className="text-[10px] font-bold bg-amber-badge text-white px-2 py-0.5 rounded-full">
-                            {activityBadgeCount}
-                          </span>
-                        ) : null}
-                      </button>
-
-                      {/* 4. My Books */}
-                      <button
-                        type="button"
-                        onClick={() => handleSelectMenuItem('my-books')}
-                        className={`w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition ${
-                          activeTab === 'my-books'
-                            ? 'bg-brand/10 text-brand font-semibold'
-                            : 'text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0">
-                            <HugeiconsIcon icon={BookOpen01Icon} size={18} />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-slate-800">My Books</p>
-                            <p className="text-[11px] text-slate-500">Manage shelf, lent out & history</p>
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* 5. Wishlist & Alerts */}
+                      {/* 2. Wishlist & Alerts */}
                       <button
                         type="button"
                         onClick={() => {
@@ -500,70 +426,45 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                       {/* --- Writer Capabilities & Mode Switcher --- */}
                       {currentUser?.writerStatus === 'approved' || activeWriterProfile ? (
-                        <>
-                          {/* Reader / Writer Profile Switcher */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsProfileMenuOpen(false);
-                              if (experienceMode === 'reader') {
-                                setExperienceMode('writer');
-                                setActiveTab('profile');
-                                navigate('/profile');
-                              } else {
-                                setExperienceMode('reader');
-                                setActiveTab('profile');
-                                navigate('/profile');
-                              }
-                              if (typeof window !== 'undefined') {
-                                window.scrollTo({ top: 0, behavior: 'instant' });
-                              }
-                            }}
-                            className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-purple-50/70 hover:text-brand transition group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-purple-100 text-brand flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition">
-                                <HugeiconsIcon icon={SparklesIcon} size={18} />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-slate-800 group-hover:text-brand">
-                                  {experienceMode === 'writer' ? 'Switch to Reader Profile' : 'Switch to Writer Profile'}
-                                </p>
-                                <p className="text-[11px] text-slate-500">
-                                  {experienceMode === 'writer'
-                                    ? 'Return to your reader profile & shelf'
-                                    : 'Open your author profile & published works'}
-                                </p>
-                              </div>
+                        /* Reader / Writer Profile Switcher */
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            if (experienceMode === 'reader') {
+                              setExperienceMode('writer');
+                              setActiveTab('profile');
+                              navigate('/profile');
+                            } else {
+                              setExperienceMode('reader');
+                              setActiveTab('profile');
+                              navigate('/profile');
+                            }
+                            if (typeof window !== 'undefined') {
+                              window.scrollTo({ top: 0, behavior: 'instant' });
+                            }
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-purple-50/70 hover:text-brand transition group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-purple-100 text-brand flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition">
+                              <HugeiconsIcon icon={SparklesIcon} size={18} />
                             </div>
-                            <span className="text-[10px] font-bold bg-purple-100 text-brand px-2 py-0.5 rounded-full">
-                              {experienceMode === 'writer' ? 'Reader' : 'Writer'}
-                            </span>
-                          </button>
-
-                          {/* Writer Dashboard */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsProfileMenuOpen(false);
-                              openWriterDashboard();
-                            }}
-                            className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-purple-50/70 hover:text-brand transition group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-purple-50 text-brand flex items-center justify-center flex-shrink-0">
-                                <HugeiconsIcon icon={BookOpen01Icon} size={18} />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-slate-800 group-hover:text-brand">Writer Dashboard</p>
-                                <p className="text-[11px] text-slate-500">Manage bibliography & profile</p>
-                              </div>
+                            <div>
+                              <p className="font-semibold text-slate-800 group-hover:text-brand">
+                                {experienceMode === 'writer' ? 'Switch to Reader Profile' : 'Switch to Writer Profile'}
+                              </p>
+                              <p className="text-[11px] text-slate-500">
+                                {experienceMode === 'writer'
+                                  ? 'Return to your reader profile & shelf'
+                                  : 'Open your author profile & published works'}
+                              </p>
                             </div>
-                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                              Verified
-                            </span>
-                          </button>
-                        </>
+                          </div>
+                          <span className="text-[10px] font-bold bg-purple-100 text-brand px-2 py-0.5 rounded-full">
+                            {experienceMode === 'writer' ? 'Reader' : 'Writer'}
+                          </span>
+                        </button>
                       ) : currentUser?.writerStatus === 'pending' ? (
                         <button
                           type="button"
