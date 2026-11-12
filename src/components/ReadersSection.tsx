@@ -8,13 +8,17 @@ interface ReadersSectionProps {
   readers: Reader[];
   onBrowseShelf: (reader: Reader) => void;
   onSeeAll?: () => void;
+  maxDisplay?: number;
 }
 
 export const ReadersSection: React.FC<ReadersSectionProps> = ({
   readers,
   onBrowseShelf,
-  onSeeAll
+  onSeeAll,
+  maxDisplay = 5
 }) => {
+  const displayedReaders = readers.slice(0, maxDisplay);
+
   return (
     <section className="pt-6 pb-16">
       {/* Section Header */}
@@ -43,7 +47,7 @@ export const ReadersSection: React.FC<ReadersSectionProps> = ({
 
       {/* Readers List */}
       <div className="flex flex-col gap-3.5 sm:gap-4">
-        {readers.map((reader) => (
+        {displayedReaders.map((reader) => (
           <ReaderCard
             key={reader.id}
             reader={reader}

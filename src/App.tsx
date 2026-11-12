@@ -454,17 +454,38 @@ const UserProfileRoute: React.FC<{
   onQuickBorrow,
   onOpenAddBook,
 }) => {
-  const { experienceMode, activeWriterProfile } = useWriter();
+  const { experienceMode, activeWriterProfile, allAuthors } = useWriter();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
 
+  // Robust target writer resolution
+  const targetWriter = useMemo(() => {
+    if (activeWriterProfile) return activeWriterProfile;
+    if (currentUser?.writerStatus === 'approved') {
+      const target = (currentUser.writerProfileId || currentUser.displayName)?.trim().toLowerCase();
+      if (target) {
+        return (
+          allAuthors.find(
+            (a) =>
+              a.id.toLowerCase() === target ||
+              a.slug.toLowerCase() === target ||
+              a.name.toLowerCase() === target
+          ) || null
+        );
+      }
+    }
+    return null;
+  }, [activeWriterProfile, currentUser, allAuthors]);
+
   // If in Writer Mode with an approved Writer profile, render the official Writer Profile!
-  if (experienceMode === 'writer' && activeWriterProfile) {
-    const authorWorks = getCatalogWorksForAuthor(activeWriterProfile.name, booksList);
-    const authorCopies = getBooksByAuthor(booksList, activeWriterProfile.name);
+  if (experienceMode === 'writer' && (activeWriterProfile || targetWriter)) {
+    const writer = activeWriterProfile || targetWriter!;
+    const authorWorks = getCatalogWorksForAuthor(writer.name, booksList);
+    const authorCopies = getBooksByAuthor(booksList, writer.name);
 
     return (
       <AuthorProfilePage
-        author={activeWriterProfile}
+        author={writer}
         works={authorWorks}
         books={authorCopies}
         onSelectWork={(work) => navigate(`/book/${encodeURIComponent(work.id)}`)}
@@ -472,7 +493,7 @@ const UserProfileRoute: React.FC<{
         onSelectAuthor={onSelectAuthor}
         onSelectOwner={onSelectOwner}
         onQuickBorrow={onQuickBorrow}
-        onOpenAddBook={() => onOpenAddBook?.({ author: activeWriterProfile.name })}
+        onOpenAddBook={() => onOpenAddBook?.({ author: writer.name })}
         onBack={() => navigate('/books')}
         isUserProfileView={true}
       />
@@ -1090,6 +1111,7 @@ const BookCircleMain: React.FC = () => {
                   readers={readersList}
                   onBrowseShelf={handleBrowseReader}
                   onSeeAll={() => navigate('/readers')}
+                  maxDisplay={5}
                 />
               </>
             }

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -71,6 +72,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     activeWriterProfile,
   } = useWriter();
 
+  const navigate = useNavigate();
+
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -137,6 +140,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const handleSelectMenuItem = (tabId: string) => {
     setActiveTab(tabId);
     setIsProfileMenuOpen(false);
+    if (tabId === 'profile') {
+      navigate('/profile');
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    }
   };
 
   const handleLogoutClick = () => {
@@ -212,25 +221,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Section Actions */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Active Writer Mode Badge & Quick Switch */}
-          {experienceMode === 'writer' && activeWriterProfile && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200/80 text-xs text-brand font-medium shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-              <span>Writer Mode · <strong>{activeWriterProfile.name}</strong></span>
-              <button
-                type="button"
-                onClick={() => {
-                  setExperienceMode('reader');
-                  setActiveTab('profile');
-                }}
-                className="text-[11px] text-slate-500 hover:text-brand underline font-normal ml-1"
-                title="Switch back to reader profile"
-              >
-                Switch
-              </button>
-            </div>
-          )}
-
           {/* Buy Us a Coffee Button */}
           <button
             onClick={onOpenCoffeeModal}
@@ -516,9 +506,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                             type="button"
                             onClick={() => {
                               setIsProfileMenuOpen(false);
-                              const nextMode = experienceMode === 'writer' ? 'reader' : 'writer';
-                              setExperienceMode(nextMode);
-                              handleSelectMenuItem('profile');
+                              if (experienceMode === 'reader') {
+                                setExperienceMode('writer');
+                                setActiveTab('profile');
+                                navigate('/profile');
+                              } else {
+                                setExperienceMode('reader');
+                                setActiveTab('profile');
+                                navigate('/profile');
+                              }
+                              if (typeof window !== 'undefined') {
+                                window.scrollTo({ top: 0, behavior: 'instant' });
+                              }
                             }}
                             className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-purple-50/70 hover:text-brand transition group"
                           >

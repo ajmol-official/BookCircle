@@ -206,14 +206,53 @@ export const WriterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Active Writer Profile (if current user is an approved writer)
   const activeWriterProfile = useMemo(() => {
     if (!currentUser) return null;
-    const authorId = currentUser.writerProfileId;
-    if (!authorId) {
-      // Fallback check in customAuthors where claimedUserId === currentUser.id
-      const claimed = allAuthors.find((a) => a.claimedUserId === currentUser.id);
-      return claimed || null;
+    const authorId = currentUser.writerProfileId?.trim();
+    if (authorId) {
+      const lower = authorId.toLowerCase();
+      const match = allAuthors.find(
+        (a) =>
+          a.id.toLowerCase() === lower ||
+          a.slug.toLowerCase() === lower ||
+          a.name.toLowerCase() === lower
+      );
+      if (match) return match;
     }
-    return allAuthors.find((a) => a.id === authorId || a.slug === authorId) || null;
-  }, [currentUser, allAuthors]);
+
+    // Fallback 1: check in allAuthors where claimedUserId === currentUser.id
+    const claimed = allAuthors.find((a) => a.claimedUserId === currentUser.id);
+    if (claimed) return claimed;
+
+    // Fallback 2: check applications for approved or pending claims by this user
+    const userApp = applications.find(
+      (app) => app.userId === currentUser.id && (app.status === 'approved' || app.status === 'pending')
+    );
+    if (userApp) {
+      const targetId = (userApp.targetAuthorId || userApp.targetAuthorSlug || userApp.targetAuthorName)?.trim().toLowerCase();
+      if (targetId) {
+        const match = allAuthors.find(
+          (a) =>
+            a.id.toLowerCase() === targetId ||
+            a.slug.toLowerCase() === targetId ||
+            a.name.toLowerCase() === targetId
+        );
+        if (match) return match;
+      }
+      if (userApp.proposedAuthor?.name) {
+        const propName = userApp.proposedAuthor.name.toLowerCase();
+        const matchProp = allAuthors.find((a) => a.name.toLowerCase() === propName);
+        if (matchProp) return matchProp;
+      }
+    }
+
+    // Fallback 3: if currentUser has writerStatus === 'approved', try matching displayName to authors
+    if (currentUser.writerStatus === 'approved' && currentUser.displayName) {
+      const nameLower = currentUser.displayName.trim().toLowerCase();
+      const matchByName = allAuthors.find((a) => a.name.toLowerCase() === nameLower);
+      if (matchByName) return matchByName;
+    }
+
+    return null;
+  }, [currentUser, allAuthors, applications]);
 
   // Enforce experience mode validity: only approved writers can be in 'writer' mode
   const isApprovedWriter = Boolean(
