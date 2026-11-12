@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -13,8 +12,7 @@ import {
   BookOpen01Icon,
   Book02Icon,
   SparklesIcon,
-  FavouriteIcon,
-  UserCircle02Icon
+  FavouriteIcon
 } from '@hugeicons/core-free-icons';
 import type { Author } from '../../types/author';
 import type { Book, CatalogWork } from '../../types';
@@ -50,8 +48,7 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
   onBack,
   isUserProfileView = false
 }) => {
-  const navigate = useNavigate();
-  const { openWriterOnboarding, openWriterDashboard, activeWriterProfile, setExperienceMode } = useWriter();
+  const { openWriterOnboarding, openWriterDashboard, activeWriterProfile } = useWriter();
   const { currentUser } = useAuth();
   const [photoError, setPhotoError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -216,36 +213,29 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
           document.body
         )}
 
-      <div className="pt-4 sm:pt-8 pb-20 animate-in fade-in duration-200">
+      <div className={`${isUserProfileView ? 'pt-6 sm:pt-8' : 'pt-4 sm:pt-8'} pb-20 animate-in fade-in duration-200`}>
 
-      {/* Contextual Breadcrumb & Back Navigation */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
-          <button
-            type="button"
-            onClick={onBack}
-            className="hover:text-brand font-medium transition-colors"
-          >
-            {isUserProfileView ? 'Home' : 'Catalogue'}
-          </button>
-          <span className="text-slate-300">/</span>
-          <span className="text-slate-400 font-medium">
-            {isUserProfileView ? 'Writer Profile' : 'Authors'}
-          </span>
-          <span className="text-slate-300">/</span>
-          <span className="text-slate-800 font-semibold truncate max-w-[200px] sm:max-w-none">
-            {author.name}
-          </span>
-        </nav>
-
-        {isUserProfileView ? (
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-brand text-xs font-semibold border border-purple-200 shadow-2xs">
-              <HugeiconsIcon icon={SparklesIcon} size={13} className="text-brand" />
-              <span>Official Writer Profile</span>
+      {/* Contextual Breadcrumb & Back Navigation (Visible only for visitors browsing authors) */}
+      {!isUserProfileView && (
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+            <button
+              type="button"
+              onClick={onBack}
+              className="hover:text-brand font-medium transition-colors"
+            >
+              Catalogue
+            </button>
+            <span className="text-slate-300">/</span>
+            <span className="text-slate-400 font-medium">
+              Authors
             </span>
-          </div>
-        ) : (
+            <span className="text-slate-300">/</span>
+            <span className="text-slate-800 font-semibold truncate max-w-[200px] sm:max-w-none">
+              {author.name}
+            </span>
+          </nav>
+
           <button
             type="button"
             onClick={onBack}
@@ -254,8 +244,8 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
             <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
             <span>Back to Books</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
         {/* ─── SECTION A: Author Information Header Card ─── */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200/90 shadow-card mb-10 transition-all">
@@ -322,29 +312,14 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
                 {/* Follow & Owner Actions */}
                 <div className="flex items-center gap-2 self-start flex-wrap">
                   {isOwner ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={openWriterDashboard}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-purple-50 text-brand border border-purple-200 text-xs font-semibold hover:bg-purple-100 transition shadow-xs active:scale-95"
-                      >
-                        <HugeiconsIcon icon={SparklesIcon} size={14} />
-                        <span>Edit Writer Profile</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setExperienceMode('reader');
-                          navigate('/profile');
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-slate-200 text-slate-600 hover:text-brand hover:border-brand/40 bg-white text-xs font-medium transition shadow-xs active:scale-95"
-                        title="Switch back to your Reader Profile"
-                      >
-                        <HugeiconsIcon icon={UserCircle02Icon} size={14} />
-                        <span>Switch to Reader</span>
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      onClick={openWriterDashboard}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-purple-50 text-brand border border-purple-200 text-xs font-semibold hover:bg-purple-100 transition shadow-xs active:scale-95"
+                    >
+                      <HugeiconsIcon icon={SparklesIcon} size={14} />
+                      <span>Edit Writer Profile</span>
+                    </button>
                   ) : (
                     <button
                       type="button"
