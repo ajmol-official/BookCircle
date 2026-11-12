@@ -94,6 +94,16 @@ Crafted with a warm, welcoming booklover palette based on the official Figma des
 - **Google OAuth & WhatsApp Phone OTP:** Fast social login and international WhatsApp OTP verification.
 - **Database-Level Privacy:** Personal collection books (`[PRIVATE_COLLECTION]`) are filtered out at the Supabase query level to ensure privacy.
 
+### 11. ✍️ Writer Ecosystem, Profile Claiming & Dual Experience Modes
+- **Official Writer Onboarding (`WriterOnboardingModal`):** Structured verification application allowing authors to claim existing bibliography entries or publish new works.
+- **Editorial Review Queue (`AdminWriterReviewModal`):** Privileged admin portal for community review and verification.
+- **Seamless Dual Experience Switcher:** Instant toggle between Reader and Writer experiences from the profile dropdown, dynamically routing `/profile` to personal reader stats or official author biography and bibliography.
+- **Clutter-Free Creator View:** Top breadcrumb bars and external badges are cleanly suppressed when writers view their own profile, keeping the focus on self-management (`Edit Writer Profile` + `Share Profile`).
+
+### 12. 🏘️ Curated Neighborhood Highlights & Minimalist Navigation
+- **Curated Home "Readers near you":** Kept focused with 5 active community neighbors and a direct "See All" shortcut to the full `/readers` directory.
+- **Streamlined Profile Dropdown:** Focused solely on account settings, mode switching, wishlist alerts, sharing guides, and sign out, keeping daily navigation fast and uncluttered.
+
 ---
 
 ## 📂 Project Architecture
@@ -102,7 +112,8 @@ Crafted with a warm, welcoming booklover palette based on the official Figma des
 BookCircle/
 ├── docs/                        # Dedicated technical specifications & architectural deep dives
 │   ├── FEATURES.md              # Comprehensive feature matrix, UX flows & screenshots
-│   └── author-profiles-future-architecture.md # Author entity models & Phase 2 roadmap
+│   ├── USER_FLOWS.md            # Interaction architecture, decision trees & edge cases
+│   └── author-profiles-future-architecture.md # Author entity models & roadmap
 ├── scripts/                     # Automated end-to-end verification test suites
 │   ├── verify-author-profiles.mjs # Cross-platform author navigation & profile tests
 │   └── verify-floating-chat.mjs # Floating chat widget & responsive FAB coordinator tests
@@ -121,15 +132,24 @@ BookCircle/
 │   │   ├── onboarding/          # WelcomeOnboardingModal (3-pillar intro)
 │   │   ├── profile/             # ProfilePage, PublicProfilePage, ReturnReliabilityModal & WishlistModal
 │   │   ├── readers/             # ReadersBrowsePage (community neighbor directory)
+│   │   ├── settings/            # SettingsPage (account & preferred handover spots)
+│   │   ├── who-we-are/          # Static Who We Are storytelling page
+│   │   ├── writer/              # WriterOnboardingModal, WriterDashboardModal, AdminWriterReviewModal
 │   │   ├── BookCard.tsx         # Unified book card with clickable author & quick actions
 │   │   ├── BooksSection.tsx     # Homepage community book grid
 │   │   ├── CategoryPills.tsx    # Horizontal genre filter chips
 │   │   ├── FloatingAddBookButton.tsx # Responsive FAB coordinated with floating chat
-│   │   └── Navbar.tsx           # Sticky top navbar with profile popover & notifications
+│   │   ├── MobileNavBar.tsx     # Responsive mobile bottom navigation bar
+│   │   ├── Navbar.tsx           # Sticky top navbar with streamlined profile dropdown
+│   │   ├── ReaderCard.tsx       # Community neighbor card with trust tier and shelf preview
+│   │   ├── ReadersSection.tsx   # Curated homepage neighbors section (5 active readers)
+│   │   ├── WriterCard.tsx       # Homepage writer card with verified badge & bibliography
+│   │   └── WritersSection.tsx   # Homepage spotlight writers showcase
 │   ├── context/
 │   │   ├── AuthContext.tsx      # AuthProvider, session lifecycle & action guarding
 │   │   ├── ExchangeContext.tsx  # Borrow & return exchange state management
-│   │   └── MessagingContext.tsx # Floating chat coordination & thread messaging
+│   │   ├── MessagingContext.tsx # Floating chat coordination & thread messaging
+│   │   └── WriterContext.tsx    # Writer identity, onboarding, profile claiming & mode switching
 │   ├── data/
 │   │   ├── authors.ts           # Canonical author directory, slugs & dynamic author generator
 │   │   └── mockData.ts          # Seed catalog books, community copies & reader profiles
@@ -138,8 +158,10 @@ BookCircle/
 │   │   ├── dbService.ts         # Supabase client integration with local fallback
 │   │   └── storageService.ts    # Persistent localStorage engine
 │   ├── types/
+│   │   ├── auth.ts              # Auth, user session, and claim request types
 │   │   ├── author.ts            # Author data entity & future-ready claim fields
-│   │   └── index.ts             # Book, CatalogBook, Reader & Exchange interfaces
+│   │   ├── index.ts             # Book, CatalogBook, Reader & Exchange interfaces
+│   │   └── writer.ts            # Writer application, onboarding, and dashboard types
 │   ├── App.tsx                  # Root router coordinator & global layout
 │   └── main.tsx                 # React 19 application entry point
 ├── supabase/

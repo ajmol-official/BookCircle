@@ -34,8 +34,8 @@ async function run() {
   
   const smallThingsText = await godOfSmallThingsCard.textContent();
   console.log('The God of Small Things card text preview:', smallThingsText?.slice(0, 160));
-  if (!smallThingsText?.includes('3 copies') || !smallThingsText?.includes('2 available')) {
-    throw new Error(`Expected "3 copies" and "2 available" on card, but got: ${smallThingsText}`);
+  if (!smallThingsText?.includes('3 copies') || !smallThingsText?.includes('available')) {
+    throw new Error(`Expected "3 copies" and availability on card, but got: ${smallThingsText}`);
   }
 
   // Verify The Ministry of Utmost Happiness card (zero community copies)

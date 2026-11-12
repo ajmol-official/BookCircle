@@ -32,39 +32,45 @@ This document records the design philosophy, data relationships, and future capa
 
 ---
 
-## 3. Future-Ready Architecture & Roadmap (Phase 2+)
+## 3. Writer Ecosystem & Implemented Capabilities (Phase 2)
 
-The `Author` type (`src/types/author.ts`) and database schema are structured to support future expansion without breaking changes:
+The `Author` type (`src/types/author.ts`), `WriterContext` (`src/context/WriterContext.tsx`), and UI components now deliver full writer participation:
 
-### A. Author Profile Claiming (`isClaimed`, `claimedUserId`)
-- Authors can claim their existing catalogue profile using a verified identity proof flow (e.g. publisher email domain verification, official social auth, or literary agency confirmation).
-- Once claimed, `isClaimed = true` and `claimedUserId` links to the author's BookCircle user account.
+### A. Author Profile Claiming (`isClaimed`, `claimedUserId`) — ✅ Implemented
+- Authors can claim their existing catalogue profile using a verified identity proof flow (`WriterOnboardingModal`) with publisher email, author website, or literary agency credentials.
+- Once approved via the editorial admin queue (`AdminWriterReviewModal`), `isClaimed = true` and `claimedUserId` links to the author's BookCircle user account.
 
-### B. Verified Author Badges (`isVerified`)
-- A distinctive "Verified Author" badge appears next to the author's name on their profile, book cards, and search listings, establishing authenticity and trust.
+### B. Verified Author Badges (`isVerified`) — ✅ Implemented
+- A distinctive "Verified Author" badge (`SparklesIcon` + checkmark) appears next to the author's name on their profile, book cards, and search listings, establishing authenticity and trust.
 
-### C. Author Self-Management & Profile Editing
-- Claimed authors gain access to an Author Dashboard to:
-  - Edit their biography, profile photo, and banner.
+### C. Author Self-Management & Profile Editing — ✅ Implemented
+- Claimed authors gain access to an Author Dashboard (`WriterDashboardModal`) to:
+  - Edit their biography, profile photo, and designations.
   - Add official website and social media handles (`websiteUrl`, `socialLinks.twitter`, `socialLinks.instagram`, `socialLinks.goodreads`).
   - Correct bibliography details and highlight signature works.
 
-### D. Upcoming Releases & New Book Announcements
+### D. Community Following & Literary Updates (`followersCount`) — ✅ Implemented
+- BookCircle readers can click `+ Follow Author` on author profiles with optimistic UI feedback and persistent local/cloud tracking.
+
+### E. Dual Experience Mode (Reader vs. Writer) — ✅ Implemented
+- Writers seamlessly toggle between their community reader shelf and their official author profile.
+- `/profile` dynamically routes to either `ProfilePage` (Reader) or `AuthorProfilePage` (Writer) based on active mode.
+- Tailored owner view: Visitor badges and breadcrumbs are cleanly suppressed when a writer views their own profile.
+
+---
+
+## 4. Future Roadmap (Phase 3+)
+
+### A. Upcoming Releases & New Book Announcements
 - Authors can showcase upcoming book releases before physical copies reach the community.
 - Readers can register interest or pre-order/wishlist upcoming releases.
 
-### E. Community Following & Literary Updates (`followersCount`)
-- BookCircle readers can click "+ Follow Author" to receive notifications when:
-  - A neighbor in their community adds a copy of the author's books to their shelf.
-  - The author posts an announcement, Q&A, or reading list recommendation.
-  - An author hosts a local book club meetup or virtual discussion.
-
-### F. Author-Curated Shelves & Reading Recommendations
+### B. Author-Curated Shelves & Reading Recommendations
 - Authors can recommend books by other writers in BookCircle, creating a rich literary web of recommendations from peer creators.
 
 ---
 
-## 4. Planned Database Schema Extension (Supabase / PostgreSQL)
+## 5. Planned Database Schema Extension (Supabase / PostgreSQL)
 
 ```sql
 -- Authors Table

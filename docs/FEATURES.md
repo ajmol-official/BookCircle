@@ -14,8 +14,11 @@ Welcome to the definitive feature and architecture reference for **BookCircle**.
 7. [Lending vs. Free Community Donations](#7-lending-vs-free-community-donations)
 8. [Wishlist & Real-Time Return Alerts](#8-wishlist--real-time-return-alerts)
 9. [Frictionless Guest Browsing & Unified Authentication](#9-frictionless-guest-browsing--unified-authentication)
-10. [Database Architecture & Privacy Enforcement (Supabase)](#10-database-architecture--privacy-enforcement-supabase)
-11. [Automated Testing & End-to-End Verification](#11-automated-testing--end-to-end-verification)
+10. [Book Catalogue Cards & Community Copies Decoupling](#10-book-catalogue-cards--community-copies-decoupling)
+11. [Writer Ecosystem, Onboarding & Dual Experience Mode](#11-writer-ecosystem-onboarding--dual-experience-mode)
+12. [Curated Neighborhood Sections & Streamlined Navigation](#12-curated-neighborhood-sections--streamlined-navigation)
+13. [Database Architecture & Privacy Enforcement (Supabase)](#13-database-architecture--privacy-enforcement-supabase)
+14. [Automated Testing & End-to-End Verification](#14-automated-testing--end-to-end-verification)
 
 ---
 
@@ -227,7 +230,53 @@ BookCircle maintains a strict architectural separation between **Published Liter
 
 ---
 
-## 11. Database Architecture & Privacy Enforcement (Supabase)
+## 11. Writer Ecosystem, Onboarding & Dual Experience Mode
+
+BookCircle empowers literary creators to establish verified presence, claim catalogue profiles, and connect directly with their local reading community.
+
+### A. Writer Onboarding & Claiming Wizard (`WriterOnboardingModal`)
+- Multi-step structured application workflow allowing members to:
+  1. Claim an existing catalogue author entity (e.g. Arundhati Roy, Neil Gaiman) or create a new author identity.
+  2. Provide verification credentials (publisher email, official author website, Goodreads profile, or agent representation).
+  3. Set biographical details, literary achievements, awards, and country designation.
+- Real-time status states: `none` $\rightarrow$ `pending` (Under Review) $\rightarrow$ `approved` (Official Writer) or `changes_requested`.
+
+### B. Editorial Review Portal (`AdminWriterReviewModal`)
+- Secure, authorized editorial review queue for BookCircle community managers.
+- Review pending claims with complete evidence dossiers, one-click claim approvals, or change requests with contextual feedback.
+
+### C. Seamless Dual Experience Mode (`Reader` vs `Writer`)
+- Approved writers can toggle between **Reader Mode** and **Writer Mode** directly from the profile dropdown.
+- **Dynamic Profile Route (`/profile`):**
+  - In **Reader Mode**, `/profile` displays the member's reading stats, trust tier, active shelf, and lending activity.
+  - In **Writer Mode**, `/profile` automatically transforms into the user's official **Writer Profile**, presenting their verified badge, biography, awards, and canonical bibliography.
+- **Clean Owner Experience:**
+  - Redundant breadcrumbs and external visitor badges (`✨ Official Writer Profile`) are cleanly suppressed when an author views their own profile (`isUserProfileView = true`), presenting a focused, uncluttered creator view.
+  - Profile switcher actions are centralized in the top navbar profile menu, keeping the profile header cards focused on essential actions (`Edit Writer Profile` + `Share Profile`).
+  - Zero-layout-shift toast notification portal ensures clipboard feedback renders seamlessly without displacing UI elements.
+
+---
+
+## 12. Curated Neighborhood Sections & Streamlined Navigation
+
+### A. Curated Homepage "Readers near you" Section
+- To prevent cognitive overload and maintain high visual quality, the homepage "Readers near you" section displays a curated showcase of **5 active neighbors** (`maxDisplay={5}`).
+- A prominent "See All" action links to the comprehensive `/readers` directory where members can explore the full community and filter by distance.
+
+### B. Focused Profile Dropdown Navigation
+- The profile dropdown menu is intentionally streamlined to prioritize essential daily utilities:
+  1. **Profile** (Dynamically labeled `Reader Profile` or `Writer Profile` based on active mode).
+  2. **Wishlist & Alerts** (Saved books and real-time return alerts counter).
+  3. **Mode Switcher / Become a Writer** (`Switch to Writer Profile` / `Switch to Reader Profile` or writer onboarding entry).
+  4. **Editorial Review** (Privileged admin review queue for authorized staff).
+  5. **How BookCircle Works** (Educational guide for lending and borrowing).
+  6. **Settings** (Account preferences and preferred handover spots).
+  7. **Sign Out** (Secure session teardown).
+- Primary communication and library tabs remain prominently anchored in the top navigation bar and mobile bottom bar (`/messages`, `/activity`, `/my-books`).
+
+---
+
+## 13. Database Architecture & Privacy Enforcement (Supabase)
 
 BookCircle integrates seamlessly with Supabase PostgreSQL with automated fallback to local state.
 
@@ -244,7 +293,7 @@ BookCircle integrates seamlessly with Supabase PostgreSQL with automated fallbac
 
 ---
 
-## 12. Automated Testing & End-to-End Verification
+## 14. Automated Testing & End-to-End Verification
 
 BookCircle features automated verification scripts powered by Playwright to ensure zero regressions across releases:
 
