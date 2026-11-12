@@ -1,4 +1,7 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   ArrowLeft01Icon,
@@ -10,7 +13,8 @@ import {
   BookOpen01Icon,
   Book02Icon,
   SparklesIcon,
-  FavouriteIcon
+  FavouriteIcon,
+  UserCircle02Icon
 } from '@hugeicons/core-free-icons';
 import type { Author } from '../../types/author';
 import type { Book, CatalogWork } from '../../types';
@@ -30,6 +34,7 @@ interface AuthorProfilePageProps {
   onQuickBorrow?: (book: Book) => void;
   onOpenAddBook?: () => void;
   onBack?: () => void;
+  isUserProfileView?: boolean;
 }
 
 export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
@@ -42,15 +47,33 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
   onSelectOwner: _onSelectOwner,
   onQuickBorrow: _onQuickBorrow,
   onOpenAddBook,
-  onBack
+  onBack,
+  isUserProfileView = false
 }) => {
-  const { openWriterOnboarding, openWriterDashboard } = useWriter();
+  const navigate = useNavigate();
+  const { openWriterOnboarding, openWriterDashboard, activeWriterProfile, setExperienceMode } = useWriter();
   const { currentUser } = useAuth();
   const [photoError, setPhotoError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isFollowing, setIsFollowing] = useState(false);
   const [shareToast, setShareToast] = useState(false);
+
+  // Robust profile ownership detection
+  const isOwner = Boolean(
+    isUserProfileView ||
+    (currentUser &&
+      author &&
+      (author.claimedUserId === currentUser.id ||
+        (currentUser.writerStatus === 'approved' &&
+          currentUser.writerProfileId &&
+          (currentUser.writerProfileId === author.id ||
+            currentUser.writerProfileId === author.slug)) ||
+        (activeWriterProfile &&
+          (activeWriterProfile.id === author.id ||
+            activeWriterProfile.slug === author.slug ||
+            activeWriterProfile.name.toLowerCase().trim() === author.name.toLowerCase().trim()))))
+  );
 
   // If author is missing or invalid slug
   if (!author) {
@@ -173,14 +196,27 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
   };
 
   return (
-    <div className="pt-4 sm:pt-8 pb-20 animate-in fade-in duration-200">
-      {/* Toast Notification */}
-      {shareToast && (
-        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 animate-fade-in">
-          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="text-emerald-400" />
-          <span>Author profile link copied to clipboard!</span>
-        </div>
-      )}
+    <>
+      {/* Floating Centered Toast Notification rendered via Portal to guarantee 0.0px layout shift */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <AnimatePresence>
+            {shareToast && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-medium shadow-2xl border border-slate-700/80 flex items-center gap-2.5 max-w-md pointer-events-none"
+              >
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-emerald-400 flex-shrink-0" />
+                <span>Author profile link copied to clipboard!</span>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+
+      <div className="pt-4 sm:pt-8 pb-20 animate-in fade-in duration-200">
 
       {/* Contextual Breadcrumb & Back Navigation */}
       <div className="flex items-center justify-between gap-4 mb-6">
@@ -190,24 +226,35 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
             onClick={onBack}
             className="hover:text-brand font-medium transition-colors"
           >
-            Catalogue
+            {isUserProfileView ? 'Home' : 'Catalogue'}
           </button>
           <span className="text-slate-300">/</span>
-          <span className="text-slate-400 font-medium">Authors</span>
+          <span className="text-slate-400 font-medium">
+            {isUserProfileView ? 'Writer Profile' : 'Authors'}
+          </span>
           <span className="text-slate-300">/</span>
           <span className="text-slate-800 font-semibold truncate max-w-[200px] sm:max-w-none">
             {author.name}
           </span>
         </nav>
 
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-brand transition-colors bg-white px-3 sm:px-4 py-1.5 rounded-full border border-slate-200/80 shadow-xs hover:border-brand/30"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-          <span>Back to Books</span>
-        </button>
+        {isUserProfileView ? (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-brand text-xs font-semibold border border-purple-200 shadow-2xs">
+              <HugeiconsIcon icon={SparklesIcon} size={13} className="text-brand" />
+              <span>Official Writer Profile</span>
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-brand transition-colors bg-white px-3 sm:px-4 py-1.5 rounded-full border border-slate-200/80 shadow-xs hover:border-brand/30"
+          >
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
+            <span>Back to Books</span>
+          </button>
+        )}
       </div>
 
         {/* ─── SECTION A: Author Information Header Card ─── */}
@@ -272,35 +319,50 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
                   )}
                 </div>
 
-                {/* Follow & Share Actions */}
+                {/* Follow & Owner Actions */}
                 <div className="flex items-center gap-2 self-start flex-wrap">
-                  {author.claimedUserId === currentUser?.id && (
+                  {isOwner ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={openWriterDashboard}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-purple-50 text-brand border border-purple-200 text-xs font-semibold hover:bg-purple-100 transition shadow-xs active:scale-95"
+                      >
+                        <HugeiconsIcon icon={SparklesIcon} size={14} />
+                        <span>Edit Writer Profile</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExperienceMode('reader');
+                          navigate('/profile');
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-slate-200 text-slate-600 hover:text-brand hover:border-brand/40 bg-white text-xs font-medium transition shadow-xs active:scale-95"
+                        title="Switch back to your Reader Profile"
+                      >
+                        <HugeiconsIcon icon={UserCircle02Icon} size={14} />
+                        <span>Switch to Reader</span>
+                      </button>
+                    </>
+                  ) : (
                     <button
                       type="button"
-                      onClick={openWriterDashboard}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-purple-50 text-brand border border-purple-200 text-xs font-semibold hover:bg-purple-100 transition shadow-xs"
+                      onClick={handleToggleFollow}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all active:scale-95 shadow-xs ${
+                        isFollowing
+                          ? 'bg-purple-100 text-brand border border-purple-300'
+                          : 'bg-brand text-white hover:bg-brand/90 hover:shadow-sm'
+                      }`}
                     >
-                      <HugeiconsIcon icon={SparklesIcon} size={14} />
-                      <span>Manage Profile</span>
+                      <HugeiconsIcon
+                        icon={FavouriteIcon}
+                        size={14}
+                        className={isFollowing ? 'fill-brand text-brand' : 'text-white'}
+                      />
+                      <span>{isFollowing ? 'Following' : '+ Follow Author'}</span>
                     </button>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={handleToggleFollow}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all active:scale-95 shadow-xs ${
-                      isFollowing
-                        ? 'bg-purple-100 text-brand border border-purple-300'
-                        : 'bg-brand text-white hover:bg-brand/90 hover:shadow-sm'
-                    }`}
-                  >
-                    <HugeiconsIcon
-                      icon={FavouriteIcon}
-                      size={14}
-                      className={isFollowing ? 'fill-brand text-brand' : 'text-white'}
-                    />
-                    <span>{isFollowing ? 'Following' : '+ Follow Author'}</span>
-                  </button>
 
                   <button
                     type="button"
@@ -404,7 +466,7 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
               )}
 
               {/* Unclaimed Author Profile Claim Invitation Banner */}
-              {!author.isClaimed && (
+              {!author.isClaimed && !isOwner && (
                 <div className="mt-5 pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                   <p className="text-slate-500">
                     Are you <strong>{author.name}</strong> or their official literary representative?
@@ -536,6 +598,7 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
           )}
         </div>
       </div>
+    </>
   );
 };
 

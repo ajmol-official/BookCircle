@@ -436,6 +436,59 @@ const AuthorProfileRoute: React.FC<{
   );
 };
 
+// ─── USER PROFILE ROUTE WRAPPER (READER OR WRITER PROFILE) ─────────────
+const UserProfileRoute: React.FC<{
+  booksList: Book[];
+  currentUserShelfBooks: Book[];
+  onSelectBook: (book: Book) => void;
+  onSelectAuthor: (authorName: string, authorId?: string) => void;
+  onSelectOwner: (ownerName: string) => void;
+  onQuickBorrow?: (book: Book) => void;
+  onOpenAddBook?: (initialBook?: any) => void;
+}> = ({
+  booksList,
+  currentUserShelfBooks,
+  onSelectBook,
+  onSelectAuthor,
+  onSelectOwner,
+  onQuickBorrow,
+  onOpenAddBook,
+}) => {
+  const { experienceMode, activeWriterProfile } = useWriter();
+  const navigate = useNavigate();
+
+  // If in Writer Mode with an approved Writer profile, render the official Writer Profile!
+  if (experienceMode === 'writer' && activeWriterProfile) {
+    const authorWorks = getCatalogWorksForAuthor(activeWriterProfile.name, booksList);
+    const authorCopies = getBooksByAuthor(booksList, activeWriterProfile.name);
+
+    return (
+      <AuthorProfilePage
+        author={activeWriterProfile}
+        works={authorWorks}
+        books={authorCopies}
+        onSelectWork={(work) => navigate(`/book/${encodeURIComponent(work.id)}`)}
+        onSelectBook={onSelectBook}
+        onSelectAuthor={onSelectAuthor}
+        onSelectOwner={onSelectOwner}
+        onQuickBorrow={onQuickBorrow}
+        onOpenAddBook={() => onOpenAddBook?.({ author: activeWriterProfile.name })}
+        onBack={() => navigate('/books')}
+        isUserProfileView={true}
+      />
+    );
+  }
+
+  // Otherwise, render the standard Reader Profile
+  return (
+    <ProfilePage
+      onSelectBook={onSelectBook}
+      onSelectAuthor={onSelectAuthor}
+      myBooks={currentUserShelfBooks}
+    />
+  );
+};
+
 // ─── MESSAGES ROUTE WRAPPER ───────────────────────────────────────────
 const MessagesRoute: React.FC<{
   booksList: Book[];
@@ -1153,10 +1206,14 @@ const BookCircleMain: React.FC = () => {
           <Route
             path="/profile"
             element={
-              <ProfilePage
+              <UserProfileRoute
+                booksList={booksList}
+                currentUserShelfBooks={currentUserShelfBooks}
                 onSelectBook={handleSelectBook}
                 onSelectAuthor={handleSelectAuthor}
-                myBooks={currentUserShelfBooks}
+                onSelectOwner={handleSelectOwner}
+                onQuickBorrow={handleQuickBorrow}
+                onOpenAddBook={handleOpenAddBook}
               />
             }
           />

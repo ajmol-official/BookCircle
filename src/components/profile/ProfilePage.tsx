@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Location01Icon,
@@ -11,14 +13,13 @@ import {
   GiftIcon,
   Bookmark02Icon,
   ArrowRight01Icon,
-  Settings01Icon,
-  SparklesIcon,
+  Share01Icon,
+  CheckmarkCircle02Icon,
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
 import { EditProfileModal } from './EditProfileModal';
 import { ReturnReliabilityModal } from './ReturnReliabilityModal';
 import { useAuth } from '../../context/AuthContext';
-import { useWriter } from '../../context/WriterContext';
 
 interface ProfilePageProps {
   onSelectBook: (book: Book) => void;
@@ -29,7 +30,6 @@ interface ProfilePageProps {
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelectAuthor, myBooks }) => {
   const navigate = useNavigate();
   const { currentUser, updateProfile } = useAuth();
-  const { activeWriterProfile, openWriterDashboard, openWriterOnboarding } = useWriter();
 
   const [profile, setProfile] = useState({
     name: currentUser?.displayName || 'Reader',
@@ -69,6 +69,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isReliabilityModalOpen, setIsReliabilityModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleShareProfile = () => {
+    try {
+      const readerSlug = encodeURIComponent((currentUser?.displayName || profile.name || 'reader').toLowerCase().replace(/\s+/g, '-'));
+      const shareUrl = `${window.location.origin}/reader/${readerSlug}`;
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).catch(() => {});
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch (err) {
+      console.error('Failed to copy reader profile link:', err);
+    }
+  };
 
   const reviewsWritten = [
     {
@@ -128,11 +144,31 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
   );
 
   return (
-    <div className="pt-8 pb-20 animate-in fade-in duration-200 space-y-8">
+    <>
+      {/* Floating Centered Toast Notification rendered via Portal to guarantee 0.0px layout shift */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <AnimatePresence>
+            {copiedLink && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-medium shadow-2xl border border-slate-700/80 flex items-center gap-2.5 max-w-md pointer-events-none"
+              >
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-emerald-400 flex-shrink-0" />
+                <span>Profile link copied to clipboard!</span>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+
+      <div className="pt-8 pb-20 animate-in fade-in duration-200 space-y-8">
       
       {/* 1. User Profile Header Card matching Figma #47:1711 */}
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-card">
+        <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
           <div className="relative group flex-shrink-0">
             {profile.avatar && !avatarError ? (
               <img
@@ -158,56 +194,55 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
               <HugeiconsIcon icon={Camera01Icon} size={16} />
             </button>
           </div>
-          <div className="space-y-2">
-            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-slate-800 tracking-tight">
-              {profile.name}
-            </h1>
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500">
-              <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand flex-shrink-0" />
-              <span>
-                {profile.location} · Member since {currentUser?.memberSince || 'February 2024'}
-              </span>
+
+          <div className="flex-1 min-w-0 space-y-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-slate-800 tracking-tight">
+                  {profile.name}
+                </h1>
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 mt-1">
+                  <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand flex-shrink-0" />
+                  <span>
+                    {profile.location} · Member since {currentUser?.memberSince || 'February 2024'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl border border-slate-300 hover:border-brand hover:bg-brand/5 text-slate-700 hover:text-brand text-xs sm:text-sm font-semibold transition-all shadow-xs active:scale-95"
+                >
+                  <HugeiconsIcon icon={PencilEdit02Icon} size={17} />
+                  <span>Edit Profile</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShareProfile}
+                  className={`p-2.5 rounded-xl border transition shadow-xs active:scale-95 flex items-center justify-center ${
+                    copiedLink
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-600'
+                      : 'border-slate-300 text-slate-600 hover:text-brand hover:border-brand hover:bg-brand/5 bg-white'
+                  }`}
+                  title={copiedLink ? 'Profile link copied!' : 'Share Profile'}
+                  aria-label="Share profile"
+                >
+                  <HugeiconsIcon
+                    icon={copiedLink ? CheckmarkCircle02Icon : Share01Icon}
+                    size={17}
+                    className={copiedLink ? 'text-emerald-600' : ''}
+                  />
+                </button>
+              </div>
             </div>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed pt-1 font-sans">
+
+            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed pt-1 font-sans">
               {profile.bio}
             </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 self-end md:self-auto flex-wrap">
-          {currentUser?.writerStatus === 'approved' || activeWriterProfile ? (
-            <button
-              onClick={openWriterDashboard}
-              className="flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200 text-xs sm:text-sm font-semibold transition-all shadow-2xs"
-            >
-              <HugeiconsIcon icon={SparklesIcon} size={17} />
-              <span>Writer Dashboard</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => openWriterOnboarding()}
-              className="flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl border border-purple-200 hover:border-brand hover:bg-purple-50 text-brand text-xs sm:text-sm font-semibold transition-all shadow-2xs"
-            >
-              <HugeiconsIcon icon={SparklesIcon} size={17} />
-              <span>Become a Writer</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl border border-slate-300 hover:border-brand hover:bg-brand/5 text-slate-700 hover:text-brand text-xs sm:text-sm font-semibold transition-all"
-          >
-            <HugeiconsIcon icon={PencilEdit02Icon} size={17} />
-            <span>Edit Profile</span>
-          </button>
-          <button
-            onClick={() => navigate('/settings')}
-            className="flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl border border-slate-300 hover:border-brand hover:bg-brand/5 text-slate-700 hover:text-brand text-xs sm:text-sm font-semibold transition-all"
-            title="Account & Notification Settings"
-          >
-            <HugeiconsIcon icon={Settings01Icon} size={17} />
-            <span className="hidden sm:inline">Settings</span>
-          </button>
         </div>
       </div>
 
@@ -626,5 +661,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
       />
 
     </div>
+    </>
   );
 };

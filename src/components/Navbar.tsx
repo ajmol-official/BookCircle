@@ -214,14 +214,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2.5 sm:gap-3">
           {/* Active Writer Mode Badge & Quick Switch */}
           {experienceMode === 'writer' && activeWriterProfile && (
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200/80 text-xs text-brand font-medium shadow-2xs">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200/80 text-xs text-brand font-medium shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
               <span>Writer Mode · <strong>{activeWriterProfile.name}</strong></span>
               <button
                 type="button"
-                onClick={() => setExperienceMode('reader')}
+                onClick={() => {
+                  setExperienceMode('reader');
+                  setActiveTab('profile');
+                }}
                 className="text-[11px] text-slate-500 hover:text-brand underline font-normal ml-1"
-                title="Switch back to reader mode"
+                title="Switch back to reader profile"
               >
                 Switch
               </button>
@@ -338,20 +341,41 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {/* User Identity Header */}
                     <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-3.5">
                       <img
-                        src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                        alt={currentUser?.displayName || 'User'}
+                        src={
+                          experienceMode === 'writer' && activeWriterProfile?.photo
+                            ? activeWriterProfile.photo
+                            : currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
+                        }
+                        alt={
+                          experienceMode === 'writer' && activeWriterProfile
+                            ? activeWriterProfile.name
+                            : currentUser?.displayName || 'User'
+                        }
                         className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0"
                       />
                       <div className="min-w-0 flex-1">
                         <h4 className="font-serif text-sm font-semibold text-slate-900 truncate">
-                          {currentUser?.displayName || 'Reader'}
+                          {experienceMode === 'writer' && activeWriterProfile
+                            ? activeWriterProfile.name
+                            : currentUser?.displayName || 'Reader'}
                         </h4>
                         <p className="text-xs text-slate-500 truncate">
-                          {currentUser?.email || currentUser?.phoneNumber || 'Active Member'}
+                          {experienceMode === 'writer' && activeWriterProfile
+                            ? activeWriterProfile.profession || 'Official Writer Profile'
+                            : currentUser?.email || currentUser?.phoneNumber || 'Active Member'}
                         </p>
                         <div className="flex items-center gap-1.5 mt-1 text-[11px]">
-                          <span className="text-amber-600 font-semibold">★ {currentUser?.trustScore || 4.9}</span>
-                          <span className="text-slate-500">• {currentUser?.lendsCount ?? 18} books lent</span>
+                          {experienceMode === 'writer' && activeWriterProfile ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-brand bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                              <HugeiconsIcon icon={SparklesIcon} size={11} />
+                              <span>Writer Experience Active</span>
+                            </span>
+                          ) : (
+                            <>
+                              <span className="text-amber-600 font-semibold">★ {currentUser?.trustScore || 4.9}</span>
+                              <span className="text-slate-500">• {currentUser?.lendsCount ?? 18} books lent</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -370,12 +394,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0">
-                            <HugeiconsIcon icon={UserCircle02Icon} size={18} />
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                            experienceMode === 'writer' ? 'bg-purple-100 text-brand' : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            <HugeiconsIcon icon={experienceMode === 'writer' ? BookOpen01Icon : UserCircle02Icon} size={18} />
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-800">Profile</p>
-                            <p className="text-[11px] text-slate-500">View public library & trust stats</p>
+                            <p className="font-semibold text-slate-800">
+                              {experienceMode === 'writer' ? 'Writer Profile' : 'Reader Profile'}
+                            </p>
+                            <p className="text-[11px] text-slate-500">
+                              {experienceMode === 'writer'
+                                ? 'View published works & author identity'
+                                : 'View public library & trust stats'}
+                            </p>
                           </div>
                         </div>
                       </button>
@@ -479,12 +511,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {/* --- Writer Capabilities & Mode Switcher --- */}
                       {currentUser?.writerStatus === 'approved' || activeWriterProfile ? (
                         <>
-                          {/* Mode Switcher */}
+                          {/* Reader / Writer Profile Switcher */}
                           <button
                             type="button"
                             onClick={() => {
                               setIsProfileMenuOpen(false);
-                              setExperienceMode(experienceMode === 'writer' ? 'reader' : 'writer');
+                              const nextMode = experienceMode === 'writer' ? 'reader' : 'writer';
+                              setExperienceMode(nextMode);
+                              handleSelectMenuItem('profile');
                             }}
                             className="w-full px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left text-slate-700 hover:bg-purple-50/70 hover:text-brand transition group"
                           >
@@ -494,15 +528,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                               </div>
                               <div>
                                 <p className="font-semibold text-slate-800 group-hover:text-brand">
-                                  {experienceMode === 'writer' ? 'Switch to Reader' : 'Switch to Writer'}
+                                  {experienceMode === 'writer' ? 'Switch to Reader Profile' : 'Switch to Writer Profile'}
                                 </p>
                                 <p className="text-[11px] text-slate-500">
-                                  {experienceMode === 'writer' ? 'Return to reader view' : 'Access your author dashboard'}
+                                  {experienceMode === 'writer'
+                                    ? 'Return to your reader profile & shelf'
+                                    : 'Open your author profile & published works'}
                                 </p>
                               </div>
                             </div>
                             <span className="text-[10px] font-bold bg-purple-100 text-brand px-2 py-0.5 rounded-full">
-                              {experienceMode === 'writer' ? 'Writer' : 'Reader'}
+                              {experienceMode === 'writer' ? 'Reader' : 'Writer'}
                             </span>
                           </button>
 
