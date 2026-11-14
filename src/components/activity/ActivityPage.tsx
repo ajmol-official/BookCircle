@@ -442,13 +442,13 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
   const isOwner = (e: ExchangeTransaction) =>
     Boolean(e.ownerId && e.ownerId === currentUserId) ||
     Boolean(currentUserDisplayName && e.ownerName && e.ownerName.toLowerCase().trim() === currentUserDisplayName.toLowerCase().trim()) ||
-    Boolean(isDemoSession && (e.ownerName === 'Maya Lin' || e.ownerName === 'You'));
+    Boolean(isDemoSession && (e.ownerId === 'demo-user' || e.ownerName === 'Maya Lin' || e.ownerName === 'You'));
 
   // Helper: Is current user the borrower?
   const isBorrower = (e: ExchangeTransaction) =>
     Boolean(e.borrowerId && e.borrowerId === currentUserId) ||
     Boolean(currentUserDisplayName && e.borrowerName && e.borrowerName.toLowerCase().trim() === currentUserDisplayName.toLowerCase().trim()) ||
-    Boolean(isDemoSession && (e.borrowerName === 'Maya Lin' || e.borrowerName === 'You'));
+    Boolean(isDemoSession && (e.borrowerId === 'demo-user' || e.borrowerName === 'Maya Lin' || e.borrowerName === 'You'));
 
   // ─── LENDING TAB DATA ─────────────────────────────────────────────────────
   const lendingExchanges = useMemo(() => exchanges.filter(isOwner), [exchanges, currentUserId, currentUserDisplayName]);
@@ -865,9 +865,9 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                               <HugeiconsIcon icon={Calendar01Icon} size={14} className="text-brand flex-shrink-0" />
                               <span>{req.meetupDate} at {req.meetupTime}</span>
                             </span>
-                            <span className="inline-flex items-center gap-1 font-medium text-slate-700">
+                            <span className="inline-flex items-center gap-1 font-medium text-slate-700 min-w-0">
                               <HugeiconsIcon icon={Location01Icon} size={14} className="text-brand flex-shrink-0" />
-                              <span>{req.meetupSpot}</span>
+                              <span className="truncate max-w-[180px] xs:max-w-[240px] sm:max-w-xs" title={req.meetupSpot}>{req.meetupSpot}</span>
                             </span>
                           </div>
                         </div>
@@ -958,10 +958,10 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                             <h4 className="font-serif text-base font-semibold text-slate-800 mt-1 truncate">
                               {item.bookTitle}
                             </h4>
-                            <p className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
-                              <span>{item.meetupDate} @ {item.meetupTime}</span>
-                              <span>·</span>
-                              <span className="truncate">{item.meetupSpot}</span>
+                            <p className="text-xs text-slate-500 flex items-center gap-2 mt-0.5 min-w-0">
+                              <span className="flex-shrink-0">{item.meetupDate} @ {item.meetupTime}</span>
+                              <span className="flex-shrink-0">·</span>
+                              <span className="truncate max-w-[160px] xs:max-w-[220px] sm:max-w-xs" title={item.meetupSpot}>{item.meetupSpot}</span>
                             </p>
                           </div>
                         </div>
@@ -971,7 +971,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                             <div className="flex items-center gap-2 flex-wrap">
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
                                 <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
-                                <span>You confirmed handover</span>
+                                <span>You confirmed · Waiting for the other person to confirm.</span>
                               </div>
                               {item.reminderSentAt ? (
                                 <span className="text-[11px] text-slate-500 font-medium bg-slate-100 px-2.5 py-1 rounded-lg">
@@ -1001,27 +1001,34 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                               </button>
                             </div>
                           ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActionConfirmTarget({
-                                  type: 'lender_handover',
-                                  exchange: item,
-                                  title: 'Confirm Book Handover',
-                                  description: `Confirm that you met ${item.borrowerName} and handed over “${item.bookTitle}”?`,
-                                  confirmLabel: 'Confirm Handover',
-                                  cancelLabel: 'Cancel',
-                                  details: {
-                                    date: item.meetupDate,
-                                    time: item.meetupTime,
-                                    spot: item.meetupSpot,
-                                  },
-                                });
-                              }}
-                              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
-                            >
-                              I Handed Over Book
-                            </button>
+                            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                              {item.pickupConfirmation?.borrowerConfirmed && (
+                                <span className="text-[11px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl">
+                                  {item.borrowerName} confirmed pickup
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActionConfirmTarget({
+                                    type: 'lender_handover',
+                                    exchange: item,
+                                    title: 'Confirm Book Handover',
+                                    description: `Confirm that you met ${item.borrowerName} and handed over “${item.bookTitle}”?`,
+                                    confirmLabel: 'Confirm Handover',
+                                    cancelLabel: 'Cancel',
+                                    details: {
+                                      date: item.meetupDate,
+                                      time: item.meetupTime,
+                                      spot: item.meetupSpot,
+                                    },
+                                  });
+                                }}
+                                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
+                              >
+                                I Handed Over Book
+                              </button>
+                            </div>
                           )}
 
                           <button
@@ -1364,7 +1371,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                             <div className="flex items-center gap-2 flex-wrap">
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
                                 <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
-                                <span>You confirmed receipt</span>
+                                <span>You confirmed · Waiting for the other person to confirm.</span>
                               </div>
                               {item.reminderSentAt ? (
                                 <span className="text-[11px] text-slate-500 font-medium bg-slate-100 px-2.5 py-1 rounded-lg">
@@ -1394,27 +1401,34 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                               </button>
                             </div>
                           ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActionConfirmTarget({
-                                  type: 'borrower_handover',
-                                  exchange: item,
-                                  title: 'Confirm Book Receipt',
-                                  description: `Confirm that you received “${item.bookTitle}” from ${item.ownerName}?`,
-                                  confirmLabel: 'Confirm Receipt',
-                                  cancelLabel: 'Cancel',
-                                  details: {
-                                    date: item.meetupDate,
-                                    time: item.meetupTime,
-                                    spot: item.meetupSpot,
-                                  },
-                                });
-                              }}
-                              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
-                            >
-                              I Received the Book
-                            </button>
+                            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                              {item.pickupConfirmation?.lenderConfirmed && (
+                                <span className="text-[11px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl">
+                                  {item.ownerName} confirmed handover
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActionConfirmTarget({
+                                    type: 'borrower_handover',
+                                    exchange: item,
+                                    title: 'Confirm Book Receipt',
+                                    description: `Confirm that you received “${item.bookTitle}” from ${item.ownerName}?`,
+                                    confirmLabel: 'Confirm Receipt',
+                                    cancelLabel: 'Cancel',
+                                    details: {
+                                      date: item.meetupDate,
+                                      time: item.meetupTime,
+                                      spot: item.meetupSpot,
+                                    },
+                                  });
+                                }}
+                                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
+                              >
+                                I Received the Book
+                              </button>
+                            </div>
                           )}
 
                           <button
@@ -2393,17 +2407,10 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
               Action Notice
             </h3>
             <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed max-w-sm mx-auto">
-              {error}
+              {error.replace(/^403\s*Forbidden:\s*/i, '')}
             </p>
 
             <div className="mt-6 flex items-center justify-center gap-3 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={clearError}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm transition"
-              >
-                Cancel
-              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -2412,7 +2419,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                 }}
                 className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95"
               >
-                Retry
+                Dismiss
               </button>
             </div>
           </div>

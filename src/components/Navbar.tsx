@@ -184,7 +184,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Center Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-3.5 lg:gap-6 xl:gap-8">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (

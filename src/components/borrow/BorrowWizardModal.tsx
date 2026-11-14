@@ -182,7 +182,7 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition z-10"
+            className="absolute top-3.5 right-3.5 p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition z-10"
             aria-label="Close modal"
           >
             <HugeiconsIcon icon={Cancel01Icon} size={18} />

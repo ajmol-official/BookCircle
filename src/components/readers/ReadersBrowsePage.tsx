@@ -288,7 +288,7 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition flex-shrink-0"
+                className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition flex-shrink-0"
                 title="Clear search"
               >
                 <HugeiconsIcon icon={Cancel01Icon} size={16} />
@@ -302,7 +302,7 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
           SECTION 2: SINGLE HORIZONTAL TOOLBAR
           (Displays Reader Count, Distance Filter & More Filters Button in 1 line)
       ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 mb-6 shadow-2xs flex flex-row items-center justify-between gap-2 sm:gap-3">
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 mb-6 shadow-2xs flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-3">
         {/* Left: Reader Count Context */}
         <div className="flex items-center gap-1.5 text-slate-700 min-w-0">
           <span className="font-serif font-bold text-slate-900 text-sm sm:text-base flex-shrink-0">
@@ -319,7 +319,7 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
         </div>
 
         {/* Right: Distance Dropdown & More Filters Control (Strict Single Line) */}
-        <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap">
           {/* Distance Filter Dropdown */}
           <div className="relative">
             <select
@@ -442,7 +442,7 @@ export const ReadersBrowsePage: React.FC<ReadersBrowsePageProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsFilterDrawerOpen(false)}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+                    className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
                     title="Close drawer"
                   >
                     <HugeiconsIcon icon={Cancel01Icon} size={18} />

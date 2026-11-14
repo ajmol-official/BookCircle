@@ -52,8 +52,15 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const currentUserId = currentUser?.id || 'demo-user';
-  const currentUserDisplayName = currentUser?.displayName || 'Maya Lin';
+  const isDemoSession =
+    !currentUser ||
+    currentUser.authProvider === 'demo' ||
+    currentUser.email === 'maya.reader@bookcircle.org';
+
+  const currentUserId = currentUser?.id || (isDemoSession ? 'demo-user' : '');
+  const currentUserDisplayName =
+    currentUser?.displayName ||
+    (isDemoSession ? 'Maya Lin' : currentUser?.email?.split('@')[0] || '');
 
   const clearError = useCallback(() => {
     setError(null);
@@ -63,7 +70,7 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setIsLoading(true);
       setError(null);
-      const data = await exchangeService.getExchanges(currentUserId, currentUserDisplayName);
+      const data = await exchangeService.getExchanges(currentUserId, currentUserDisplayName, isDemoSession);
       setExchanges(data);
     } catch (err: any) {
       console.error('Failed to load exchanges:', err);
@@ -71,7 +78,7 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [currentUserId, currentUserDisplayName]);
+  }, [currentUserId, currentUserDisplayName, isDemoSession]);
 
   useEffect(() => {
     loadData();
@@ -84,13 +91,13 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Dynamic Action Required Badge Counts
   const badgeCounts = useMemo(() => {
-    return exchangeService.getActionRequiredCount(currentUserId, currentUserDisplayName, exchanges);
-  }, [currentUserId, currentUserDisplayName, exchanges]);
+    return exchangeService.getActionRequiredCount(currentUserId, currentUserDisplayName, exchanges, isDemoSession);
+  }, [currentUserId, currentUserDisplayName, exchanges, isDemoSession]);
 
   const acceptRequest = async (exchangeId: string) => {
     setError(null);
     try {
-      await exchangeService.acceptRequest(exchangeId, currentUserId);
+      await exchangeService.acceptRequest(exchangeId, currentUserId, currentUserDisplayName);
       // Reload all exchanges to reflect the accepted request and auto-declined competing requests
       await loadData();
     } catch (err: any) {
@@ -102,7 +109,7 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const declineRequest = async (exchangeId: string, reason?: string) => {
     setError(null);
     try {
-      const updated = await exchangeService.declineRequest(exchangeId, reason, currentUserId);
+      const updated = await exchangeService.declineRequest(exchangeId, reason, currentUserId, currentUserDisplayName);
       updateExchangeInState(updated);
     } catch (err: any) {
       setError(err?.message || 'Failed to decline request');
@@ -113,7 +120,7 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const cancelRequest = async (exchangeId: string) => {
     setError(null);
     try {
-      const updated = await exchangeService.cancelRequest(exchangeId, currentUserId);
+      const updated = await exchangeService.cancelRequest(exchangeId, currentUserId, currentUserDisplayName);
       updateExchangeInState(updated);
     } catch (err: any) {
       setError(err?.message || 'Failed to cancel request');
@@ -124,7 +131,7 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const confirmPickupHandover = async (exchangeId: string, role: 'lender' | 'borrower') => {
     setError(null);
     try {
-      const updated = await exchangeService.confirmPickupHandover(exchangeId, role, currentUserId);
+      const updated = await exchangeService.confirmPickupHandover(exchangeId, role, currentUserId, currentUserDisplayName);
       updateExchangeInState(updated);
     } catch (err: any) {
       setError(err?.message || 'Failed to confirm handover');
@@ -190,7 +197,8 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         exchangeId,
         conditionVerified,
         conditionNotes,
-        currentUserId
+        currentUserId,
+        currentUserDisplayName
       );
       updateExchangeInState(updated);
     } catch (err: any) {
@@ -207,7 +215,14 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   ) => {
     setError(null);
     try {
-      const updated = await exchangeService.submitRating(exchangeId, role, rating, feedback, currentUserId);
+      const updated = await exchangeService.submitRating(
+        exchangeId,
+        role,
+        rating,
+        feedback,
+        currentUserId,
+        currentUserDisplayName
+      );
       updateExchangeInState(updated);
     } catch (err: any) {
       setError(err?.message || 'Failed to submit rating');

@@ -109,7 +109,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
               {/* Close Button */}
               <button
                 onClick={onClose}
-                className="p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition"
+                className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition"
                 aria-label="Close"
               >
                 <HugeiconsIcon icon={Cancel01Icon} size={18} />

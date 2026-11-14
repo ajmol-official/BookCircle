@@ -89,7 +89,7 @@ export const RecordDirectReturnModal: React.FC<RecordDirectReturnModalProps> = (
         <button
           onClick={onClose}
           disabled={isSubmitting}
-          className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition disabled:opacity-50"
+          className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition disabled:opacity-50"
           aria-label="Close dialog"
         >
           <HugeiconsIcon icon={Cancel01Icon} size={18} />
@@ -207,7 +207,7 @@ export const RecordDirectReturnModal: React.FC<RecordDirectReturnModalProps> = (
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <div className="sticky bottom-0 bg-white/95 backdrop-blur-xs mt-6 flex items-center justify-end gap-3 pt-3 pb-1 border-t border-slate-100 z-10">
           <button
             type="button"
             onClick={onClose}

@@ -241,8 +241,8 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
         {/* Book Metadata */}
         <div className="flex-1 flex flex-col space-y-4 w-full">
           <div>
-            <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-x-3 gap-y-2.5 mb-2.5 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 {resolvedCopies.length === 0 ? (
                   <span className="px-3 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />

@@ -319,7 +319,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition flex-shrink-0"
+                className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition flex-shrink-0"
                 title="Clear search"
               >
                 <HugeiconsIcon icon={Cancel01Icon} size={16} />
@@ -432,7 +432,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
         </div>
 
         {/* Right Action Controls: Distance, Sort, Drawer Trigger, View Toggle */}
-        <div className="flex items-center gap-2 self-end md:self-auto flex-wrap">
+        <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto justify-start sm:justify-end flex-wrap">
           
           {/* Distance Dropdown */}
           <div className="relative">
@@ -798,7 +798,8 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                   </div>
                   <button
                     onClick={() => setIsFilterDrawerOpen(false)}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+                    className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+                    title="Close drawer"
                   >
                     <HugeiconsIcon icon={Cancel01Icon} size={18} />
                   </button>

@@ -1075,7 +1075,7 @@ const BookCircleMain: React.FC = () => {
         className={`flex-1 max-w-[1248px] w-full mx-auto ${
           isMessagesActive
             ? 'min-h-0 flex flex-col overflow-hidden px-0 sm:px-6 pb-16 md:pb-3.5'
-            : 'px-4 sm:px-6 pb-20 md:pb-0'
+            : 'px-4 sm:px-6 pb-28 sm:pb-24 md:pb-0'
         }`}
       >
         <Routes>

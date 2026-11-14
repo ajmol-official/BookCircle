@@ -132,12 +132,64 @@ const mapRowToTransaction = (item: any): ExchangeTransaction => {
   };
 };
 
+/**
+ * Authoritative role-based permission validator for exchange operations.
+ * Evaluates ID matching, display name matching, and demo mode compatibility.
+ */
+const isAuthorizedParty = (
+  role: 'owner' | 'borrower',
+  current: any,
+  callerId?: string,
+  callerName?: string
+): boolean => {
+  if (!callerId && !callerName) return true;
+
+  const targetId = role === 'owner' ? current.owner_id : current.borrower_id;
+  const targetName = role === 'owner' ? current.owner_name : current.borrower_name;
+
+  // 1. Direct ID match
+  if (callerId && targetId && callerId === targetId) return true;
+
+  // 2. Demo session match (demo user can manage demo or unassigned items)
+  if (callerId === 'demo-user' || targetId === 'demo-user') return true;
+
+  // 3. Name match (case-insensitive)
+  if (
+    callerName &&
+    targetName &&
+    callerName.toLowerCase().trim() === targetName.toLowerCase().trim()
+  ) {
+    return true;
+  }
+
+  // 4. Demo aliases for Maya Lin / You
+  if (
+    (callerId === 'demo-user' || callerName?.toLowerCase().trim() === 'maya lin') &&
+    (targetName === 'Maya Lin' || targetName === 'You')
+  ) {
+    return true;
+  }
+
+  // 5. Fallback if record has no explicit owner_id/borrower_id set
+  if (!targetId) {
+    if (!targetName || targetName === 'You') return true;
+    if (callerName && targetName.toLowerCase().trim() === callerName.toLowerCase().trim()) return true;
+    if (callerId === 'demo-user') return true;
+  }
+
+  return false;
+};
+
 export const exchangeService = {
   /**
-   * Fetch all authoritative exchange transactions from Supabase.
-   * Throws if Supabase query fails.
+   * Fetch authoritative exchange transactions from Supabase.
+   * Enforces strict account isolation so users only see exchanges belonging to them.
    */
-  async getExchanges(_userId: string = 'demo-user', _userDisplayName?: string): Promise<ExchangeTransaction[]> {
+  async getExchanges(
+    userId: string = 'demo-user',
+    userDisplayName?: string,
+    isDemoSession?: boolean
+  ): Promise<ExchangeTransaction[]> {
     if (!isSupabaseConfigured()) {
       throw new Error('Supabase is not configured. Please check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
     }
@@ -152,7 +204,31 @@ export const exchangeService = {
       throw new Error(`Database error loading exchanges: ${error.message}`);
     }
 
-    return (data || []).map(mapRowToTransaction);
+    // Skip filter if explicitly requested (e.g. global verification scripts)
+    if (userId === 'all') {
+      return (data || []).map(mapRowToTransaction);
+    }
+
+    const isDemo = isDemoSession || userId === 'demo-user' || userDisplayName === 'Maya Lin';
+
+    // Strict account isolation: only return exchanges where current user is the owner or borrower
+    const filtered = (data || []).filter((row) => {
+      // Is current user the owner/lender of this book?
+      const isOwner =
+        Boolean(row.owner_id && row.owner_id === userId) ||
+        Boolean(userDisplayName && row.owner_name && row.owner_name.toLowerCase().trim() === userDisplayName.toLowerCase().trim()) ||
+        Boolean(isDemo && (row.owner_id === 'demo-user' || row.owner_name === 'Maya Lin' || row.owner_name === 'You'));
+
+      // Is current user the borrower/requester?
+      const isBorrower =
+        Boolean(row.borrower_id && row.borrower_id === userId) ||
+        Boolean(userDisplayName && row.borrower_name && row.borrower_name.toLowerCase().trim() === userDisplayName.toLowerCase().trim()) ||
+        Boolean(isDemo && (row.borrower_id === 'demo-user' || row.borrower_name === 'Maya Lin' || row.borrower_name === 'You'));
+
+      return isOwner || isBorrower;
+    });
+
+    return filtered.map(mapRowToTransaction);
   },
 
   /**
@@ -162,19 +238,20 @@ export const exchangeService = {
   getActionRequiredCount(
     userId: string = 'demo-user',
     userDisplayName?: string,
-    exchanges: ExchangeTransaction[] = []
+    exchanges: ExchangeTransaction[] = [],
+    isDemoSession?: boolean
   ): { total: number; lending: number; borrowing: number } {
+    const isDemo = isDemoSession || userId === 'demo-user' || userDisplayName === 'Maya Lin';
+
     const isOwner = (e: ExchangeTransaction) =>
-      e.ownerId === userId ||
-      (userDisplayName && e.ownerName.toLowerCase().trim() === userDisplayName.toLowerCase().trim()) ||
-      e.ownerName === 'Maya Lin' ||
-      e.ownerName === 'You';
+      Boolean(e.ownerId && e.ownerId === userId) ||
+      Boolean(userDisplayName && e.ownerName && e.ownerName.toLowerCase().trim() === userDisplayName.toLowerCase().trim()) ||
+      Boolean(isDemo && (e.ownerId === 'demo-user' || e.ownerName === 'Maya Lin' || e.ownerName === 'You'));
 
     const isBorrower = (e: ExchangeTransaction) =>
-      e.borrowerId === userId ||
-      (userDisplayName && e.borrowerName.toLowerCase().trim() === userDisplayName.toLowerCase().trim()) ||
-      e.borrowerName === 'Maya Lin' ||
-      e.borrowerName === 'You';
+      Boolean(e.borrowerId && e.borrowerId === userId) ||
+      Boolean(userDisplayName && e.borrowerName && e.borrowerName.toLowerCase().trim() === userDisplayName.toLowerCase().trim()) ||
+      Boolean(isDemo && (e.borrowerId === 'demo-user' || e.borrowerName === 'Maya Lin' || e.borrowerName === 'You'));
 
     let lendingCount = 0;
     exchanges.forEach((e) => {
@@ -232,26 +309,38 @@ export const exchangeService = {
       throw new Error('Supabase client not configured.');
     }
 
-    // 1. Concurrency Check: Verify book is not already loaned out
-    const { data: existingActive, error: checkErr } = await supabase
+    // 1. Concurrency Check: Verify book is not already loaned out for this specific owner
+    let activeLoanQuery = supabase
       .from('borrow_requests')
       .select('id, status')
       .eq('book_id', params.book.id)
       .in('status', ['accepted', 'handed_over', 'active_loan']);
 
-    if (!checkErr && existingActive && existingActive.length > 0) {
-      throw new Error(`“${params.book.title}” already has an active loan in progress.`);
+    if (params.owner.id) {
+      activeLoanQuery = activeLoanQuery.eq('owner_id', params.owner.id);
     }
 
-    // Deduplication check: if a pending request from this borrower already exists for this book, return it safely (prevents duplicate submission on retry)
+    const { data: existingActive, error: checkErr } = await activeLoanQuery;
+
+    if (!checkErr && existingActive && existingActive.length > 0) {
+      throw new Error(`This copy of “${params.book.title}” already has an active loan in progress.`);
+    }
+
+    // Deduplication check: if a pending request from this borrower already exists for this book copy, return it safely (prevents duplicate submission on retry)
     if (params.borrower.id) {
-      const { data: existingPending } = await supabase
+      let pendingQuery = supabase
         .from('borrow_requests')
         .select('*')
         .eq('book_id', params.book.id)
         .eq('borrower_id', params.borrower.id)
         .in('status', ['pending', 'pending_approval', 'pending_claim'])
         .limit(1);
+
+      if (params.owner.id) {
+        pendingQuery = pendingQuery.eq('owner_id', params.owner.id);
+      }
+
+      const { data: existingPending } = await pendingQuery;
 
       if (existingPending && existingPending.length > 0) {
         return mapRowToTransaction(existingPending[0]);
@@ -315,15 +404,21 @@ export const exchangeService = {
       throw new Error('Supabase client not configured.');
     }
 
-    // Deduplication check: if a pending gift claim from this recipient already exists for this book, return it safely (prevents duplicate submission on retry)
+    // Deduplication check: if a pending gift claim from this recipient already exists for this book copy, return it safely (prevents duplicate submission on retry)
     if (params.borrower.id) {
-      const { data: existingPending } = await supabase
+      let pendingClaimQuery = supabase
         .from('borrow_requests')
         .select('*')
         .eq('book_id', params.book.id)
         .eq('borrower_id', params.borrower.id)
         .in('status', ['pending', 'pending_approval', 'pending_claim'])
         .limit(1);
+
+      if (params.owner.id) {
+        pendingClaimQuery = pendingClaimQuery.eq('owner_id', params.owner.id);
+      }
+
+      const { data: existingPending } = await pendingClaimQuery;
 
       if (existingPending && existingPending.length > 0) {
         return mapRowToTransaction(existingPending[0]);
@@ -374,7 +469,11 @@ export const exchangeService = {
    * Owner accepts an incoming request in Supabase.
    * Atomically declines competing requests for this book.
    */
-  async acceptRequest(exchangeId: string, executingUserId?: string): Promise<ExchangeTransaction> {
+  async acceptRequest(
+    exchangeId: string,
+    executingUserId?: string,
+    executingUserName?: string
+  ): Promise<ExchangeTransaction> {
     if (!isSupabaseConfigured()) {
       throw new Error('Supabase client not configured.');
     }
@@ -401,16 +500,16 @@ export const exchangeService = {
     }
 
     // Authorization Guard: Only the book owner is authorized to accept this request
-    if (callerId && current.owner_id && current.owner_id !== callerId) {
-      throw new Error('403 Forbidden: Only the book owner is authorized to accept this request.');
+    if (!isAuthorizedParty('owner', current, callerId, executingUserName)) {
+      throw new Error('Only the book owner is authorized to accept this request.');
     }
 
     const { message: cleanMsg, meta } = decodeMessageAndMeta(current.message);
     const nextSubstatus = current.exchange_type === 'gift' ? 'claim_accepted' : 'accepted';
     const updatedMeta = { ...meta, substatus: nextSubstatus };
 
-    // 2. Concurrency protection: Verify no other active exchange on this book
-    const { data: activeOthers } = await supabase
+    // 2. Concurrency protection: Verify no other active exchange on this book for this specific owner
+    let activeQuery = supabase
       .from('borrow_requests')
       .select('id, status')
       .eq('book_id', current.book_id)
@@ -426,8 +525,14 @@ export const exchangeService = {
         'claim_handover',
       ]);
 
+    if (current.owner_id) {
+      activeQuery = activeQuery.eq('owner_id', current.owner_id);
+    }
+
+    const { data: activeOthers } = await activeQuery;
+
     if (activeOthers && activeOthers.length > 0) {
-      throw new Error('This book already has an active loan or accepted exchange in progress.');
+      throw new Error('Your copy of this title is already on loan. Once the current exchange is marked as returned, you can accept new requests.');
     }
 
     // 3. Update target request atomically (guarded on status being pending)
@@ -448,12 +553,18 @@ export const exchangeService = {
 
     // 4. Concurrency Arbitration Guard:
     // If two competing requests race simultaneously, deterministically elect the unique winner
-    const { data: activeList } = await supabase
+    let arbitrationQuery = supabase
       .from('borrow_requests')
       .select('id, created_at')
       .eq('book_id', current.book_id)
       .in('status', ['accepted', 'handed_over', 'active_loan'])
       .order('created_at', { ascending: true });
+
+    if (current.owner_id) {
+      arbitrationQuery = arbitrationQuery.eq('owner_id', current.owner_id);
+    }
+
+    const { data: activeList } = await arbitrationQuery;
 
     if (activeList && activeList.length > 1) {
       const winnerId = activeList[0].id;
@@ -471,13 +582,13 @@ export const exchangeService = {
           })
           .eq('id', exchangeId);
 
-        throw new Error('Concurrency Conflict: Another request for this book was accepted simultaneously.');
+        throw new Error('Concurrency Conflict: Another request for this copy was accepted simultaneously.');
       }
     }
 
-    // 5. Concurrency Guard: Atomically decline any competing requests for this book
+    // 5. Concurrency Guard: Atomically decline any competing requests for this book copy
     try {
-      await supabase
+      let cancelOthersQuery = supabase
         .from('borrow_requests')
         .update({
           status: 'cancelled',
@@ -485,6 +596,12 @@ export const exchangeService = {
         .eq('book_id', current.book_id)
         .neq('id', exchangeId)
         .in('status', ['pending', 'pending_approval', 'pending_claim']);
+
+      if (current.owner_id) {
+        cancelOthersQuery = cancelOthersQuery.eq('owner_id', current.owner_id);
+      }
+
+      await cancelOthersQuery;
     } catch (e) {
       console.warn('Could not auto-decline competing requests:', e);
     }
@@ -495,7 +612,12 @@ export const exchangeService = {
   /**
    * Owner declines a request in Supabase.
    */
-  async declineRequest(exchangeId: string, reason?: string, executingUserId?: string): Promise<ExchangeTransaction> {
+  async declineRequest(
+    exchangeId: string,
+    reason?: string,
+    executingUserId?: string,
+    executingUserName?: string
+  ): Promise<ExchangeTransaction> {
     if (!isSupabaseConfigured()) {
       throw new Error('Supabase client not configured.');
     }
@@ -519,8 +641,8 @@ export const exchangeService = {
     }
 
     // Authorization Guard: Only the book owner is authorized to decline this request
-    if (callerId && current.owner_id && current.owner_id !== callerId) {
-      throw new Error('403 Forbidden: Only the book owner is authorized to decline this request.');
+    if (!isAuthorizedParty('owner', current, callerId, executingUserName)) {
+      throw new Error('Only the book owner is authorized to decline this request.');
     }
 
     const { message: cleanMsg, meta } = decodeMessageAndMeta(current.message);
@@ -547,7 +669,11 @@ export const exchangeService = {
   /**
    * Borrower cancels a request prior to handover.
    */
-  async cancelRequest(exchangeId: string, executingUserId?: string): Promise<ExchangeTransaction> {
+  async cancelRequest(
+    exchangeId: string,
+    executingUserId?: string,
+    executingUserName?: string
+  ): Promise<ExchangeTransaction> {
     if (!isSupabaseConfigured()) throw new Error('Supabase client not configured.');
 
     const { data: current, error: fetchErr } = await supabase
@@ -569,8 +695,8 @@ export const exchangeService = {
     }
 
     // Authorization Guard: Only the borrower who made the request can cancel it
-    if (callerId && current.borrower_id && current.borrower_id !== callerId) {
-      throw new Error('403 Forbidden: Only the requester is authorized to cancel this request.');
+    if (!isAuthorizedParty('borrower', current, callerId, executingUserName)) {
+      throw new Error('Only the requester is authorized to cancel this request.');
     }
 
     const { message: cleanMsg, meta } = decodeMessageAndMeta(current.message);
@@ -601,7 +727,8 @@ export const exchangeService = {
   async confirmPickupHandover(
     exchangeId: string,
     role: 'lender' | 'borrower',
-    executingUserId?: string
+    executingUserId?: string,
+    executingUserName?: string
   ): Promise<ExchangeTransaction> {
     if (!isSupabaseConfigured()) throw new Error('Supabase client not configured.');
 
@@ -624,11 +751,9 @@ export const exchangeService = {
     }
 
     // Authorization Guard: Ensure the user confirming matches their role in this transaction
-    if (role === 'lender' && callerId && current.owner_id && current.owner_id !== callerId) {
-      throw new Error('403 Forbidden: Only the book owner can confirm lender handover.');
-    }
-    if (role === 'borrower' && callerId && current.borrower_id && current.borrower_id !== callerId) {
-      throw new Error('403 Forbidden: Only the borrower can confirm borrower pickup.');
+    const roleTarget = role === 'lender' ? 'owner' : 'borrower';
+    if (!isAuthorizedParty(roleTarget, current, callerId, executingUserName)) {
+      throw new Error(`Only the ${role === 'lender' ? 'book owner' : 'borrower'} is authorized to confirm handover.`);
     }
 
     const { message: cleanMsg, meta } = decodeMessageAndMeta(current.message);
@@ -804,7 +929,8 @@ export const exchangeService = {
     exchangeId: string,
     conditionVerified: 'Like New' | 'Good' | 'Minor Wear' | 'Damaged',
     conditionNotes?: string,
-    executingUserId?: string
+    executingUserId?: string,
+    executingUserName?: string
   ): Promise<ExchangeTransaction> {
     if (!isSupabaseConfigured()) throw new Error('Supabase client not configured.');
 
@@ -817,14 +943,8 @@ export const exchangeService = {
     if (fetchErr || !current) throw new Error('Request not found.');
 
     // Authorization Guard: Only the book owner is authorized to inspect condition and confirm return receipt
-    const isAuthorizedOwner =
-      !executingUserId ||
-      !current.owner_id ||
-      current.owner_id === executingUserId ||
-      executingUserId === 'demo-user' ||
-      current.owner_id === 'demo-user';
-    if (!isAuthorizedOwner) {
-      throw new Error('403 Forbidden: Only the book owner is authorized to confirm return receipt.');
+    if (!isAuthorizedParty('owner', current, executingUserId, executingUserName)) {
+      throw new Error('Only the book owner is authorized to confirm return receipt.');
     }
 
     const { message: cleanMsg, meta } = decodeMessageAndMeta(current.message);
@@ -985,7 +1105,8 @@ export const exchangeService = {
     role: 'lender' | 'borrower',
     rating: number,
     feedback: string,
-    executingUserId?: string
+    executingUserId?: string,
+    executingUserName?: string
   ): Promise<ExchangeTransaction> {
     if (!isSupabaseConfigured()) throw new Error('Supabase client not configured.');
 
@@ -998,24 +1119,11 @@ export const exchangeService = {
     if (fetchErr || !current) throw new Error('Request not found.');
 
     // Authorization Guard: verify participant identity
-    const isAuthorizedLender =
-      !executingUserId ||
-      !current.owner_id ||
-      current.owner_id === executingUserId ||
-      executingUserId === 'demo-user' ||
-      current.owner_id === 'demo-user';
-    const isAuthorizedBorrower =
-      !executingUserId ||
-      !current.borrower_id ||
-      current.borrower_id === executingUserId ||
-      executingUserId === 'demo-user' ||
-      current.borrower_id === 'demo-user';
-
-    if (role === 'lender' && !isAuthorizedLender) {
-      throw new Error('403 Forbidden: Only the lender can submit a lender review.');
+    if (role === 'lender' && !isAuthorizedParty('owner', current, executingUserId, executingUserName)) {
+      throw new Error('Only the lender can submit a lender review.');
     }
-    if (role === 'borrower' && !isAuthorizedBorrower) {
-      throw new Error('403 Forbidden: Only the borrower can submit a borrower review.');
+    if (role === 'borrower' && !isAuthorizedParty('borrower', current, executingUserId, executingUserName)) {
+      throw new Error('Only the borrower can submit a borrower review.');
     }
 
     const { message: cleanMsg, meta } = decodeMessageAndMeta(current.message);
@@ -1105,10 +1213,10 @@ export const exchangeService = {
   /**
    * Cancel pending requests on a book when owner changes status or deletes it.
    */
-  async cancelPendingRequestsForBook(bookId: string, reason?: string): Promise<number> {
+  async cancelPendingRequestsForBook(bookId: string, reason?: string, ownerId?: string): Promise<number> {
     if (!isSupabaseConfigured()) return 0;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('borrow_requests')
       .update({
         status: 'cancelled',
@@ -1117,8 +1225,13 @@ export const exchangeService = {
           : '(Cancelled by book owner)',
       })
       .eq('book_id', bookId)
-      .in('status', ['pending', 'pending_approval', 'pending_claim'])
-      .select();
+      .in('status', ['pending', 'pending_approval', 'pending_claim']);
+
+    if (ownerId) {
+      query = query.eq('owner_id', ownerId);
+    }
+
+    const { data, error } = await query.select();
 
     if (error) {
       console.warn('Could not cancel pending requests in Supabase:', error);

@@ -86,7 +86,12 @@ async function testSampleActivitiesFlow() {
   const acceptBtn = page.locator('button:has-text("Accept Meetup")').first();
   if (await acceptBtn.isVisible()) {
     await acceptBtn.click();
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(500);
+    const confirmModalBtn = page.locator('button:has-text("Confirm Meetup"), button:has-text("Confirm")').last();
+    if (await confirmModalBtn.isVisible()) {
+      await confirmModalBtn.click();
+      await page.waitForTimeout(1500);
+    }
     console.log('   [PASS] Clicked Accept Meetup successfully!');
   }
 
