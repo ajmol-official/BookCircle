@@ -622,7 +622,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-book-dialog-title"
-        className="relative w-full max-w-lg bg-surface-card rounded-3xl p-6 sm:p-7 shadow-2xl border border-surface-border animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Hidden File Input for Image Upload */}
@@ -779,7 +779,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
               ───────────────────────────────────────────────────────────── */
               <div>
                 {/* Header & Step Indicator */}
-                <div className="pb-4 border-b border-surface-border mb-4">
+                <div className="pb-4 border-b border-surface-border mb-4 pr-10">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-brand bg-brand/10 px-2.5 py-0.5 rounded-full">
                       General Book · Step {generalStep} of 2
@@ -1218,7 +1218,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
               ───────────────────────────────────────────────────────────── */
               <div>
                 {/* Header & Step Indicator */}
-                <div className="pb-4 border-b border-surface-border mb-4">
+                <div className="pb-4 border-b border-surface-border mb-4 pr-10">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-accent-amber-text bg-accent-amber-subtle px-2.5 py-0.5 rounded-full border border-accent-amber/20">
                       Academic Donation · Step {academicStep} of 3

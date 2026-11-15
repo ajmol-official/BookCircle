@@ -35,6 +35,16 @@ export default {
         trust: {
           green: '#02804D',
           greenLight: 'rgba(2, 128, 77, 0.1)',
+        },
+        surface: {
+          card: '#FFFFFF',
+          subtle: '#F8FAFC',
+          border: '#E2E8F0',
+        },
+        ink: {
+          primary: '#0F172A',
+          secondary: '#334155',
+          muted: '#64748B',
         }
       },
       fontFamily: {
