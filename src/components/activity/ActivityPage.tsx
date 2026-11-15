@@ -533,23 +533,27 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     return list;
   }, [userHistoryList, historyFilter, currentUserId, currentUserDisplayName]);
 
-  // Check which books in history the current user has already reviewed
+  // Check which books in history the current user has already reviewed (concurrent lookup)
   useEffect(() => {
     let isMounted = true;
     const checkReviews = async () => {
-      const reviewed = new Set<string>();
-      for (const ex of userHistoryList) {
-        if (!isOwner(ex) && ex.exchangeType === 'borrow') {
+      const candidates = userHistoryList.filter(
+        (ex) => !isOwner(ex) && ex.exchangeType === 'borrow'
+      );
+      const results = await Promise.all(
+        candidates.map(async (ex) => {
           const catId = ex.catalogId || ex.bookId;
           const rev = await reviewService.getUserReviewForBook(
             catId,
             currentUserId,
             currentUser?.displayName
           );
-          if (rev) reviewed.add(catId);
-        }
+          return rev ? catId : null;
+        })
+      );
+      if (isMounted) {
+        setReviewedBookIds(new Set(results.filter(Boolean) as string[]));
       }
-      if (isMounted) setReviewedBookIds(reviewed);
     };
     checkReviews();
     return () => {

@@ -133,6 +133,40 @@ const mapRowToTransaction = (item: any): ExchangeTransaction => {
 };
 
 /**
+ * Helper to validate standard UUID v4 strings for Postgres UUID columns
+ */
+const isValidUUID = (str?: string): boolean => {
+  if (!str) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
+};
+
+/**
+ * Helper to identify demo or sample entities (e.g., demo-user, user-maya-lin, user-arif-ahmed, user-demo-*, sample-*)
+ */
+const isDemoIdentifier = (id?: string, name?: string): boolean => {
+  if (!id && !name) return false;
+  if (id) {
+    if (
+      id === 'demo-user' ||
+      id === 'user-maya-lin' ||
+      id === 'user-arif-ahmed' ||
+      id.startsWith('user-demo') ||
+      id.startsWith('sample-') ||
+      id.startsWith('demo-')
+    ) {
+      return true;
+    }
+  }
+  if (name) {
+    const n = name.toLowerCase().trim();
+    if (n === 'maya lin' || n === 'arif ahmed' || n === 'you' || n === 'reader') {
+      return true;
+    }
+  }
+  return false;
+};
+
+/**
  * Authoritative role-based permission validator for exchange operations.
  * Evaluates ID matching, display name matching, and demo mode compatibility.
  */
@@ -150,10 +184,7 @@ const isAuthorizedParty = (
   // 1. Direct ID match
   if (callerId && targetId && callerId === targetId) return true;
 
-  // 2. Demo session match (demo user can manage demo or unassigned items)
-  if (callerId === 'demo-user' || targetId === 'demo-user') return true;
-
-  // 3. Name match (case-insensitive)
+  // 2. Direct Name match (case-insensitive)
   if (
     callerName &&
     targetName &&
@@ -162,10 +193,20 @@ const isAuthorizedParty = (
     return true;
   }
 
-  // 4. Demo aliases for Maya Lin / You
+  // 3. Demo Mode Compatibility:
+  // If the caller is a demo account/session OR the target is a demo/sample record,
+  // allow managing demo transactions so interactive demonstration and testing works smoothly.
+  const isCallerDemo = isDemoIdentifier(callerId, callerName);
+  const isTargetDemo = isDemoIdentifier(targetId, targetName);
+
+  if (isCallerDemo && (isTargetDemo || !targetId)) {
+    return true;
+  }
+
+  // 4. Demo aliases for Maya Lin / Arif Ahmed / You
   if (
-    (callerId === 'demo-user' || callerName?.toLowerCase().trim() === 'maya lin') &&
-    (targetName === 'Maya Lin' || targetName === 'You')
+    (callerId === 'demo-user' || isCallerDemo) &&
+    (targetName === 'Maya Lin' || targetName === 'Arif Ahmed' || targetName === 'You')
   ) {
     return true;
   }
@@ -174,7 +215,7 @@ const isAuthorizedParty = (
   if (!targetId) {
     if (!targetName || targetName === 'You') return true;
     if (callerName && targetName.toLowerCase().trim() === callerName.toLowerCase().trim()) return true;
-    if (callerId === 'demo-user') return true;
+    if (isCallerDemo) return true;
   }
 
   return false;
@@ -194,10 +235,25 @@ export const exchangeService = {
       throw new Error('Supabase is not configured. Please check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
     }
 
-    const { data, error } = await supabase
+    const isDemo = isDemoSession || userId === 'demo-user' || userDisplayName === 'Maya Lin';
+
+    let query = supabase
       .from('borrow_requests')
       .select('*')
       .order('created_at', { ascending: false });
+
+    // Database-level query scoping: only fetch current user's relevant records
+    if (userId !== 'all' && userId) {
+      if (isDemo) {
+        query = query.or(
+          `owner_id.eq.${userId},borrower_id.eq.${userId},owner_name.eq.Maya Lin,owner_name.eq.You,borrower_name.eq.Maya Lin,borrower_name.eq.You,owner_id.is.null,borrower_id.is.null`
+        );
+      } else {
+        query = query.or(`owner_id.eq.${userId},borrower_id.eq.${userId}`);
+      }
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Failed to fetch exchanges from Supabase:', error);
@@ -208,8 +264,6 @@ export const exchangeService = {
     if (userId === 'all') {
       return (data || []).map(mapRowToTransaction);
     }
-
-    const isDemo = isDemoSession || userId === 'demo-user' || userDisplayName === 'Maya Lin';
 
     // Strict account isolation: only return exchanges where current user is the owner or borrower
     const filtered = (data || []).filter((row) => {
@@ -508,7 +562,36 @@ export const exchangeService = {
     const nextSubstatus = current.exchange_type === 'gift' ? 'claim_accepted' : 'accepted';
     const updatedMeta = { ...meta, substatus: nextSubstatus };
 
-    // 2. Concurrency protection: Verify no other active exchange on this book for this specific owner
+    // 2. Attempt atomic server-side RPC first if available
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('accept_exchange_request', {
+        target_request_id: exchangeId,
+        executing_user_id: callerId || null,
+      });
+
+      if (!rpcErr && rpcRes && rpcRes.success) {
+        // RPC succeeded atomically! Fetch updated row:
+        const { data: rpcRow } = await supabase
+          .from('borrow_requests')
+          .select('*')
+          .eq('id', exchangeId)
+          .single();
+
+        if (rpcRow) return mapRowToTransaction(rpcRow);
+      } else if (rpcRes && !rpcRes.success && rpcRes.error) {
+        throw new Error(rpcRes.error);
+      }
+    } catch (rpcCatch: any) {
+      if (
+        rpcCatch?.message?.includes('403') ||
+        rpcCatch?.message?.includes('already has an active loan')
+      ) {
+        throw rpcCatch;
+      }
+      // If RPC is not installed or not in schema cache, proceed to the guarded client-side arbitration below
+    }
+
+    // 3. Concurrency protection: Verify no other active exchange on this book for this specific owner
     let activeQuery = supabase
       .from('borrow_requests')
       .select('id, status')
@@ -974,6 +1057,40 @@ export const exchangeService = {
       returnSchedule: updatedSchedule,
     };
 
+    // 1. Fetch current book record to determine target availability mode and preserve prior state
+    let previousBookStatus = 'borrowed';
+    let targetBookStatus = 'available';
+    const isRealBookUuid = isValidUUID(current.book_id);
+
+    if (isRealBookUuid) {
+      try {
+        const { data: bookRecord } = await supabase
+          .from('books')
+          .select('availability_mode, status')
+          .eq('id', current.book_id)
+          .maybeSingle();
+        if (bookRecord) {
+          previousBookStatus = bookRecord.status || 'borrowed';
+          targetBookStatus = bookRecord.availability_mode === 'donation' ? 'donation' : 'available';
+        }
+      } catch (err) {
+        console.warn('Could not check book record availability on return:', err);
+      }
+    }
+
+    // 2. Update book availability in books catalog first (if real database book with UUID)
+    if (isRealBookUuid) {
+      const { error: bookUpdateErr } = await supabase
+        .from('books')
+        .update({ status: targetBookStatus })
+        .eq('id', current.book_id);
+
+      if (bookUpdateErr) {
+        throw new Error(`Failed to update book status on return: ${bookUpdateErr.message}`);
+      }
+    }
+
+    // 3. Update target exchange request to 'returned'
     const { data: updated, error: updateErr } = await supabase
       .from('borrow_requests')
       .update({
@@ -985,25 +1102,16 @@ export const exchangeService = {
       .single();
 
     if (updateErr || !updated) {
-      throw new Error(`Failed to complete return in Supabase: ${updateErr?.message}`);
-    }
-
-    // Update book availability in books catalog
-    if (current.book_id) {
-      try {
-        const { data: bookRecord } = await supabase
-          .from('books')
-          .select('availability_mode')
-          .eq('id', current.book_id)
-          .single();
-        const nextStatus = bookRecord?.availability_mode === 'donation' ? 'donation' : 'available';
-        await supabase
-          .from('books')
-          .update({ status: nextStatus })
-          .eq('id', current.book_id);
-      } catch (err) {
-        console.warn('Could not update book availability on return confirmation:', err);
+      // Revert book availability back to its previous status if exchange update fails to avoid partial desync
+      if (isRealBookUuid) {
+        try {
+          await supabase
+            .from('books')
+            .update({ status: previousBookStatus })
+            .eq('id', current.book_id);
+        } catch {}
       }
+      throw new Error(`Failed to complete return in Supabase: ${updateErr?.message}`);
     }
 
     return mapRowToTransaction(updated);

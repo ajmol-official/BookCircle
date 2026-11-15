@@ -10,6 +10,7 @@ export interface ChatMessage {
 
 export interface Conversation {
   id: string;
+  participantId?: string;
   participantName: string;
   participantAvatar: string;
   participantTrust?: string;

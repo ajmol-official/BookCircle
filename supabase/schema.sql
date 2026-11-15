@@ -416,11 +416,38 @@ create policy "Public community discovery policy" on public.books
   );
 
 create policy "Anyone can add books" on public.books for insert with check (true);
-create policy "Users can update own books" on public.books for update using (true);
+
+drop policy if exists "Users can update own books" on public.books;
+create policy "Users can update own books" on public.books
+  for update using (
+    auth.uid() is not null
+    and (auth.uid()::text = owner_id or (select auth.jwt()->>'sub') = owner_id)
+  );
+
+drop policy if exists "Users can delete own books" on public.books;
+create policy "Users can delete own books" on public.books
+  for delete using (
+    auth.uid() is not null
+    and (auth.uid()::text = owner_id or (select auth.jwt()->>'sub') = owner_id)
+  );
 
 -- Borrow Requests: Strict Role-Based RLS & Database Trigger Authorization
-create policy "Participants and community can view borrow requests" on public.borrow_requests
-  for select using (true);
+drop policy if exists "Participants and community can view borrow requests" on public.borrow_requests;
+drop policy if exists "Participants can view their own borrow requests" on public.borrow_requests;
+
+create policy "Participants can view their own borrow requests" on public.borrow_requests
+  for select using (
+    (
+      auth.uid() is not null
+      and (
+        auth.uid()::text = owner_id
+        or auth.uid()::text = borrower_id
+        or (select auth.jwt()->>'sub') = owner_id
+        or (select auth.jwt()->>'sub') = borrower_id
+      )
+    )
+    or (owner_id = 'demo-user' or borrower_id = 'demo-user')
+  );
 
 create policy "Authenticated users can create borrow requests" on public.borrow_requests
   for insert with check (

@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Conversation, ChatMessage, ActiveFloatingChat } from '../types/messaging';
 import { useAuth } from './AuthContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+const isRealUuid = (id?: string): boolean =>
+  Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
 
 const INITIAL_CONVERSATIONS: Conversation[] = [
   {
@@ -226,6 +230,164 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [drafts]);
 
+  // Helper to resolve a participant's UUID in Supabase
+  const resolveParticipantId = useCallback(
+    async (conv: Conversation): Promise<string | null> => {
+      if (isRealUuid(conv.participantId)) return conv.participantId!;
+      if (!isSupabaseConfigured() || !conv.participantName) return null;
+
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id')
+          .ilike('full_name', conv.participantName.trim())
+          .limit(1);
+
+        if (data && data[0]?.id && isRealUuid(data[0].id)) {
+          return data[0].id;
+        }
+      } catch {
+        // non-blocking fallback
+      }
+      return null;
+    },
+    []
+  );
+
+  // Synchronize remote messages from Supabase for authenticated users
+  const syncRemoteMessages = useCallback(async () => {
+    if (!isSupabaseConfigured() || !isRealUuid(currentUser?.id)) return;
+
+    try {
+      const currentUserId = currentUser!.id;
+      const { data: remoteMsgs, error } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
+        .order('created_at', { ascending: true });
+
+      if (error || !remoteMsgs || remoteMsgs.length === 0) return;
+
+      // Collect unique other user IDs
+      const otherUserIds = Array.from(
+        new Set(
+          remoteMsgs.map((m) => (m.sender_id === currentUserId ? m.receiver_id : m.sender_id))
+        )
+      );
+
+      // Fetch profiles for other users
+      const { data: remoteProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', otherUserIds);
+
+      const profileMap = new Map((remoteProfiles || []).map((p) => [p.id, p]));
+
+      // Group messages by other user ID
+      const msgsByOther = new Map<string, typeof remoteMsgs>();
+      for (const m of remoteMsgs) {
+        const otherId = m.sender_id === currentUserId ? m.receiver_id : m.sender_id;
+        const list = msgsByOther.get(otherId) || [];
+        list.push(m);
+        msgsByOther.set(otherId, list);
+      }
+
+      setConversations((prev) => {
+        let updated = [...prev];
+
+        for (const [otherId, mList] of msgsByOther.entries()) {
+          const profile = profileMap.get(otherId);
+          const otherName = profile?.full_name || 'Community Reader';
+          const otherAvatar =
+            profile?.avatar_url ||
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+
+          const formattedMessages: ChatMessage[] = mList.map((m) => {
+            const isMe = m.sender_id === currentUserId;
+            const createdDate = new Date(m.created_at);
+            return {
+              id: m.id,
+              sender: isMe ? 'user' : 'other',
+              senderName: isMe ? currentUser?.displayName || 'You' : otherName,
+              senderAvatar: isMe
+                ? currentUser?.avatar ||
+                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
+                : otherAvatar,
+              text: m.content,
+              time: createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              timestamp: createdDate.getTime(),
+            };
+          });
+
+          // Check if conversation exists
+          const existingIdx = updated.findIndex(
+            (c) =>
+              (c.participantId && c.participantId === otherId) ||
+              c.participantName.toLowerCase().trim() === otherName.toLowerCase().trim()
+          );
+
+          if (existingIdx >= 0) {
+            const existingMsgs = updated[existingIdx].messages || [];
+            const merged = [...existingMsgs];
+            for (const fm of formattedMessages) {
+              if (
+                !merged.some(
+                  (em) =>
+                    em.id === fm.id ||
+                    (em.text === fm.text &&
+                      Math.abs((em.timestamp || 0) - (fm.timestamp || 0)) < 4000)
+                )
+              ) {
+                merged.push(fm);
+              }
+            }
+            merged.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            const lastM = merged[merged.length - 1];
+
+            updated[existingIdx] = {
+              ...updated[existingIdx],
+              participantId: otherId,
+              participantName: updated[existingIdx].participantName || otherName,
+              participantAvatar: updated[existingIdx].participantAvatar || otherAvatar,
+              lastMessage: lastM?.text || updated[existingIdx].lastMessage,
+              lastMessageTime: lastM?.time || updated[existingIdx].lastMessageTime,
+              messages: merged,
+            };
+          } else {
+            const lastM = formattedMessages[formattedMessages.length - 1];
+            const newConv: Conversation = {
+              id: `conv-${otherId}`,
+              participantId: otherId,
+              participantName: otherName,
+              participantAvatar: otherAvatar,
+              participantTrust: '4.9 ★ (Verified Reader)',
+              bookTitle: 'Community Exchange',
+              bookAuthor: 'Neighbor',
+              bookCover:
+                'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200',
+              role: 'Lender',
+              status: 'accepted',
+              lastMessage: lastM?.text || 'Conversation opened',
+              lastMessageTime: lastM?.time || 'Just now',
+              unreadCount: 0,
+              messages: formattedMessages,
+            };
+            updated = [newConv, ...updated];
+          }
+        }
+
+        return updated;
+      });
+    } catch (e) {
+      console.warn('Could not sync remote messages from Supabase:', e);
+    }
+  }, [currentUser]);
+
+  // Sync on mount or when currentUser changes
+  useEffect(() => {
+    syncRemoteMessages();
+  }, [syncRemoteMessages]);
+
   // Total unread count
   const totalUnreadCount = useMemo(() => {
     return conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
@@ -257,6 +419,9 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Open floating chat widget
   const openFloatingChat = useCallback(
     (participantName: string, bookTitle?: string, fallbackData?: Partial<Conversation>) => {
+      // Trigger background sync to retrieve any newly received messages
+      syncRemoteMessages();
+
       const existing = conversations.find(
         (c) => c.participantName.toLowerCase().trim() === participantName.toLowerCase().trim()
       );
@@ -277,6 +442,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // Create new conversation
         const newConv: Conversation = {
           id: targetId,
+          participantId: fallbackData?.participantId,
           participantName,
           participantAvatar:
             fallbackData?.participantAvatar ||
@@ -302,7 +468,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setActiveFloatingChat({ convId: targetId, state: 'expanded' });
       markAsRead(targetId);
     },
-    [conversations, markAsRead]
+    [conversations, markAsRead, syncRemoteMessages]
   );
 
   const minimizeFloatingChat = useCallback(() => {
@@ -310,18 +476,21 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const expandFloatingChat = useCallback(() => {
+    // When expanding conversation, refresh messages from Supabase
+    syncRemoteMessages();
+
     setActiveFloatingChat((prev) => {
       if (!prev) return null;
       markAsRead(prev.convId);
       return { ...prev, state: 'expanded' };
     });
-  }, [markAsRead]);
+  }, [markAsRead, syncRemoteMessages]);
 
   const closeFloatingChat = useCallback(() => {
     setActiveFloatingChat(null);
   }, []);
 
-  // Send message with permission validation
+  // Send message with permission validation and Supabase persistence
   const sendMessage = useCallback(
     async (convId: string, text: string) => {
       const clean = text.trim();
@@ -336,11 +505,48 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw new Error('403 Forbidden: Direct messaging is locked until the borrowing request has been accepted.');
       }
 
+      // Resolve recipient UUID for real authenticated session
+      let resolvedId = target.participantId;
+      if (!resolvedId && isSupabaseConfigured() && isRealUuid(currentUser?.id)) {
+        resolvedId = (await resolveParticipantId(target)) || undefined;
+      }
+
+      let messageId = `msg-${Date.now()}`;
+      let messageTimestamp = Date.now();
+
+      // Persist to Supabase if authenticated and recipient resolved
+      if (
+        isSupabaseConfigured() &&
+        isRealUuid(currentUser?.id) &&
+        resolvedId &&
+        isRealUuid(resolvedId)
+      ) {
+        const { data: inserted, error: sendErr } = await supabase
+          .from('messages')
+          .insert({
+            sender_id: currentUser!.id,
+            receiver_id: resolvedId,
+            content: clean,
+          })
+          .select()
+          .single();
+
+        if (sendErr) {
+          console.error('Failed to send message to Supabase:', sendErr);
+          throw new Error(`Failed to send message: ${sendErr.message}`);
+        }
+
+        if (inserted) {
+          messageId = inserted.id;
+          messageTimestamp = new Date(inserted.created_at).getTime();
+        }
+      }
+
       const now = new Date();
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
       const newMsg: ChatMessage = {
-        id: `msg-${Date.now()}`,
+        id: messageId,
         sender: 'user',
         senderName: currentUser?.displayName || 'You',
         senderAvatar:
@@ -348,7 +554,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
         text: clean,
         time: timeStr,
-        timestamp: Date.now(),
+        timestamp: messageTimestamp,
       };
 
       setConversations((prev) =>
@@ -356,6 +562,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (c.id === convId) {
             return {
               ...c,
+              participantId: resolvedId || c.participantId,
               lastMessage: clean,
               lastMessageTime: timeStr,
               messages: [...c.messages, newMsg],
@@ -372,7 +579,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return next;
       });
     },
-    [conversations, currentUser]
+    [conversations, currentUser, resolveParticipantId]
   );
 
   // Demo helper: simulate acceptance of request

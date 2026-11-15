@@ -32,7 +32,7 @@ export const dbService = {
    * Fetch community discovery books.
    * Database-level privacy guard: strictly excludes personal collection and claimed donations directly via Supabase query.
    */
-  async getBooks(): Promise<Book[]> {
+  async getBooks(isDemoMode: boolean = false): Promise<Book[]> {
     if (!isSupabaseConfigured()) {
       return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
     }
@@ -47,18 +47,27 @@ export const dbService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.warn('Supabase fetch error, using fallback books:', error.message);
-        return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
+        console.error('Supabase fetch error loading books:', error.message);
+        if (isDemoMode) {
+          return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
+        }
+        throw new Error(`Database error loading books: ${error.message}`);
       }
 
       if (!data || data.length === 0) {
-        return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
+        // Authentic empty state for real database; seed mockBooks for guest demo previews
+        return isDemoMode
+          ? mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed')
+          : [];
       }
 
       return data.map(mapDbBookToBook);
-    } catch (err) {
-      console.warn('Network error accessing Supabase, using mock fallback:', err);
-      return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
+    } catch (err: any) {
+      if (isDemoMode) {
+        console.warn('Network error accessing Supabase in demo mode, using mock fallback:', err);
+        return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
+      }
+      throw err;
     }
   },
 
@@ -114,7 +123,7 @@ export const dbService = {
   /**
    * Fetch all readers / neighbor profiles
    */
-  async getReaders(): Promise<Reader[]> {
+  async getReaders(isDemoMode: boolean = false): Promise<Reader[]> {
     if (!isSupabaseConfigured()) {
       return mockReaders;
     }
@@ -125,8 +134,14 @@ export const dbService = {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error || !data || data.length === 0) {
-        return mockReaders;
+      if (error) {
+        console.error('Failed to load reader profiles:', error.message);
+        if (isDemoMode) return mockReaders;
+        throw new Error(`Database error loading readers: ${error.message}`);
+      }
+
+      if (!data || data.length === 0) {
+        return isDemoMode ? mockReaders : [];
       }
 
       return data.map((item: any) => ({
@@ -146,8 +161,9 @@ export const dbService = {
         bio: item.bio,
         verified: item.verified ?? true,
       }));
-    } catch {
-      return mockReaders;
+    } catch (err: any) {
+      if (isDemoMode) return mockReaders;
+      throw err;
     }
   },
 
@@ -204,21 +220,39 @@ export const dbService = {
    */
   async updateBookStatus(
     bookId: string,
-    newMode: 'lending' | 'donation' | 'personal'
+    newMode: 'lending' | 'donation' | 'personal',
+    userId?: string
   ): Promise<void> {
     if (!isSupabaseConfigured()) {
       return;
     }
 
+    // Only query database if bookId is a valid UUID primary key
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookId?.trim() || '')) {
+      return;
+    }
+
     try {
+      const authUser = (await supabase.auth.getUser()).data.user;
+      const effectiveOwnerId = userId || authUser?.id;
       const newStatus = newMode === 'donation' ? 'donation' : 'available';
-      await supabase
+
+      let query = supabase
         .from('books')
         .update({
           availability_mode: newMode,
           status: newStatus,
         })
         .eq('id', bookId);
+
+      if (effectiveOwnerId) {
+        query = query.eq('owner_id', effectiveOwnerId);
+      }
+
+      const { error } = await query;
+      if (error) {
+        console.warn('Could not update book status in Supabase:', error.message);
+      }
     } catch (err) {
       console.warn('Could not update book status in Supabase:', err);
     }
@@ -227,16 +261,33 @@ export const dbService = {
   /**
    * Permanently delete a book listing
    */
-  async deleteBook(bookId: string): Promise<void> {
+  async deleteBook(bookId: string, userId?: string): Promise<void> {
     if (!isSupabaseConfigured()) {
       return;
     }
 
+    // Only query database if bookId is a valid UUID primary key
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookId?.trim() || '')) {
+      return;
+    }
+
     try {
-      await supabase
+      const authUser = (await supabase.auth.getUser()).data.user;
+      const effectiveOwnerId = userId || authUser?.id;
+
+      let query = supabase
         .from('books')
         .delete()
         .eq('id', bookId);
+
+      if (effectiveOwnerId) {
+        query = query.eq('owner_id', effectiveOwnerId);
+      }
+
+      const { error } = await query;
+      if (error) {
+        console.warn('Could not delete book from Supabase:', error.message);
+      }
     } catch (err) {
       console.warn('Could not delete book from Supabase:', err);
     }
