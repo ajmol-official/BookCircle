@@ -651,7 +651,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
             <div className="w-14 h-14 rounded-2xl bg-brand/10 text-brand mx-auto flex items-center justify-center mb-4">
               <HugeiconsIcon icon={BookOpen01Icon} size={28} />
             </div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-accent-sage bg-accent-sage-subtle px-2.5 py-1 rounded-full border border-accent-sage/20">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
               Book Added Successfully!
             </span>
             <h3 className="font-serif text-xl sm:text-2xl font-semibold text-ink-primary mt-2">
@@ -671,7 +671,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                   key={item.status}
                   type="button"
                   onClick={() => handleReadingStatusSelect(item.status)}
-                  className="w-full p-3.5 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-brand/40 transition flex items-center justify-between cursor-pointer group active:scale-[0.99] touch-target-44 shadow-xs"
+                  className="w-full p-3.5 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-brand/40 transition flex items-center justify-between cursor-pointer group active:scale-[0.99] touch-target-44 shadow-sm"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{item.emoji}</span>
@@ -721,7 +721,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       setClassification('general');
                       setGeneralStep(1);
                     }}
-                    className="p-5 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-brand/50 hover:shadow-tactile-card transition-all text-left flex flex-col justify-between group cursor-pointer active:scale-[0.98]"
+                    className="p-5 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-brand/50 hover:shadow-sm transition-all text-left flex flex-col justify-between group cursor-pointer active:scale-[0.98]"
                   >
                     <div>
                       <div className="w-12 h-12 rounded-xl bg-brand/10 text-brand flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
@@ -748,17 +748,17 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       setAcademicStep(1);
                       setAvailability('donation'); // Enforce donation policy
                     }}
-                    className="p-5 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-accent-amber/50 hover:shadow-tactile-card transition-all text-left flex flex-col justify-between group cursor-pointer active:scale-[0.98]"
+                    className="p-5 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-amber-400 hover:shadow-sm transition-all text-left flex flex-col justify-between group cursor-pointer active:scale-[0.98]"
                   >
                     <div>
-                      <div className="w-12 h-12 rounded-xl bg-accent-amber-subtle text-accent-amber-text flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                      <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                         <HugeiconsIcon icon={GraduationCapIcon} size={24} />
                       </div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-serif text-lg font-semibold text-ink-primary group-hover:text-accent-amber-text transition-colors">
+                        <h4 className="font-serif text-lg font-semibold text-ink-primary group-hover:text-amber-800 transition-colors">
                           Academic Book
                         </h4>
-                        <span className="text-[10px] font-bold bg-accent-sage-subtle text-accent-sage-text px-2 py-0.5 rounded-full border border-accent-sage/20">
+                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
                           Donation
                         </span>
                       </div>
@@ -766,7 +766,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                         School, college, university textbooks, and professional curriculum course materials.
                       </p>
                     </div>
-                    <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-accent-amber-text">
+                    <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-amber-700">
                       <span>Donate Academic Book</span>
                       <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
                     </div>
@@ -831,7 +831,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             }}
                             className={`p-2.5 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
                               generalType === item.id
-                                ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                                ? 'bg-brand text-white border-brand shadow-sm font-semibold'
                                 : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
                             }`}
                           >
@@ -851,7 +851,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                           Book Title <span className="text-red-500">*</span>
                         </label>
                         {matchedCatalogId && (
-                          <span className="text-[11px] text-accent-sage font-semibold flex items-center gap-1">
+                          <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} />
                             <span>Matched to Catalog</span>
                             <button
@@ -881,7 +881,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                           }}
                           onFocus={() => setIsTitleFocused(true)}
                           placeholder="Type title (e.g. The God of Small Things, Pachinko...)"
-                          className="w-full pl-9 pr-4 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                          className="w-full pl-9 pr-4 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                         />
                       </div>
 
@@ -902,7 +902,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                               <img
                                 src={item.coverImage}
                                 alt={item.title}
-                                className="w-8 h-11 object-cover rounded shadow-xs flex-shrink-0 border border-surface-border"
+                                className="w-8 h-11 object-cover rounded shadow-sm flex-shrink-0 border border-surface-border"
                               />
                               <div className="flex-1 min-w-0">
                                 <p className="font-serif text-xs sm:text-sm font-semibold text-ink-primary truncate">
@@ -935,7 +935,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                           value={author}
                           onChange={(e) => setAuthor(e.target.value)}
                           placeholder="Author Name (e.g. Arundhati Roy)"
-                          className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                          className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                         />
                       </div>
                     ) : (
@@ -952,7 +952,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                               value={author}
                               onChange={(e) => setAuthor(e.target.value)}
                               placeholder="Original Author (e.g. Leo Tolstoy)"
-                              className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                              className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                             />
                           </div>
                           <div>
@@ -965,7 +965,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                               value={translator}
                               onChange={(e) => setTranslator(e.target.value)}
                               placeholder="Translator (e.g. Constance Garnett)"
-                              className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                              className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                             />
                           </div>
                         </div>
@@ -982,7 +982,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                               onChange={(e) => setTranslationLanguage(e.target.value)}
                               placeholder="Translation Language (e.g. Bengali, Spanish, English)"
                               list="languages-list"
-                              className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                              className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                             />
                             <datalist id="languages-list">
                               {COMMON_LANGUAGES.map((lang) => (
@@ -1007,7 +1007,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             onClick={() => setCategory(cat)}
                             className={`min-h-[38px] py-1.5 px-2 rounded-xl border text-center transition font-medium cursor-pointer touch-target-44 ${
                               category === cat
-                                ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                                ? 'bg-brand text-white border-brand shadow-sm font-semibold'
                                 : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
                             }`}
                           >
@@ -1028,7 +1028,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                         value={edition}
                         onChange={(e) => setEdition(e.target.value)}
                         placeholder="e.g. 1st Edition, Illustrated Edition, Deluxe Paperback"
-                        className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                        className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                       />
                     </div>
 
@@ -1043,7 +1043,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-tactile-card flex items-center gap-1.5 cursor-pointer touch-target-44"
+                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
                       >
                         <span>Continue to Copy Info</span>
                         <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
@@ -1068,7 +1068,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             onClick={() => setCondition(c.id)}
                             className={`p-2.5 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
                               condition === c.id
-                                ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                                ? 'bg-brand text-white border-brand shadow-sm font-semibold'
                                 : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
                             }`}
                           >
@@ -1097,7 +1097,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                               onClick={() => setAvailability(a.id)}
                               className={`p-2.5 rounded-xl border text-left transition cursor-pointer touch-target-44 flex sm:flex-col items-center sm:items-start gap-2.5 ${
                                 isSelected
-                                  ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                                  ? 'bg-brand text-white border-brand shadow-sm font-semibold'
                                   : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
                               }`}
                             >
@@ -1119,7 +1119,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5 flex items-center justify-between">
                         <span>Upload Book Cover <span className="text-red-500">*</span></span>
                         {coverUrl && (
-                          <span className="text-[11px] text-accent-sage font-medium flex items-center gap-1">
+                          <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
                             Cover photo ready
                           </span>
@@ -1127,7 +1127,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </label>
 
                       {coverUrl ? (
-                        <div className="p-3 bg-surface-subtle rounded-2xl border border-brand/40 shadow-xs flex items-center gap-3.5">
+                        <div className="p-3 bg-surface-subtle rounded-2xl border border-brand/40 shadow-sm flex items-center gap-3.5">
                           <img
                             src={coverUrl}
                             alt="Book cover preview"
@@ -1203,7 +1203,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-tactile-card flex items-center gap-1.5 cursor-pointer touch-target-44"
+                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
                       >
                         <HugeiconsIcon icon={BookOpen01Icon} size={15} />
                         <span>List Book to Circle</span>
@@ -1220,7 +1220,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                 {/* Header & Step Indicator */}
                 <div className="pb-4 border-b border-surface-border mb-4 pr-10">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-accent-amber-text bg-accent-amber-subtle px-2.5 py-0.5 rounded-full border border-accent-amber/20">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
                       Academic Donation · Step {academicStep} of 3
                     </span>
                     <button
@@ -1273,7 +1273,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             }}
                             className={`min-h-[44px] py-2 px-2.5 rounded-xl border text-center transition font-semibold cursor-pointer touch-target-44 ${
                               educationLevel === level
-                                ? 'bg-accent-amber text-white border-accent-amber shadow-xs'
+                                ? 'bg-brand text-white border-brand shadow-sm'
                                 : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
                             }`}
                           >
@@ -1290,7 +1290,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                           Textbook Title <span className="text-red-500">*</span>
                         </label>
                         {matchedCatalogId && (
-                          <span className="text-[11px] text-accent-sage font-semibold flex items-center gap-1">
+                          <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} />
                             <span>Matched to Catalog</span>
                             <button
@@ -1320,7 +1320,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                           }}
                           onFocus={() => setIsTitleFocused(true)}
                           placeholder="Textbook title (e.g. Higher Secondary Physics, Thomas Calculus...)"
-                          className="w-full pl-9 pr-4 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                          className="w-full pl-9 pr-4 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                         />
                       </div>
 
@@ -1341,7 +1341,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                               <img
                                 src={item.coverImage}
                                 alt={item.title}
-                                className="w-8 h-11 object-cover rounded shadow-xs flex-shrink-0 border border-surface-border"
+                                className="w-8 h-11 object-cover rounded shadow-sm flex-shrink-0 border border-surface-border"
                               />
                               <div className="flex-1 min-w-0">
                                 <p className="font-serif text-xs sm:text-sm font-semibold text-ink-primary truncate">
@@ -1352,7 +1352,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                                   {item.educationLevel && ` · ${item.educationLevel}`}
                                 </p>
                               </div>
-                              <span className="text-[10px] bg-accent-amber-subtle text-accent-amber-text px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                              <span className="text-[10px] bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full font-medium flex-shrink-0 border border-amber-200">
                                 Academic
                               </span>
                             </button>
@@ -1372,7 +1372,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                         value={author}
                         onChange={(e) => setAuthor(e.target.value)}
                         placeholder="Author or Editor Name (e.g. Halliday & Resnick)"
-                        className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                        className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                       />
                     </div>
 
@@ -1387,7 +1387,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                         value={edition}
                         onChange={(e) => setEdition(e.target.value)}
                         placeholder="e.g. 10th Edition, Global Edition, 2023 Revision"
-                        className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                        className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                       />
                     </div>
 
@@ -1402,7 +1402,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-tactile-card flex items-center gap-1.5 cursor-pointer touch-target-44"
+                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
                       >
                         <span>Continue to Course Info</span>
                         <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
@@ -1427,7 +1427,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             value={schoolGrade}
                             onChange={(e) => setSchoolGrade(e.target.value)}
                             placeholder="e.g. Class 9, Grade 10, O Level, Year 8"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                           />
                         </div>
 
@@ -1441,7 +1441,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             value={schoolSubject}
                             onChange={(e) => setSchoolSubject(e.target.value)}
                             placeholder="e.g. General Science, Mathematics, English, History"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                           />
                         </div>
                       </div>
@@ -1462,7 +1462,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                                 onClick={() => setCollegeGroup(group)}
                                 className={`min-h-[44px] py-2 px-2 rounded-xl border text-center transition font-semibold cursor-pointer touch-target-44 ${
                                   collegeGroup === group
-                                    ? 'bg-accent-amber text-white border-accent-amber shadow-xs'
+                                    ? 'bg-brand text-white border-brand shadow-sm'
                                     : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
                                 }`}
                               >
@@ -1482,7 +1482,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             value={collegeSubject}
                             onChange={(e) => setCollegeSubject(e.target.value)}
                             placeholder="e.g. Physics 1st Paper, Accounting, Economics"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                           />
                         </div>
                       </div>
@@ -1501,7 +1501,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             value={universityDepartment}
                             onChange={(e) => setUniversityDepartment(e.target.value)}
                             placeholder="e.g. Computer Science & Engineering, Law, Economics"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                           />
                         </div>
 
@@ -1515,7 +1515,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             value={universityCourse}
                             onChange={(e) => setUniversityCourse(e.target.value)}
                             placeholder="e.g. Algorithms & Complexity, Constitutional Law"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                           />
                         </div>
                       </div>
@@ -1534,7 +1534,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             value={professionalField}
                             onChange={(e) => setProfessionalField(e.target.value)}
                             placeholder="e.g. Chartered Accountancy (CA), Medical / USMLE, Law / Bar, PMP"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                           />
                         </div>
 
@@ -1548,7 +1548,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             value={professionalSubject}
                             onChange={(e) => setProfessionalSubject(e.target.value)}
                             placeholder="e.g. Financial Audit, Pathology, Corporate Taxation"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                           />
                         </div>
                       </div>
@@ -1566,7 +1566,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-tactile-card flex items-center gap-1.5 cursor-pointer touch-target-44"
+                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
                       >
                         <span>Continue to Copy Info</span>
                         <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
@@ -1579,8 +1579,8 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                 {academicStep === 3 && (
                   <form onSubmit={handleFinalSubmit} className="space-y-4">
                     {/* Fixed Availability Banner (Policy Enforced) */}
-                    <div className="p-4 rounded-2xl bg-accent-sage-subtle border border-accent-sage/30 text-xs text-left">
-                      <div className="flex items-center gap-2 text-accent-sage-text font-bold">
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-left">
+                      <div className="flex items-center gap-2 text-emerald-800 font-bold">
                         <HugeiconsIcon icon={GiftIcon} size={16} />
                         <span>Availability: Fixed to For Donation</span>
                       </div>
@@ -1602,7 +1602,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             onClick={() => setCondition(c.id)}
                             className={`p-2.5 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
                               condition === c.id
-                                ? 'bg-brand text-white border-brand shadow-xs font-semibold'
+                                ? 'bg-brand text-white border-brand shadow-sm font-semibold'
                                 : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
                             }`}
                           >
@@ -1620,7 +1620,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5 flex items-center justify-between">
                         <span>Upload Book Cover <span className="text-red-500">*</span></span>
                         {coverUrl && (
-                          <span className="text-[11px] text-accent-sage font-medium flex items-center gap-1">
+                          <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
                             Cover photo ready
                           </span>
@@ -1628,7 +1628,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </label>
 
                       {coverUrl ? (
-                        <div className="p-3 bg-surface-subtle rounded-2xl border border-brand/40 shadow-xs flex items-center gap-3.5">
+                        <div className="p-3 bg-surface-subtle rounded-2xl border border-brand/40 shadow-sm flex items-center gap-3.5">
                           <img
                             src={coverUrl}
                             alt="Book cover preview"
@@ -1704,7 +1704,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-accent-sage text-white text-xs font-semibold transition active:scale-95 shadow-tactile-card hover:brightness-105 flex items-center gap-1.5 cursor-pointer touch-target-44"
+                        className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
                       >
                         <HugeiconsIcon icon={GiftIcon} size={15} />
                         <span>Donate Academic Book</span>

@@ -45,6 +45,14 @@ export default {
           primary: '#0F172A',
           secondary: '#334155',
           muted: '#64748B',
+        },
+        accent: {
+          amber: '#D97706',
+          'amber-subtle': '#FEF3C7',
+          'amber-text': '#92400E',
+          sage: '#059669',
+          'sage-subtle': '#ECFDF5',
+          'sage-text': '#065F46',
         }
       },
       fontFamily: {
