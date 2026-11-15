@@ -939,22 +939,25 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                         />
                       </div>
                     ) : (
-                      /* Translated Copy: Original Author + Translator + Translation Language */
+                      /* Translated Copy: Original Author in a single line, Translator + Translation Language in a single line */
                       <div className="space-y-3.5">
+                        {/* 1. Original Author (Single Line) */}
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
+                            Original Author <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={author}
+                            onChange={(e) => setAuthor(e.target.value)}
+                            placeholder="Original Author (e.g. Leo Tolstoy)"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
+                          />
+                        </div>
+
+                        {/* 2. Translator + Translation Language (Single Line, 2 Columns) */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
-                              Original Author <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={author}
-                              onChange={(e) => setAuthor(e.target.value)}
-                              placeholder="Original Author (e.g. Leo Tolstoy)"
-                              className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                            />
-                          </div>
                           <div>
                             <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
                               Translator <span className="text-red-500">*</span>
@@ -968,27 +971,27 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                               className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
                             />
                           </div>
-                        </div>
 
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
-                            Translation Language <span className="text-red-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              required
-                              value={translationLanguage}
-                              onChange={(e) => setTranslationLanguage(e.target.value)}
-                              placeholder="Translation Language (e.g. Bengali, Spanish, English)"
-                              list="languages-list"
-                              className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                            />
-                            <datalist id="languages-list">
-                              {COMMON_LANGUAGES.map((lang) => (
-                                <option key={lang} value={lang} />
-                              ))}
-                            </datalist>
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
+                              Translation Language <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                required
+                                value={translationLanguage}
+                                onChange={(e) => setTranslationLanguage(e.target.value)}
+                                placeholder="Translation Language (e.g. Bengali, Spanish, English)"
+                                list="languages-list"
+                                className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
+                              />
+                              <datalist id="languages-list">
+                                {COMMON_LANGUAGES.map((lang) => (
+                                  <option key={lang} value={lang} />
+                                ))}
+                              </datalist>
+                            </div>
                           </div>
                         </div>
                       </div>
