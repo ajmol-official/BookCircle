@@ -945,10 +945,10 @@ const BookCircleMain: React.FC = () => {
   };
 
   const handleGlobalBookAdded = async (newBook: any) => {
-    setIsGlobalAddBookOpen(false);
     if (newBook?.title && newBook?.author) {
       const added = await dbService.addBook(
         {
+          catalogId: newBook.catalogId,
           title: newBook.title,
           author: newBook.author,
           coverImage:
@@ -959,6 +959,13 @@ const BookCircleMain: React.FC = () => {
           availabilityMode: newBook.availability || 'lending',
           condition: newBook.condition || 'Like New',
           bookType: newBook.bookType || 'Original Copy',
+          bookClassification: newBook.bookClassification || 'general',
+          generalType: newBook.generalType || 'original',
+          translator: newBook.translator,
+          translationLanguage: newBook.translationLanguage,
+          edition: newBook.edition,
+          educationLevel: newBook.educationLevel,
+          academicMetadata: newBook.academicMetadata,
           description: newBook.description || '',
           rating: 4.8,
           reviewsCount: 1,

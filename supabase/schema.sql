@@ -63,6 +63,57 @@ alter table if exists public.borrow_requests
   add column if not exists borrower_rated_at timestamptz,
   add column if not exists completed_at timestamptz;
 
+-- Enriched Book Metadata Migration (Additive & 100% Backward Compatible)
+alter table if exists public.books
+  add column if not exists catalog_id text,
+  add column if not exists book_classification text not null default 'general' check (book_classification in ('general', 'academic')),
+  add column if not exists general_type text default 'original' check (general_type in ('original', 'translated')),
+  add column if not exists translator text,
+  add column if not exists translation_language text,
+  add column if not exists edition text,
+  add column if not exists education_level text check (education_level in ('School', 'College', 'University', 'Professional')),
+  add column if not exists academic_metadata jsonb default '{}'::jsonb;
+
+-- Foolproof Academic Donation Constraint (Prevents NULL/General bypasses while protecting General books)
+alter table if exists public.books
+  drop constraint if exists books_academic_donation_check;
+
+alter table if exists public.books
+  add constraint books_academic_donation_check check (
+    case
+      when book_classification = 'academic' or education_level is not null
+        then availability_mode = 'donation'
+      else availability_mode in ('lending', 'donation', 'personal')
+    end
+  );
+
+-- Dedicated Normalized User Reading Status Table (Internal & Non-Public)
+create table if not exists public.user_reading_status (
+  id uuid default gen_random_uuid() primary key,
+  user_id text not null,
+  catalog_id text not null,
+  status text not null check (status in ('read', 'reading', 'want_to_read')),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  constraint user_reading_status_unique unique (user_id, catalog_id)
+);
+
+create index if not exists idx_user_reading_status_lookup 
+  on public.user_reading_status(user_id, catalog_id);
+
+alter table public.user_reading_status enable row level security;
+
+drop policy if exists "Users can view own reading status" on public.user_reading_status;
+create policy "Users can view own reading status"
+  on public.user_reading_status for select
+  using (auth.uid() is not null and (auth.uid()::text = user_id or (select auth.jwt()->>'sub') = user_id));
+
+drop policy if exists "Users can manage own reading status" on public.user_reading_status;
+create policy "Users can manage own reading status"
+  on public.user_reading_status for all
+  using (auth.uid() is not null and (auth.uid()::text = user_id or (select auth.jwt()->>'sub') = user_id))
+  with check (auth.uid() is not null and (auth.uid()::text = user_id or (select auth.jwt()->>'sub') = user_id));
+
 -- 1. Create PROFILES Table
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,

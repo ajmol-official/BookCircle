@@ -5,6 +5,32 @@ export * from './writer';
 
 import type { HandoverLocation } from './auth';
 
+export type BookClassification = 'general' | 'academic';
+export type GeneralBookType = 'original' | 'translated';
+export type AcademicEducationLevel = 'School' | 'College' | 'University' | 'Professional';
+export type CollegeAcademicGroup = 'Science' | 'Business Studies' | 'Humanities';
+export type UserReadingStatusValue = 'read' | 'reading' | 'want_to_read';
+
+export interface AcademicMetadata {
+  schoolGrade?: string;
+  schoolSubject?: string;
+  collegeGroup?: CollegeAcademicGroup;
+  collegeSubject?: string;
+  universityDepartment?: string;
+  universityCourse?: string;
+  professionalField?: string;
+  professionalSubject?: string;
+}
+
+export interface UserReadingStatus {
+  id?: string;
+  userId: string;
+  catalogId: string;
+  status: UserReadingStatusValue;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Book {
   id: string;
   catalogId?: string; // Canonical Unique Book Title ID for shared reviews and ratings
@@ -26,6 +52,14 @@ export interface Book {
   condition?: 'Like New' | 'Very Good' | 'Good' | 'Fair';
   availabilityMode?: 'lending' | 'donation' | 'personal';
   bookType?: 'Original Copy' | 'Translated Copy';
+  bookClassification?: BookClassification;
+  generalType?: GeneralBookType;
+  translator?: string;
+  translationLanguage?: string;
+  edition?: string;
+  educationLevel?: AcademicEducationLevel;
+  academicMetadata?: AcademicMetadata;
+  readingStatus?: UserReadingStatusValue;
   wishlistCount?: number;
   publishedYear?: string;
   owner?: {

@@ -659,7 +659,6 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onBookAdded={(newBook) => {
-          setIsAddModalOpen(false);
           const addedBook: Book = {
             id: `book-${Date.now()}`,
             catalogId: newBook.catalogId,
@@ -670,6 +669,13 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
             status: newBook.availability === 'donation' ? 'donation' : 'available',
             condition: (newBook.condition || 'Like New') as 'Like New' | 'Very Good' | 'Good' | 'Fair',
             category: newBook.category || 'Fiction',
+            bookClassification: newBook.bookClassification || 'general',
+            generalType: newBook.generalType || 'original',
+            translator: newBook.translator,
+            translationLanguage: newBook.translationLanguage,
+            edition: newBook.edition,
+            educationLevel: newBook.educationLevel,
+            academicMetadata: newBook.academicMetadata,
             rating: 4.8,
             reviewsCount: 1,
             distance: '0.1 km',

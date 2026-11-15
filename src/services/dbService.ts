@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { mockBooks, mockReaders } from '../data/mockData';
-import type { Book, Reader } from '../types';
+import type { Book, Reader, UserReadingStatusValue } from '../types';
 
 function mapDbBookToBook(item: any): Book {
   const isPersonal =
@@ -9,6 +9,7 @@ function mapDbBookToBook(item: any): Book {
 
   return {
     id: item.id,
+    catalogId: item.catalog_id || undefined,
     title: item.title,
     author: item.author,
     coverImage: item.cover_image,
@@ -24,6 +25,13 @@ function mapDbBookToBook(item: any): Book {
     description: item.description,
     condition: item.condition || 'Like New',
     availabilityMode: isPersonal ? 'personal' : ((item.availability_mode || 'lending') as 'lending' | 'donation' | 'personal'),
+    bookClassification: item.book_classification || 'general',
+    generalType: item.general_type || 'original',
+    translator: item.translator || undefined,
+    translationLanguage: item.translation_language || undefined,
+    edition: item.edition || undefined,
+    educationLevel: item.education_level || undefined,
+    academicMetadata: item.academic_metadata || undefined,
   };
 }
 
@@ -168,50 +176,159 @@ export const dbService = {
   },
 
   /**
+   * In-memory reading status store for demo/offline fallback (keyed by `${userId}:${catalogId}`)
+   */
+  readingStatusMemory: new Map<string, UserReadingStatusValue>(),
+
+  /**
    * Add a new book listing
    */
   async addBook(book: Omit<Book, 'id'>, userId?: string): Promise<Book> {
+    const isAcademic = book.bookClassification === 'academic' || Boolean(book.educationLevel);
+    const effectiveAvailability = isAcademic ? 'donation' : (book.availabilityMode || 'lending');
+    const effectiveStatus = effectiveAvailability === 'donation' ? 'donation' : 'available';
+
+    const safeBook: Omit<Book, 'id'> = {
+      ...book,
+      availabilityMode: effectiveAvailability,
+      status: effectiveStatus,
+      bookClassification: isAcademic ? 'academic' : 'general',
+    };
+
     if (!isSupabaseConfigured()) {
       const newBook: Book = {
-        ...book,
+        ...safeBook,
         id: `book-${Date.now()}`
       };
       return newBook;
     }
 
     try {
-      const { data, error } = await supabase
-        .from('books')
-        .insert({
-          title: book.title,
-          author: book.author,
-          cover_image: book.coverImage,
-          category: book.category,
-          condition: book.condition,
-          availability_mode: book.availabilityMode,
-          status: book.status,
-          description: book.description,
-          owner_name: book.ownerName,
-          owner_avatar: book.ownerAvatar,
-          owner_id: userId || null,
-        })
-        .select()
-        .single();
+      const fullPayload: any = {
+        title: safeBook.title,
+        author: safeBook.author,
+        cover_image: safeBook.coverImage,
+        category: safeBook.category,
+        condition: safeBook.condition,
+        availability_mode: safeBook.availabilityMode,
+        status: safeBook.status,
+        description: safeBook.description,
+        owner_name: safeBook.ownerName,
+        owner_avatar: safeBook.ownerAvatar,
+        owner_id: userId || null,
+        catalog_id: safeBook.catalogId || null,
+        book_classification: safeBook.bookClassification,
+        general_type: safeBook.generalType || 'original',
+        translator: safeBook.translator || null,
+        translation_language: safeBook.translationLanguage || null,
+        edition: safeBook.edition || null,
+        education_level: safeBook.educationLevel || null,
+        academic_metadata: safeBook.academicMetadata || {},
+      };
 
-      if (error || !data) {
-        throw new Error(error?.message || 'Failed to insert book');
+      let result = await supabase.from('books').insert(fullPayload).select().single();
+
+      // Graceful fallback for unmigrated Supabase database schema cache
+      if (result.error && (result.error.message.includes('schema cache') || result.error.message.includes('column'))) {
+        const basePayload = {
+          title: safeBook.title,
+          author: safeBook.author,
+          cover_image: safeBook.coverImage,
+          category: safeBook.category,
+          condition: safeBook.condition,
+          availability_mode: safeBook.availabilityMode,
+          status: safeBook.status,
+          description: safeBook.description,
+          owner_name: safeBook.ownerName,
+          owner_avatar: safeBook.ownerAvatar,
+          owner_id: userId || null,
+        };
+        result = await supabase.from('books').insert(basePayload).select().single();
+      }
+
+      if (result.error || !result.data) {
+        throw new Error(result.error?.message || 'Failed to insert book');
       }
 
       return {
-        ...book,
-        id: data.id,
+        ...safeBook,
+        id: result.data.id,
       };
     } catch (err) {
       console.error('Error inserting book into Supabase:', err);
       return {
-        ...book,
+        ...safeBook,
         id: `book-${Date.now()}`
       };
+    }
+  },
+
+  /**
+   * Record or update user reading status for a canonical book (Non-public backend record)
+   */
+  async upsertReadingStatus(
+    userId: string,
+    catalogId: string,
+    status: UserReadingStatusValue
+  ): Promise<void> {
+    if (!userId || !catalogId || !status) return;
+
+    if (!isSupabaseConfigured()) {
+      this.readingStatusMemory.set(`${userId}:${catalogId}`, status);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_reading_status')
+        .upsert(
+          {
+            user_id: userId,
+            catalog_id: catalogId,
+            status,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,catalog_id' }
+        );
+
+      if (error) {
+        // Fallback to memory store if table is not yet migrated in remote Supabase
+        console.warn('Could not upsert to user_reading_status table, using fallback store:', error.message);
+        this.readingStatusMemory.set(`${userId}:${catalogId}`, status);
+      }
+    } catch (err) {
+      console.warn('Network error updating reading status:', err);
+      this.readingStatusMemory.set(`${userId}:${catalogId}`, status);
+    }
+  },
+
+  /**
+   * Search community books for catalog autocomplete
+   */
+  async searchCommunityBooks(query: string): Promise<Book[]> {
+    if (!query || query.trim().length < 2) return [];
+    const clean = query.trim().toLowerCase();
+
+    if (!isSupabaseConfigured()) {
+      return mockBooks.filter(
+        (b) =>
+          b.title.toLowerCase().includes(clean) ||
+          b.author.toLowerCase().includes(clean)
+      );
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .or(`title.ilike.%${clean}%,author.ilike.%${clean}%`)
+        .limit(10);
+
+      if (error || !data) return [];
+      return data.map(mapDbBookToBook);
+    } catch (err) {
+      console.warn('Error querying community books:', err);
+      return [];
     }
   },
 
