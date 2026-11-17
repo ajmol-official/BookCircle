@@ -3,24 +3,37 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   StarIcon,
   BookOpen01Icon,
-  ArrowRight01Icon
+  ArrowRight01Icon,
+  FavouriteIcon,
 } from '@hugeicons/core-free-icons';
 import type { CatalogWork } from '../../types';
 
 interface BookCatalogueCardProps {
   work: CatalogWork;
   onSelectWork: (work: CatalogWork) => void;
+  isWishlisted?: boolean;
+  onToggleWishlist?: (work: CatalogWork) => void;
 }
 
 export const BookCatalogueCard: React.FC<BookCatalogueCardProps> = ({
   work,
-  onSelectWork
+  onSelectWork,
+  isWishlisted = false,
+  onToggleWishlist,
 }) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [localWishlist, setLocalWishlist] = useState(isWishlisted);
 
   const hasCopies = work.totalCopies > 0;
   const isAvailable = work.availableCopies > 0;
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLocalWishlist(!localWishlist);
+    if (onToggleWishlist) {
+      onToggleWishlist(work);
+    }
+  };
 
   return (
     <div
@@ -33,135 +46,114 @@ export const BookCatalogueCard: React.FC<BookCatalogueCardProps> = ({
           onSelectWork(work);
         }
       }}
-      className="group bg-white rounded-2xl p-4 sm:p-4.5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-brand/40 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none transition-all duration-300 flex flex-col justify-between cursor-pointer"
+      className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover hover:border-brand/30 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none transition-all duration-300 flex flex-col justify-between cursor-pointer relative"
     >
       <div>
-        {/* Book Cover Image Container */}
-        <div className="relative w-full h-52 sm:h-56 rounded-xl overflow-hidden bg-slate-100 mb-3 shadow-inner">
-          {/* Skeleton Pulse */}
-          {!imageLoaded && !imageError && (
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse" />
-          )}
-
+        {/* Soft Framed Image Container */}
+        <div className="relative w-full h-44 sm:h-48 rounded-xl bg-[#F1F5F9] flex items-center justify-center p-3 mb-3.5 overflow-hidden shadow-2xs">
           {imageError || !work.coverImage ? (
-            <div className="w-full h-full bg-gradient-to-br from-brand/10 via-[#FDF8F2] to-amber-500/10 flex flex-col items-center justify-center p-4 text-center select-none">
-              <HugeiconsIcon icon={BookOpen01Icon} size={36} className="text-brand/60 mb-2" />
-              <span className="font-serif font-semibold text-slate-800 text-sm line-clamp-2 px-2">
+            <div className="w-full h-full bg-gradient-to-br from-brand/10 via-[#FDF8F2] to-amber-500/10 flex flex-col items-center justify-center p-3 text-center select-none rounded-lg">
+              <HugeiconsIcon icon={BookOpen01Icon} size={30} className="text-brand/60 mb-1" />
+              <span className="font-serif font-semibold text-slate-800 text-xs line-clamp-2 px-1">
                 {work.title}
               </span>
-              <span className="text-xs text-slate-500 mt-1 line-clamp-1">{work.author}</span>
             </div>
           ) : (
             <img
               src={work.coverImage}
-              alt={`Cover of ${work.title}`}
-              onLoad={() => setImageLoaded(true)}
+              alt={work.title}
               onError={() => setImageError(true)}
-              className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${
-                imageLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
+              className="max-h-full max-w-[124px] object-cover rounded shadow-md group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
             />
           )}
 
-          {/* Bottom gradient on cover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 pointer-events-none" />
-
-          {/* Top-Left: Category Badge */}
-          <div className="absolute top-3 left-3">
-            <span className="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-medium tracking-wide shadow-sm">
-              {work.category}
-            </span>
+          {/* Social Proof Badge */}
+          <div className="absolute bottom-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-[11px] font-medium text-slate-700 shadow-2xs">
+            {hasCopies ? `${work.totalCopies} in community` : 'Catalogue Title'}
           </div>
 
-          {/* Top-Right: Community Availability Pill */}
-          <div className="absolute top-3 right-3">
-            {isAvailable ? (
-              <span className="px-2.5 py-1 rounded-full bg-emerald-950/85 backdrop-blur-md text-emerald-300 border border-emerald-400/30 text-[11px] font-bold flex items-center gap-1.5 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{work.availableCopies} available</span>
-              </span>
-            ) : hasCopies ? (
-              <span className="px-2.5 py-1 rounded-full bg-amber-950/85 backdrop-blur-md text-amber-300 border border-amber-400/30 text-[11px] font-bold flex items-center gap-1 shadow-sm">
-                <span>All copies lent</span>
-              </span>
-            ) : (
-              <span className="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-slate-300 text-[11px] font-medium shadow-sm">
-                <span>No copies yet</span>
-              </span>
-            )}
-          </div>
+          {/* Floating Wishlist Heart */}
+          <button
+            type="button"
+            onClick={handleWishlistClick}
+            className={`absolute top-2.5 right-2.5 p-2 rounded-full backdrop-blur-xs transition active:scale-90 cursor-pointer ${
+              localWishlist
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'bg-black/35 hover:bg-black/55 text-white'
+            }`}
+            title={localWishlist ? 'Remove from wishlist' : 'Save to wishlist'}
+            aria-label="Wishlist"
+          >
+            <HugeiconsIcon
+              icon={FavouriteIcon}
+              size={14}
+              className={localWishlist ? 'fill-current' : ''}
+            />
+          </button>
         </div>
 
-        {/* Book Details */}
-        <div className="flex flex-col gap-1">
-          <h3 className="font-serif text-base sm:text-lg font-semibold text-slate-900 line-clamp-1 group-hover:text-brand transition-colors">
-            {work.title}
-          </h3>
+        {/* Title */}
+        <h3 className="font-serif text-base sm:text-lg font-semibold text-slate-800 line-clamp-1 group-hover:text-brand transition-colors pt-0.5">
+          {work.title}
+        </h3>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-            <span>{work.category}</span>
-            {work.publishedYear && (
-              <>
-                <span className="text-slate-300">•</span>
-                <span>Published {work.publishedYear}</span>
-              </>
-            )}
-          </div>
+        {/* Metadata Subtitle: Genre . Published Year */}
+        <p className="text-xs text-slate-500 font-medium mt-0.5">
+          <span>{work.category}</span>
+          {work.publishedYear && (
+            <>
+              <span className="mx-1 text-slate-300">·</span>
+              <span>Published {work.publishedYear}</span>
+            </>
+          )}
+        </p>
 
-          {/* Rating Row */}
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <div className="flex items-center text-amber-500">
-              <HugeiconsIcon icon={StarIcon} size={15} className="fill-amber-400 text-amber-500" />
-            </div>
-            <span className="text-xs font-bold text-slate-800">
-              {work.rating.toFixed(1)}
-            </span>
-            <span className="text-xs text-slate-400">
-              ({work.reviewsCount} {work.reviewsCount === 1 ? 'review' : 'reviews'})
-            </span>
-          </div>
+        {/* Star Rating Row */}
+        <div className="flex items-center gap-1.5 text-xs text-slate-700 font-semibold mt-2">
+          <HugeiconsIcon icon={StarIcon} size={14} className="text-amber-500 fill-amber-400" />
+          <span>{work.rating.toFixed(1)}</span>
+          <span className="text-[11px] text-slate-400 font-normal">
+            ({work.reviewsCount} {work.reviewsCount === 1 ? 'review' : 'reviews'})
+          </span>
+        </div>
 
-          {/* Compact Single-Line Copy Count & Availability Row */}
-          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-xs whitespace-nowrap min-h-[22px]">
-            {hasCopies ? (
-              <>
-                <span className="text-slate-600 font-medium whitespace-nowrap">
-                  <strong className="text-slate-900 font-semibold">{work.totalCopies}</strong> {work.totalCopies === 1 ? 'copy' : 'copies'}
-                </span>
-                <span className={`text-[11px] font-semibold whitespace-nowrap shrink-0 ${isAvailable ? 'text-emerald-700' : 'text-amber-700'}`}>
-                  {isAvailable ? `${work.availableCopies} available` : 'All copies lent'}
-                </span>
-              </>
-            ) : (
-              <span className="text-slate-400 font-medium whitespace-nowrap">
-                0 Community copies
+        {/* Community Circulation Row matching Figma */}
+        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+          {hasCopies ? (
+            <>
+              <span className="text-slate-600 font-medium">
+                {work.totalCopies} {work.totalCopies === 1 ? 'community copy' : 'community copies'}
               </span>
-            )}
-          </div>
+              <div className="flex items-center gap-1.5 font-medium text-brand">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isAvailable ? 'bg-brand' : 'bg-amber-500'}`} />
+                <span>{isAvailable ? `${work.availableCopies} Available` : 'All copies lent'}</span>
+              </div>
+            </>
+          ) : (
+            <span className="text-slate-400 font-medium">
+              0 community copies
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Primary CTA: Explore Copies Directly Below */}
-      <div className="mt-2.5">
+      {/* Primary CTA: Explore Copies Directly Below matching Figma */}
+      <div className="mt-4 pt-3 border-t border-slate-100">
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onSelectWork(work);
           }}
-          className={`w-full py-2 px-3 sm:py-2.5 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-98 ${
+          className={`w-full py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs ${
             hasCopies
-              ? 'bg-brand hover:bg-brand/90 text-white shadow-brand/20'
-              : 'bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200/80'
+              ? 'bg-brand hover:bg-brand-dark text-white'
+              : 'bg-[#F3F0FC] hover:bg-[#ebe6fa] text-brand border border-brand/20'
           }`}
         >
           <span>Explore Copies</span>
-          <HugeiconsIcon
-            icon={ArrowRight01Icon}
-            size={15}
-            className="group-hover:translate-x-1 transition-transform"
-          />
+          <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
         </button>
       </div>
     </div>
