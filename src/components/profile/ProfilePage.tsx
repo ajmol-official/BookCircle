@@ -1,22 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  Location01Icon,
-  PencilEdit02Icon,
   StarIcon,
   BookOpen01Icon,
-  ShieldCheckIcon,
-  Camera01Icon,
-  GiftIcon,
-  Bookmark02Icon,
   ArrowRight01Icon,
-  Share01Icon,
   CheckmarkCircle02Icon,
 } from '@hugeicons/core-free-icons';
-import type { Book } from '../../types';
+import type { Book, HandoverLocation } from '../../types';
+import { ProfileHeaderCard } from './ProfileHeaderCard';
+import { ProfileBookCard } from './ProfileBookCard';
+import { ProfileMeetupSpotsTab } from './ProfileMeetupSpotsTab';
 import { EditProfileModal } from './EditProfileModal';
 import { ReturnReliabilityModal } from './ReturnReliabilityModal';
 import { useAuth } from '../../context/AuthContext';
@@ -27,29 +23,29 @@ interface ProfilePageProps {
   myBooks: Book[];
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelectAuthor, myBooks }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({
+  onSelectBook,
+  onSelectAuthor,
+  myBooks,
+}) => {
   const navigate = useNavigate();
   const { currentUser, updateProfile } = useAuth();
 
   const [profile, setProfile] = useState({
     name: currentUser?.displayName || 'Reader',
     location: currentUser?.location || 'Local Community',
-    bio: currentUser?.bio || 'Book enthusiast and community reader.',
+    bio: currentUser?.bio || 'Book enthusiast and community reader. Slow reader. Love novels that feel like long walks.',
     avatar: currentUser?.avatar || '',
-    favoriteGenres: currentUser?.favoriteGenres || ['All', 'Fiction', 'Non-fiction', 'Science', 'History', 'Poetry']
+    favoriteGenres: currentUser?.favoriteGenres || ['All', 'Fiction', 'Non-fiction', 'Science', 'History', 'Poetry'],
   });
 
-  const [avatarError, setAvatarError] = useState(false);
   const [coverErrors, setCoverErrors] = useState<Record<string, boolean>>({});
   const [fbAvatarErrors, setFbAvatarErrors] = useState<Record<string, boolean>>({});
-
-  // Derive initials for avatar fallback
-  const initials = React.useMemo(() => {
-    if (!profile.name) return 'R';
-    const parts = profile.name.trim().split(/\s+/);
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    return profile.name.slice(0, 2).toUpperCase();
-  }, [profile.name]);
+  const [activeSubTab, setActiveSubTab] = useState<'library' | 'reviews' | 'feedback' | 'meetup'>('library');
+  const [selectedGenre, setSelectedGenre] = useState<string>('All');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isReliabilityModalOpen, setIsReliabilityModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Sync profile when currentUser updates
   React.useEffect(() => {
@@ -57,23 +53,66 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
       setProfile({
         name: currentUser.displayName || 'Reader',
         location: currentUser.location || 'Local Community',
-        bio: currentUser.bio || 'Book enthusiast and community reader.',
+        bio: currentUser.bio || 'Book enthusiast and community reader. Slow reader. Love novels that feel like long walks.',
         avatar: currentUser.avatar || '',
-        favoriteGenres: currentUser.favoriteGenres || ['All', 'Fiction', 'Non-fiction', 'Science']
+        favoriteGenres: currentUser.favoriteGenres || ['All', 'Fiction', 'Non-fiction', 'Science'],
       });
-      setAvatarError(false);
     }
   }, [currentUser]);
 
-  const [activeSubTab, setActiveSubTab] = useState<'shelf' | 'reviews' | 'feedback'>('shelf');
-  const [selectedGenre, setSelectedGenre] = useState<string>('All');
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isReliabilityModalOpen, setIsReliabilityModalOpen] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
+  // Derive initials for avatar fallback
+  const initials = useMemo(() => {
+    if (!profile.name) return 'R';
+    const parts = profile.name.trim().split(/\s+/);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return profile.name.slice(0, 2).toUpperCase();
+  }, [profile.name]);
+
+  // Derived Book Counts for Hero Stats Strip
+  const totalBooksCount = myBooks.length;
+  const availableLendingCount = myBooks.filter(
+    (b) => b.availabilityMode === 'lending' && b.status !== 'lent_out'
+  ).length;
+  const availableDonationCount = myBooks.filter(
+    (b) => b.availabilityMode === 'donation' || b.status === 'donation'
+  ).length;
+  const lentOutCount = myBooks.filter((b) => b.status === 'lent_out').length;
+
+  // Derive Preferred Handover Locations
+  const handoverSpots = useMemo<HandoverLocation[]>(() => {
+    if (currentUser?.preferredHandoverLocations && currentUser.preferredHandoverLocations.length > 0) {
+      return currentUser.preferredHandoverLocations;
+    }
+    try {
+      const stored = localStorage.getItem('bookcircle_user_settings');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed.preferredHandoverLocations) && parsed.preferredHandoverLocations.length > 0) {
+          return parsed.preferredHandoverLocations;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return [
+      {
+        id: 'spot-1',
+        name: 'Camden Coffee Roasters',
+        instructions: 'Main entrance foyer by the community book nook · Weekdays 5pm – 7pm',
+      },
+      {
+        id: 'spot-2',
+        name: 'Primrose Hill Community Library',
+        instructions: 'Front reception desk area · Saturdays 10am – 1pm',
+      },
+    ];
+  }, [currentUser]);
 
   const handleShareProfile = () => {
     try {
-      const readerSlug = encodeURIComponent((currentUser?.displayName || profile.name || 'reader').toLowerCase().replace(/\s+/g, '-'));
+      const readerSlug = encodeURIComponent(
+        (currentUser?.displayName || profile.name || 'reader').toLowerCase().replace(/\s+/g, '-')
+      );
       const shareUrl = `${window.location.origin}/reader/${readerSlug}`;
 
       if (navigator.clipboard) {
@@ -94,7 +133,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
       cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=200',
       rating: 5,
       date: 'March 14, 2026',
-      text: 'One of the most extraordinary family sagas I have read in years. Every character carries their pain with grace.'
+      text: 'One of the most extraordinary family sagas I have read in years. Every character carries their pain with grace.',
     },
     {
       id: 'my-rev-2',
@@ -103,7 +142,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
       cover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200',
       rating: 4.5,
       date: 'February 2, 2026',
-      text: 'Rich atmospheric prose that feels like magic. Best read with warm tea by the window.'
+      text: 'Rich atmospheric prose that feels like magic. Best read with warm tea by the window.',
     },
     {
       id: 'my-rev-3',
@@ -112,8 +151,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
       cover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?auto=format&fit=crop&q=80&w=200',
       rating: 5,
       date: 'January 18, 2026',
-      text: 'Quiet, profound, and deeply human. An unforgettable meditation on ordinary devotion.'
-    }
+      text: 'Quiet, profound, and deeply human. An unforgettable meditation on ordinary devotion.',
+    },
   ];
 
   const communityFeedback = [
@@ -125,7 +164,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
       book: 'The Overstory',
       date: '2 weeks ago',
       rating: 5,
-      comment: 'Maya was so lovely to meet at Riverside Coffee! The book was pristine and she included a cute handmade bookmark.'
+      comment: 'So lovely to meet at Riverside Coffee! The book was pristine and she included a cute handmade bookmark.',
     },
     {
       id: 'fb-2',
@@ -135,532 +174,344 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onSelectBook, onSelect
       book: 'Drive',
       date: '1 month ago',
       rating: 5,
-      comment: 'Maya returned my book ahead of time and in perfect shape. Reliable and wonderful neighbor!'
-    }
+      comment: 'Returned my book ahead of time and in perfect shape. Reliable and wonderful neighbor!',
+    },
   ];
 
-  const filteredShelf = myBooks.filter((b) => 
-    selectedGenre === 'All' || b.category.toLowerCase() === selectedGenre.toLowerCase()
+  const filteredShelf = myBooks.filter(
+    (b) => selectedGenre === 'All' || b.category.toLowerCase() === selectedGenre.toLowerCase()
   );
 
   return (
     <>
-      {/* Floating Centered Toast Notification rendered via Portal to guarantee 0.0px layout shift */}
+      {/* Floating Centered Toast Notification rendered via Portal */}
       {typeof document !== 'undefined' &&
         createPortal(
-          <AnimatePresence>
-            {copiedLink && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-medium shadow-2xl border border-slate-700/80 flex items-center gap-2.5 max-w-md pointer-events-none"
-              >
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-emerald-400 flex-shrink-0" />
-                <span>Profile link copied to clipboard!</span>
-              </motion.div>
-            )}
-          </AnimatePresence>,
+          <div className="fixed top-20 sm:top-24 inset-x-0 z-50 flex justify-center pointer-events-none px-4">
+            <AnimatePresence>
+              {copiedLink && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="px-5 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-medium shadow-2xl border border-slate-700/80 flex items-center gap-2.5 max-w-md pointer-events-auto"
+                >
+                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-emerald-400 flex-shrink-0" />
+                  <span>Profile link copied to clipboard!</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>,
           document.body
         )}
 
       <div className="pt-8 pb-20 animate-in fade-in duration-200 space-y-8">
-      
-      {/* 1. User Profile Header Card matching Figma #47:1711 */}
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-card">
-        <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
-          <div className="relative group flex-shrink-0">
-            {profile.avatar && !avatarError ? (
-              <img
-                src={profile.avatar}
-                alt={profile.name}
-                onError={() => setAvatarError(true)}
-                className="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover ring-4 ring-slate-100 shadow-md"
-              />
-            ) : (
-              <div
-                className="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-brand/20 via-brand/10 to-amber-500/15 border-2 border-brand/20 text-brand font-serif font-bold text-3xl sm:text-4xl flex items-center justify-center shadow-md select-none"
-                aria-label={profile.name}
-              >
-                {initials}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => setIsEditModalOpen(true)}
-              className="absolute bottom-1 right-1 p-2.5 rounded-full bg-brand text-white shadow-md hover:bg-brand-dark transition transform group-hover:scale-110 active:scale-95"
-              title="Change profile picture"
-            >
-              <HugeiconsIcon icon={Camera01Icon} size={16} />
-            </button>
-          </div>
+        {/* 1. Profile Hero Card matching Figma */}
+        <ProfileHeaderCard
+          name={profile.name}
+          location={profile.location}
+          memberSince={currentUser?.memberSince || 'February 2024'}
+          bio={profile.bio}
+          avatar={profile.avatar}
+          initials={initials}
+          stats={{
+            totalBooks: totalBooksCount,
+            availableLending: availableLendingCount,
+            availableDonation: availableDonationCount,
+            lentOut: lentOutCount,
+          }}
+          trustStats={{
+            onTimeReturnsRatio: '32/32',
+            communityContributions: availableDonationCount || 5,
+            activeBorrows: 16,
+            generousListerBooks: totalBooksCount || 14,
+          }}
+          isOwnProfile={true}
+          onEditProfile={() => setIsEditModalOpen(true)}
+          onShareProfile={handleShareProfile}
+          onOpenReliabilityModal={() => setIsReliabilityModalOpen(true)}
+          copiedLink={copiedLink}
+        />
 
-          <div className="flex-1 min-w-0 space-y-3">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div>
-                <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-slate-800 tracking-tight">
-                  {profile.name}
-                </h1>
-                <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 mt-1">
-                  <HugeiconsIcon icon={Location01Icon} size={16} className="text-brand flex-shrink-0" />
-                  <span>
-                    {profile.location} · Member since {currentUser?.memberSince || 'February 2024'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl border border-slate-300 hover:border-brand hover:bg-brand/5 text-slate-700 hover:text-brand text-xs sm:text-sm font-semibold transition-all shadow-xs active:scale-95"
-                >
-                  <HugeiconsIcon icon={PencilEdit02Icon} size={17} />
-                  <span>Edit Profile</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleShareProfile}
-                  className={`p-2.5 rounded-xl border transition shadow-xs active:scale-95 flex items-center justify-center ${
-                    copiedLink
-                      ? 'border-emerald-300 bg-emerald-50 text-emerald-600'
-                      : 'border-slate-300 text-slate-600 hover:text-brand hover:border-brand hover:bg-brand/5 bg-white'
-                  }`}
-                  title={copiedLink ? 'Profile link copied!' : 'Share Profile'}
-                  aria-label="Share profile"
-                >
-                  <HugeiconsIcon
-                    icon={copiedLink ? CheckmarkCircle02Icon : Share01Icon}
-                    size={17}
-                    className={copiedLink ? 'text-emerald-600' : ''}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed pt-1 font-sans">
-              {profile.bio}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Trust & Badges Banner matching Figma #48:1818 */}
-      <div className="bg-cream-200 rounded-2xl p-6 border border-slate-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
-        {/* Trust Badge Column */}
-        <div className="flex items-center gap-6 pr-6 md:border-r border-slate-300">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Trust Badge</p>
-            <p className="font-serif text-2xl font-bold text-brand mt-0.5">Verified</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Tier 5 · Always on time</p>
-            <button
-              type="button"
-              onClick={() => setIsReliabilityModalOpen(true)}
-              className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-brand hover:text-brand-dark bg-brand/10 hover:bg-brand/20 px-2.5 py-1 rounded-lg transition"
-            >
-              <HugeiconsIcon icon={ShieldCheckIcon} size={13} />
-              <span>5-Tier Guide</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Badges items */}
-        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {/* Badge 1 */}
-          <div className="flex items-center gap-3">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 flex-shrink-0 shadow-xs" />
-            <div>
-              <p className="text-xs sm:text-sm font-semibold text-slate-800">Always returned on time</p>
-              <p className="text-xs text-slate-500">32/32 on schedule</p>
-            </div>
-          </div>
-
-          {/* Badge 2 */}
-          <div className="flex items-center gap-3">
-            <span className="w-3.5 h-3.5 rounded-full bg-amber-500 flex-shrink-0 shadow-xs" />
-            <div>
-              <p className="text-xs sm:text-sm font-semibold text-slate-800">Active borrower</p>
-              <p className="text-xs text-slate-500">16 Borrows completed</p>
-            </div>
-          </div>
-
-          {/* Badge 3 */}
-          <div className="flex items-center gap-3">
-            <span className="w-3.5 h-3.5 rounded-full bg-brand flex-shrink-0 shadow-xs" />
-            <div>
-              <p className="text-xs sm:text-sm font-semibold text-slate-800">Generous Lister</p>
-              <p className="text-xs text-slate-500">14 Books shared</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Numerical Activity Metrics matching Figma #48:1840 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-6 border-y border-slate-200/80">
-        <div>
-          <span className="font-serif text-3xl sm:text-4xl font-bold text-slate-700">18</span>
-          <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mt-1">
-            Books Listed
-          </span>
-        </div>
-
-        <div>
-          <span className="font-serif text-3xl sm:text-4xl font-bold text-brand">24</span>
-          <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mt-1">
-            Lent Out
-          </span>
-        </div>
-
-        <div>
-          <span className="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">14</span>
-          <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mt-1">
-            Borrows
-          </span>
-        </div>
-
-        <div>
-          <span className="font-serif text-3xl sm:text-4xl font-bold text-amber-600">31</span>
-          <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mt-1">
-            Reviews Written
-          </span>
-        </div>
-      </div>
-
-      {/* 4. Sub-Tab Switcher matching Figma #48:1853 */}
-      <div className="flex items-center gap-8 border-b border-slate-200">
-        {[
-          { id: 'shelf', label: 'Shelf' },
-          { id: 'reviews', label: 'Reviews (31)' },
-          { id: 'feedback', label: 'Feedback' },
-        ].map((tab) => {
-          const isActive = activeSubTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveSubTab(tab.id as any)}
-              className={`relative pb-3 text-base sm:text-lg font-serif transition-colors ${
-                isActive ? 'text-slate-900 font-semibold' : 'text-slate-500 hover:text-slate-700 font-medium'
-              }`}
-            >
-              <span>{tab.label}</span>
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-900 rounded-full transition-all" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 5. Tab Content: Shelf */}
-      {activeSubTab === 'shelf' && (
-        <div className="space-y-6">
-          {/* Prominent Manage My Library Shortcut Banner */}
-          <div className="bg-brand/5 border border-brand/20 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
-                <HugeiconsIcon icon={BookOpen01Icon} size={20} />
-              </div>
-              <div>
-                <h4 className="font-serif text-sm sm:text-base font-semibold text-slate-800">
-                  Personal Library & Inventory
-                </h4>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Manage book availability (Lending / Donation / Private), add new copies, or edit condition.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => navigate('/my-books')}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 whitespace-nowrap self-end sm:self-auto"
-            >
-              <span>Manage My Library ({myBooks.length})</span>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
-            </button>
-          </div>
-
-          {/* Favorite Genres filter chips */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-serif text-base font-semibold text-slate-700">
-                Favorite Genres
-              </h3>
+        {/* 2. Sub-Tabs Bar matching Figma */}
+        <div className="flex items-center gap-8 sm:gap-12 border-b border-slate-200 overflow-x-auto no-scrollbar">
+          {[
+            { id: 'library', label: 'My Library' },
+            { id: 'reviews', label: `Reviews (${reviewsWritten.length})` },
+            { id: 'feedback', label: `Feedback (${communityFeedback.length})` },
+            { id: 'meetup', label: 'Meetup Spots' },
+          ].map((tab) => {
+            const isActive = activeSubTab === tab.id;
+            return (
               <button
-                type="button"
-                onClick={() => setIsEditModalOpen(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:text-brand-dark hover:underline transition"
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id as any)}
+                className={`relative pb-3 text-base sm:text-lg font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                  isActive ? 'text-slate-900 font-semibold' : 'text-slate-500 hover:text-slate-700'
+                }`}
               >
-                <HugeiconsIcon icon={PencilEdit02Icon} size={13} />
-                <span>Edit Preferences</span>
+                <span>{tab.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand rounded-full transition-all" />
+                )}
               </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {profile.favoriteGenres.map((genre) => (
-                <button
-                  key={genre}
-                  onClick={() => setSelectedGenre(genre)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    selectedGenre === genre
-                      ? 'bg-brand text-white shadow-xs'
-                      : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {genre}
-                </button>
-              ))}
-            </div>
-          </div>
+            );
+          })}
+        </div>
 
-          {/* Books grid */}
-          <div>
-            <div className="flex items-end justify-between mb-4">
+        {/* 3. Tab Content 1: My Library */}
+        {activeSubTab === 'library' && (
+          <div className="space-y-6">
+            {/* Shelf Header Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="font-serif text-xl sm:text-2xl font-semibold text-slate-800">
-                  Public Shelf Showcase
+                  On the shelf
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  What your neighbors see when visiting your community profile ({filteredShelf.length} books)
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  {filteredShelf.length} {filteredShelf.length === 1 ? 'book' : 'books'} listed
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={() => navigate('/my-books')}
-                className="text-xs font-semibold text-brand hover:text-brand-dark transition hover:underline flex items-center gap-1"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-brand text-xs sm:text-sm font-semibold transition active:scale-95 self-start sm:self-auto cursor-pointer"
               >
-                <span>Edit in My Books</span>
-                <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
+                <span>Manage Books</span>
+                <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredShelf.map((book) => (
+            {/* Favorite Genres filter chips (if available) */}
+            {profile.favoriteGenres && profile.favoriteGenres.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-xs font-semibold text-slate-500 mr-1">Filter genre:</span>
+                {profile.favoriteGenres.map((genre) => (
+                  <button
+                    key={genre}
+                    onClick={() => setSelectedGenre(genre)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      selectedGenre === genre
+                        ? 'bg-brand text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* 4-Column Book Grid */}
+            {filteredShelf.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
+                {filteredShelf.map((book) => (
+                  <ProfileBookCard
+                    key={book.id}
+                    book={book}
+                    isPublic={false}
+                    onSelectBook={onSelectBook}
+                    onSelectAuthor={onSelectAuthor}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-12 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-brand/10 text-brand mx-auto flex items-center justify-center">
+                  <HugeiconsIcon icon={BookOpen01Icon} size={24} />
+                </div>
+                <h3 className="font-serif text-base font-semibold text-slate-800">No books found</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  {selectedGenre !== 'All'
+                    ? `No books under "${selectedGenre}" category yet.`
+                    : 'Your personal library is empty. Add copies to start lending and donating!'}
+                </p>
+                {selectedGenre !== 'All' ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGenre('All')}
+                    className="text-xs font-semibold text-brand hover:underline"
+                  >
+                    Show all books
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/my-books')}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand text-white text-xs font-semibold hover:bg-brand-dark transition shadow-xs"
+                  >
+                    <span>Go to My Books</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 4. Tab Content 2: Reviews */}
+        {activeSubTab === 'reviews' && (
+          <div className="space-y-4">
+            <h2 className="font-serif text-xl sm:text-2xl font-semibold text-slate-800">
+              Reviews by {profile.name} ({reviewsWritten.length})
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {reviewsWritten.map((rev) => (
                 <div
-                  key={book.id}
-                  onClick={() => onSelectBook(book)}
-                  className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover transition-all cursor-pointer flex flex-col justify-between group"
+                  key={rev.id}
+                  className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-card flex flex-col justify-between space-y-4"
                 >
                   <div>
-                    <div className="relative w-full h-52 rounded-xl overflow-hidden bg-slate-100 mb-3 shadow-inner">
-                      {coverErrors[book.id] || !book.coverImage ? (
-                        <div className="w-full h-full bg-gradient-to-br from-brand/10 via-[#FDF8F2] to-amber-500/10 flex flex-col items-center justify-center p-3 text-center select-none">
-                          <HugeiconsIcon icon={BookOpen01Icon} size={30} className="text-brand/60 mb-1" />
-                          <span className="font-serif font-semibold text-slate-800 text-xs line-clamp-2 px-1">
-                            {book.title}
-                          </span>
+                    <div className="flex items-center gap-3.5 mb-3">
+                      {coverErrors[rev.id] || !rev.cover ? (
+                        <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-brand/10 via-[#FDF8F2] to-amber-500/10 border border-slate-200 flex flex-col items-center justify-center p-1 text-center select-none flex-shrink-0">
+                          <HugeiconsIcon icon={BookOpen01Icon} size={16} className="text-brand/60" />
                         </div>
                       ) : (
                         <img
-                          src={book.coverImage}
-                          alt={book.title}
-                          onError={() => setCoverErrors((prev) => ({ ...prev, [book.id]: true }))}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          src={rev.cover}
+                          alt={rev.book}
+                          onError={() => setCoverErrors((prev) => ({ ...prev, [rev.id]: true }))}
+                          className="w-12 h-16 object-cover rounded-lg shadow-sm flex-shrink-0"
                         />
                       )}
-                      <div className="absolute bottom-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-white/90 text-[10px] font-semibold text-slate-700 shadow-xs">
-                        {book.ownersCount} own this
+                      <div>
+                        <h4 className="font-serif text-base font-semibold text-slate-800">{rev.book}</h4>
+                        <p className="text-xs text-slate-500">{rev.author}</p>
+                        <div className="flex items-center gap-1 text-amber-500 mt-1">
+                          {[...Array(5)].map((_, i) => (
+                            <HugeiconsIcon
+                              key={i}
+                              icon={StarIcon}
+                              size={12}
+                              className={
+                                i < Math.floor(rev.rating)
+                                  ? 'fill-amber-400 text-amber-500'
+                                  : 'text-slate-200'
+                              }
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
 
-                    <h4 className="font-serif text-base font-semibold text-slate-800 line-clamp-1 group-hover:text-brand transition-colors">
-                      {book.title}
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onSelectAuthor) onSelectAuthor(book.author, book.authorId);
-                        }}
-                        className="hover:text-brand hover:underline font-medium text-slate-500 inline-flex items-center gap-1 transition-colors rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand/40 cursor-pointer"
-                        title={`View ${book.author}'s author profile`}
-                      >
-                        {book.author}
-                      </button>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed italic">
+                      “{rev.text}”
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    {book.availabilityMode === 'donation' ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
-                        <HugeiconsIcon icon={GiftIcon} size={12} />
-                        <span>For Donation</span>
-                      </span>
-                    ) : book.availabilityMode === 'personal' ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                        <HugeiconsIcon icon={Bookmark02Icon} size={12} />
-                        <span>Private Collection</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-brand/10 text-brand border border-brand/20">
-                        <HugeiconsIcon icon={BookOpen01Icon} size={12} />
-                        <span>For Lending</span>
-                      </span>
-                    )}
-
-                    <div className="flex items-center text-amber-500 text-xs font-bold gap-1">
-                      <HugeiconsIcon icon={StarIcon} size={13} className="fill-amber-400 text-amber-500" />
-                      <span>{book.rating}</span>
-                    </div>
+                  <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+                    Reviewed on {rev.date}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 6. Tab Content: Reviews Written */}
-      {activeSubTab === 'reviews' && (
-        <div className="space-y-4">
-          <h2 className="font-serif text-xl sm:text-2xl font-semibold text-slate-800">
-            Reviews by {profile.name} ({reviewsWritten.length})
-          </h2>
+        {/* 5. Tab Content 3: Community Feedback */}
+        {activeSubTab === 'feedback' && (
+          <div className="space-y-4">
+            <h2 className="font-serif text-xl sm:text-2xl font-semibold text-slate-800">
+              Community Endorsements ({communityFeedback.length})
+            </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {reviewsWritten.map((rev) => (
-              <div
-                key={rev.id}
-                className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-card flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center gap-3.5 mb-3">
-                    {coverErrors[rev.id] || !rev.cover ? (
-                      <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-brand/10 via-[#FDF8F2] to-amber-500/10 border border-slate-200 flex flex-col items-center justify-center p-1 text-center select-none flex-shrink-0">
-                        <HugeiconsIcon icon={BookOpen01Icon} size={16} className="text-brand/60" />
+            <div className="space-y-3">
+              {communityFeedback.map((fb) => (
+                <div
+                  key={fb.id}
+                  className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-4">
+                    {fbAvatarErrors[fb.id] || !fb.avatar ? (
+                      <div className="w-12 h-12 rounded-full bg-brand/10 border-2 border-brand/20 text-brand font-bold text-xs flex items-center justify-center flex-shrink-0 select-none">
+                        {fb.giver.slice(0, 2).toUpperCase()}
                       </div>
                     ) : (
                       <img
-                        src={rev.cover}
-                        alt={rev.book}
-                        onError={() => setCoverErrors((prev) => ({ ...prev, [rev.id]: true }))}
-                        className="w-12 h-16 object-cover rounded-lg shadow-sm flex-shrink-0"
+                        src={fb.avatar}
+                        alt={fb.giver}
+                        onError={() => setFbAvatarErrors((prev) => ({ ...prev, [fb.id]: true }))}
+                        className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-slate-100"
                       />
                     )}
                     <div>
-                      <h4 className="font-serif text-base font-semibold text-slate-800">{rev.book}</h4>
-                      <p className="text-xs text-slate-500">{rev.author}</p>
-                      <div className="flex items-center gap-1 text-amber-500 mt-1">
-                        {[...Array(5)].map((_, i) => (
-                          <HugeiconsIcon
-                            key={i}
-                            icon={StarIcon}
-                            size={12}
-                            className={i < Math.floor(rev.rating) ? 'fill-amber-400 text-amber-500' : 'text-slate-200'}
-                          />
-                        ))}
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-sans font-semibold text-sm sm:text-base text-slate-900">
+                          {fb.giver}
+                        </h4>
+                        <span className="text-xs text-slate-500">· {fb.role} for “{fb.book}”</span>
                       </div>
+                      <p className="text-xs sm:text-sm text-slate-600 mt-1 italic">
+                        “{fb.comment}”
+                      </p>
                     </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed italic">
-                    “{rev.text}”
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-                  Reviewed on {rev.date}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 7. Tab Content: Community Feedback */}
-      {activeSubTab === 'feedback' && (
-        <div className="space-y-4">
-          <h2 className="font-serif text-xl sm:text-2xl font-semibold text-slate-800">
-            Community Endorsements ({communityFeedback.length})
-          </h2>
-
-          <div className="space-y-3">
-            {communityFeedback.map((fb) => (
-              <div
-                key={fb.id}
-                className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-4">
-                  {fbAvatarErrors[fb.id] || !fb.avatar ? (
-                    <div className="w-12 h-12 rounded-full bg-brand/10 border-2 border-brand/20 text-brand font-bold text-xs flex items-center justify-center flex-shrink-0 select-none">
-                      {fb.giver.slice(0, 2).toUpperCase()}
-                    </div>
-                  ) : (
-                    <img
-                      src={fb.avatar}
-                      alt={fb.giver}
-                      onError={() => setFbAvatarErrors((prev) => ({ ...prev, [fb.id]: true }))}
-                      className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-slate-100"
-                    />
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-sans font-semibold text-sm sm:text-base text-slate-900">{fb.giver}</h4>
-                      <span className="text-xs text-slate-500">· {fb.role} for “{fb.book}”</span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-600 mt-1 italic">
-                      “{fb.comment}”
-                    </p>
+                  <div className="flex items-center gap-1 text-amber-500 self-end sm:self-auto">
+                    {[...Array(fb.rating)].map((_, i) => (
+                      <HugeiconsIcon
+                        key={i}
+                        icon={StarIcon}
+                        size={14}
+                        className="fill-amber-400 text-amber-500"
+                      />
+                    ))}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1 text-amber-500 self-end sm:self-auto">
-                  {[...Array(fb.rating)].map((_, i) => (
-                    <HugeiconsIcon
-                      key={i}
-                      icon={StarIcon}
-                      size={14}
-                      className="fill-amber-400 text-amber-500"
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Edit Profile Modal */}
-      <EditProfileModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        userProfile={{
-          name: profile.name,
-          location: profile.location,
-          bio: profile.bio,
-          avatar: profile.avatar,
-          favoriteGenres: profile.favoriteGenres,
-        }}
-        onSave={async (updated) => {
-          setProfile((prev) => ({ ...prev, ...updated }));
-          try {
-            await updateProfile({
-              displayName: updated.name,
-              avatar: updated.avatar,
-              location: updated.location,
-              bio: updated.bio,
-              favoriteGenres: updated.favoriteGenres,
-              isProfileComplete: true,
-            });
-          } catch (e) {
-            console.error('Failed to update persistent profile:', e);
-          }
-        }}
-      />
+        {/* 6. Tab Content 4: Meetup Spots */}
+        {activeSubTab === 'meetup' && (
+          <ProfileMeetupSpotsTab
+            handoverSpots={handoverSpots}
+            isOwnProfile={true}
+            readerName={profile.name}
+          />
+        )}
 
-      {/* 5-Level Return Reliability System Modal */}
-      <ReturnReliabilityModal
-        isOpen={isReliabilityModalOpen}
-        onClose={() => setIsReliabilityModalOpen(false)}
-        userName={profile.name}
-        userTier={5}
-        onTimeCount={32}
-        totalReturns={32}
-      />
+        {/* Modals */}
+        <EditProfileModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          userProfile={{
+            name: profile.name,
+            location: profile.location,
+            bio: profile.bio,
+            avatar: profile.avatar,
+            favoriteGenres: profile.favoriteGenres,
+          }}
+          onSave={async (updated) => {
+            setProfile((prev) => ({ ...prev, ...updated }));
+            try {
+              await updateProfile({
+                displayName: updated.name,
+                avatar: updated.avatar,
+                location: updated.location,
+                bio: updated.bio,
+                favoriteGenres: updated.favoriteGenres,
+                isProfileComplete: true,
+              });
+            } catch (e) {
+              console.error('Failed to update persistent profile:', e);
+            }
+          }}
+        />
 
-    </div>
+        <ReturnReliabilityModal
+          isOpen={isReliabilityModalOpen}
+          onClose={() => setIsReliabilityModalOpen(false)}
+          userName={profile.name}
+          userTier={5}
+          onTimeCount={32}
+          totalReturns={32}
+        />
+      </div>
     </>
   );
 };
