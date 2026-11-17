@@ -199,11 +199,25 @@ async function run() {
   await modal.locator('input[placeholder*="Constance Garnett"]').fill('Ranjan Roy');
   await modal.locator('input[placeholder*="Bengali"]').fill('Bengali');
 
+  // Verify Edition field is NOT visible for Translated Copy
+  const editionFieldTranslated = await modal.locator('input[placeholder*="1st Edition"]').isVisible();
+  if (editionFieldTranslated) {
+    throw new Error('FAIL: Edition field should NOT be displayed for Translated Copy!');
+  }
+  console.log('✅ Verified Edition field is omitted for Translated Copy.');
+
+  // Verify Switch Type button is removed from header
+  const switchTypeBtn = await modal.locator('button:has-text("Switch Type")').isVisible();
+  if (switchTypeBtn) {
+    throw new Error('FAIL: Switch Type button should be removed from header!');
+  }
+  console.log('✅ Verified Switch Type button is removed from header.');
+
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'addbook_06_general_translated_step1.png') });
 
-  // Switch type back to test Academic Book
-  const backToEntry = modal.locator('button:has-text("Switch Type")');
-  await backToEntry.click();
+  // Cancel back to Screen 0 to test Academic Book
+  const cancelBtn = modal.locator('button:has-text("Cancel")');
+  await cancelBtn.click();
   await page.waitForTimeout(400);
 
   // 5. Test Academic Book Flow - Streamlined 2-Step Flow & Smart Adaptive Field

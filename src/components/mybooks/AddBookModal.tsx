@@ -513,9 +513,9 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
         generalType,
         translator: generalType === 'translated' ? translator.trim() : undefined,
         translationLanguage: generalType === 'translated' ? translationLanguage.trim() : undefined,
-        edition: edition.trim() || undefined,
+        edition: generalType === 'original' && edition.trim() ? edition.trim() : undefined,
         description: generalType === 'translated'
-          ? `Translated by ${translator.trim()} into ${translationLanguage.trim()}.${edition.trim() ? ` Edition: ${edition.trim()}.` : ''}`
+          ? `Translated by ${translator.trim()} into ${translationLanguage.trim()}.`
           : edition.trim() ? `Edition: ${edition.trim()}.` : '',
       };
 
@@ -803,18 +803,10 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
               <div>
                 {/* Header & Step Indicator */}
                 <div className="pb-4 border-b border-surface-border mb-5 pr-10">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-brand bg-brand/10 px-2.5 py-0.5 rounded-full">
                       General Book · Step {generalStep} of 2
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setClassification(null)}
-                      className="text-xs text-ink-muted hover:text-ink-primary font-medium hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <HugeiconsIcon icon={ArrowLeft01Icon} size={13} />
-                      <span>Switch Type</span>
-                    </button>
                   </div>
                   <h3 id="add-book-dialog-title" className="font-serif text-2xl font-semibold text-ink-primary mt-2">
                     {generalStep === 1 ? 'Book Information' : 'Copy Information & Condition'}
@@ -850,6 +842,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             type="button"
                             onClick={() => {
                               setGeneralType(item.id);
+                              if (item.id === 'translated') setEdition('');
                               setFormError(null);
                             }}
                             className={`p-3 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
@@ -1041,20 +1034,22 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </div>
                     </div>
 
-                    {/* Optional Edition Field */}
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5 flex items-center justify-between">
-                        <span>Edition</span>
-                        <span className="text-[11px] text-ink-muted normal-case font-normal">(Optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={edition}
-                        onChange={(e) => setEdition(e.target.value)}
-                        placeholder="e.g. 1st Edition, Illustrated Edition, Deluxe Paperback"
-                        className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                      />
-                    </div>
+                    {/* Optional Edition Field (Only for Original Copy) */}
+                    {generalType === 'original' && (
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5 flex items-center justify-between">
+                          <span>Edition</span>
+                          <span className="text-[11px] text-ink-muted normal-case font-normal">(Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={edition}
+                          onChange={(e) => setEdition(e.target.value)}
+                          placeholder="e.g. 1st Edition, Illustrated Edition, Deluxe Paperback"
+                          className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
+                        />
+                      </div>
+                    )}
 
                     {/* Step 1 Actions */}
                     <div className="pt-4 border-t border-surface-border flex items-center justify-between gap-3">
@@ -1248,18 +1243,10 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
               <div>
                 {/* Header & Step Indicator */}
                 <div className="pb-4 border-b border-surface-border mb-5 pr-10">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
                       Academic Donation · Step {academicStep} of 2
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setClassification(null)}
-                      className="text-xs text-ink-muted hover:text-ink-primary font-medium hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <HugeiconsIcon icon={ArrowLeft01Icon} size={13} />
-                      <span>Switch Type</span>
-                    </button>
                   </div>
                   <h3 id="add-book-dialog-title" className="font-serif text-2xl font-semibold text-ink-primary mt-2">
                     {academicStep === 1
