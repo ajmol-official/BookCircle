@@ -6,6 +6,7 @@ import {
   useLocation,
   useParams,
   useSearchParams,
+  Navigate,
 } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { HeaderSection } from './components/HeaderSection';
@@ -36,6 +37,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { ProfileSetupModal } from './components/auth/ProfileSetupModal';
 import { ReadersBrowsePage } from './components/readers/ReadersBrowsePage';
 import { BooksBrowsePage } from './components/books/BooksBrowsePage';
+import { WritersBrowsePage } from './components/writers/WritersBrowsePage';
 import { AuthorProfilePage } from './components/author/AuthorProfilePage';
 import { NotFoundPage } from './components/NotFoundPage';
 import { WhoWeArePage } from './components/about/WhoWeArePage';
@@ -55,7 +57,8 @@ import {
   getAuthorByName,
   getOrCreateAuthor,
   generateAuthorSlug,
-  getBooksByAuthor
+  getBooksByAuthor,
+  getAllAuthors
 } from './data/authors';
 import {
   findCatalogBook,
@@ -651,6 +654,7 @@ const BookCircleMain: React.FC = () => {
   // Dynamic books collection with live availability tracking
   const [booksList, setBooksList] = useState<Book[]>(mockBooks);
   const [readersList, setReadersList] = useState<Reader[]>(mockReaders);
+  const authorsList = useMemo(() => getAllAuthors(), []);
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
 
   // Load live books and readers from database (Supabase) if available, with graceful fallback to mock data
@@ -1113,6 +1117,7 @@ const BookCircleMain: React.FC = () => {
                 <WritersSection
                   books={booksList}
                   onSelectAuthor={handleSelectAuthor}
+                  onSeeAll={() => navigate('/authors')}
                 />
                 <ReadersSection
                   readers={readersList}
@@ -1265,6 +1270,23 @@ const BookCircleMain: React.FC = () => {
                 onBrowseShelf={handleBrowseReader}
               />
             }
+          />
+
+          <Route
+            path="/authors"
+            element={
+              <WritersBrowsePage
+                authors={authorsList}
+                books={booksList}
+                onSelectAuthor={handleSelectAuthor}
+                onBack={() => navigate('/')}
+              />
+            }
+          />
+
+          <Route
+            path="/writers"
+            element={<Navigate to="/authors" replace />}
           />
 
           <Route

@@ -1,4 +1,6 @@
 import React from 'react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import type { Author } from '../types/author';
 import type { Book } from '../types';
 import { initialAuthors } from '../data/authors';
@@ -8,12 +10,14 @@ interface WritersSectionProps {
   authors?: Author[];
   books: Book[];
   onSelectAuthor: (authorName: string, authorId?: string) => void;
+  onSeeAll?: () => void;
 }
 
 export const WritersSection: React.FC<WritersSectionProps> = ({
   authors = initialAuthors.slice(0, 4),
   books,
-  onSelectAuthor
+  onSelectAuthor,
+  onSeeAll
 }) => {
   if (!authors || authors.length === 0) return null;
 
@@ -29,6 +33,21 @@ export const WritersSection: React.FC<WritersSectionProps> = ({
             Explore your favourite writers and discover their published works.
           </p>
         </div>
+
+        {onSeeAll && (
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="group flex items-center gap-1.5 text-sm font-semibold text-brand hover:text-brand-dark px-3 py-1.5 rounded-lg hover:bg-brand/5 transition-all cursor-pointer"
+          >
+            <span>View all Writers</span>
+            <HugeiconsIcon
+              icon={ArrowRight01Icon}
+              size={18}
+              className="group-hover:translate-x-0.5 transition-transform"
+            />
+          </button>
+        )}
       </div>
 
       {/* Writers Grid */}
@@ -45,4 +64,3 @@ export const WritersSection: React.FC<WritersSectionProps> = ({
     </section>
   );
 };
-
