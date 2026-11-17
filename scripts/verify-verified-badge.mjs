@@ -20,22 +20,15 @@ async function verifyBadge() {
   await page.goto('http://localhost:5173/', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1000);
 
-  // Scroll to Writers You May Love
-  const writersSection = page.locator('section:has-text("Writers You May Love")');
-  await writersSection.scrollIntoViewIfNeeded();
+  // Scroll to Authors You May Love
+  const authorsSection = page.locator('section:has-text("Authors You May Love")');
+  await authorsSection.scrollIntoViewIfNeeded();
   await page.waitForTimeout(600);
 
-  // Screenshot first writer card (Arundhati Roy)
-  const firstCard = writersSection.locator('div.group.bg-white.rounded-xl').first();
-  await firstCard.screenshot({
-    path: path.join(ARTIFACTS_DIR, 'verified_badge_home_card.png')
-  });
-  console.log('Captured verified_badge_home_card.png');
-
   // Screenshot all 4 cards in the section
-  const sectionBox = await writersSection.boundingBox();
+  const sectionBox = await authorsSection.boundingBox();
   await page.screenshot({
-    path: path.join(ARTIFACTS_DIR, 'verified_badge_home_section.png'),
+    path: path.join(ARTIFACTS_DIR, 'authors_home_section_updated.png'),
     clip: {
       x: 0,
       y: sectionBox ? Math.max(0, sectionBox.y - 20) : 600,
@@ -43,18 +36,7 @@ async function verifyBadge() {
       height: 520
     }
   });
-  console.log('Captured verified_badge_home_section.png');
-
-  // Navigate to /authors
-  console.log('2. Navigating to /authors...');
-  await page.goto('http://localhost:5173/authors', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-
-  await page.screenshot({
-    path: path.join(ARTIFACTS_DIR, 'verified_badge_authors_directory.png'),
-    fullPage: false
-  });
-  console.log('Captured verified_badge_authors_directory.png');
+  console.log('Captured authors_home_section_updated.png');
 
   await browser.close();
   console.log('Verification finished successfully!');

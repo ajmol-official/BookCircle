@@ -27,10 +27,10 @@ export const WritersSection: React.FC<WritersSectionProps> = ({
       <div className="flex items-end justify-between mb-6">
         <div>
           <h2 className="font-serif text-2xl sm:text-[26px] font-semibold text-slate-800 tracking-tight">
-            Writers You May Love
+            Authors You May Love
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Explore your favourite writers and discover their published works.
+            Explore your favourite authors and discover their published works.
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export const WritersSection: React.FC<WritersSectionProps> = ({
             onClick={onSeeAll}
             className="group flex items-center gap-1.5 text-sm font-semibold text-brand hover:text-brand-dark px-3 py-1.5 rounded-lg hover:bg-brand/5 transition-all cursor-pointer"
           >
-            <span>View all Writers</span>
+            <span>View all Authors</span>
             <HugeiconsIcon
               icon={ArrowRight01Icon}
               size={18}
