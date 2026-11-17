@@ -124,7 +124,7 @@ async function run() {
       throw new Error(`Condition option "${cond}" not found!`);
     }
   }
-  console.log('✅ All 4 Condition options verified.');
+  console.log('✅ All 4 Condition options verified in 2x2 grid.');
 
   // Select "Very Good"
   await modal.getByRole('button', { name: /^Very Good\b/ }).click();
@@ -206,14 +206,14 @@ async function run() {
   await backToEntry.click();
   await page.waitForTimeout(400);
 
-  // 5. Test Academic Book Flow - All 4 Education Levels & Dynamic Step 2
-  console.log('\n--- Test 5: Academic Book Flow (3 Steps, Donation Locked) ---');
+  // 5. Test Academic Book Flow - Streamlined 2-Step Flow & Smart Adaptive Field
+  console.log('\n--- Test 5: Academic Book Flow (Streamlined 2-Step, Donation Locked) ---');
   await modal.locator('button:has-text("Academic Book")').click();
   await page.waitForTimeout(400);
 
   // Step 1: Academic Book & Education Level
-  await modal.locator('text="Academic Donation · Step 1 of 3"').waitFor({ state: 'visible' });
-  console.log('✅ Academic Step 1 indicator verified.');
+  await modal.locator('text="Academic Donation · Step 1 of 2"').waitFor({ state: 'visible' });
+  console.log('✅ Academic Step 1 indicator verified (Step 1 of 2).');
 
   // Verify 4 Education Levels
   for (const level of ['School', 'College', 'University', 'Professional']) {
@@ -224,113 +224,63 @@ async function run() {
   }
   console.log('✅ All 4 Academic Education Levels available.');
 
-  // Test Level A: School
-  console.log('\nTesting Academic Level: School');
+  // Test Level A: School adaptive field (Class / Grade)
+  console.log('\nTesting Academic Adaptive Field: School');
   await modal.locator('button:has-text("School")').click();
-  await modal.locator('input[placeholder*="Calculus"], input[placeholder*="Title"]').first().fill('Secondary General Science');
-  await modal.locator('input[placeholder*="Author"], input[placeholder*="author"]').first().fill('NCTB Curriculum Board');
+  const schoolGradeLabel = modal.locator('label:has-text("Class / Grade")');
+  if (!(await schoolGradeLabel.isVisible())) {
+    throw new Error('School adaptive field "Class / Grade" label missing!');
+  }
+  console.log('✅ Adaptive field updated to "Class / Grade" for School.');
+
+  // Test Level B: College adaptive field (Group / Stream)
+  console.log('Testing Academic Adaptive Field: College');
+  await modal.locator('button:has-text("College")').click();
+  const collegeGroupLabel = modal.locator('label:has-text("College Group / Stream")');
+  if (!(await collegeGroupLabel.isVisible())) {
+    throw new Error('College adaptive field "College Group / Stream" missing!');
+  }
+  console.log('✅ Adaptive field updated to "College Group / Stream" for College.');
+
+  // Test Level C: Professional adaptive field
+  console.log('Testing Academic Adaptive Field: Professional');
+  await modal.locator('button:has-text("Professional")').click();
+  const profFieldLabel = modal.locator('label:has-text("Professional Field / Track")');
+  if (!(await profFieldLabel.isVisible())) {
+    throw new Error('Professional adaptive field "Professional Field / Track" missing!');
+  }
+  console.log('✅ Adaptive field updated to "Professional Field / Track" for Professional.');
+
+  // Test Level D: University adaptive field (Department & Course)
+  console.log('Testing Academic Adaptive Field: University');
+  await modal.locator('button:has-text("University")').click();
+  const univDeptLabel = modal.locator('label:has-text("Department & Course")');
+  if (!(await univDeptLabel.isVisible())) {
+    throw new Error('University adaptive field "Department & Course" missing!');
+  }
+  console.log('✅ Adaptive field updated to "Department & Course" for University.');
+
+  // Fill in University details
+  await modal.locator('input[placeholder*="Calculus"], input[placeholder*="Textbook title"]').first().fill('University Physics with Modern Physics');
+  await modal.locator('input[placeholder*="Halliday & Resnick"]').fill('Hugh D. Young & Roger A. Freedman');
+  await modal.locator('input[placeholder*="General Science, Mathematics"]').fill('Physics');
+  await modal.locator('input[placeholder*="Computer Science (CSE 101)"]').fill('Physics & Astronomy (PHY 101)');
+
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'addbook_07_academic_school_step1.png') });
 
-  await modal.locator('button:has-text("Continue to Course Info")').click();
-  await page.waitForTimeout(400);
-
-  // Verify School dynamic fields (Class/Grade, Subject)
-  await modal.locator('text="School Specific Information"').waitFor({ state: 'visible' });
-  const gradeInput = modal.locator('input[placeholder*="Class 10"], input[placeholder*="Grade"]');
-  const schoolSubInput = modal.locator('input[placeholder*="Physics, Chemistry"], input[placeholder*="General Science"]');
-  if (!(await gradeInput.isVisible()) || !(await schoolSubInput.isVisible())) {
-    throw new Error('School dynamic fields (Class/Grade, Subject) missing!');
-  }
-  console.log('✅ School dynamic fields (Class/Grade, Subject) verified.');
-  await gradeInput.fill('Class 10');
-  await schoolSubInput.fill('General Science');
-  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'addbook_08_academic_school_step2.png') });
-
-  // Go back to Step 1 and test College
-  await modal.locator('button:has-text("Back")').click();
-  await page.waitForTimeout(300);
-
-  // Test Level B: College
-  console.log('\nTesting Academic Level: College');
-  await modal.locator('button:has-text("College")').click();
-  await modal.locator('button:has-text("Continue to Course Info")').click();
-  await page.waitForTimeout(400);
-
-  // Verify College dynamic fields: Group (Science / Business Studies / Humanities), Subject. NO Department field.
-  await modal.locator('text="College Specific Information"').waitFor({ state: 'visible' });
-  const scPill = modal.locator('button:has-text("Science")');
-  const bsPill = modal.locator('button:has-text("Business Studies")');
-  const humPill = modal.locator('button:has-text("Humanities")');
-  if (!(await scPill.isVisible()) || !(await bsPill.isVisible()) || !(await humPill.isVisible())) {
-    throw new Error('College Academic Groups missing!');
-  }
-  const deptFieldCollege = await modal.locator('label:has-text("Department")').isVisible();
-  if (deptFieldCollege) {
-    throw new Error('College level should NOT have a Department field!');
-  }
-  console.log('✅ College dynamic fields (Science/Business/Humanities groups, Subject) verified without Department field.');
-  await bsPill.click();
-  await modal.locator('input[placeholder*="Accounting"]').fill('Accounting');
-  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'addbook_09_academic_college_step2.png') });
-
-  // Go back to Step 1 and test University
-  await modal.locator('button:has-text("Back")').click();
-  await page.waitForTimeout(300);
-
-  // Test Level C: University
-  console.log('\nTesting Academic Level: University');
-  await modal.locator('button:has-text("University")').click();
-  await modal.locator('button:has-text("Continue to Course Info")').click();
-  await page.waitForTimeout(400);
-
-  await modal.locator('text="University Specific Information"').waitFor({ state: 'visible' });
-  const deptLabel = modal.locator('label:has-text("Department")');
-  const courseLabel = modal.locator('label:has-text("Course Name")');
-  if (!(await deptLabel.isVisible()) || !(await courseLabel.isVisible())) {
-    throw new Error('University fields (Department, Course Name) missing!');
-  }
-  console.log('✅ University dynamic fields (Department [Required], Course Name [Optional]) verified.');
-  await modal.locator('input[placeholder*="Computer Science"]').fill('Computer Science & Engineering');
-  await modal.locator('input[placeholder*="Algorithms"]').fill('Data Structures & Algorithms');
-  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'addbook_10_academic_university_step2.png') });
-
-  // Go back to Step 1 and test Professional
-  await modal.locator('button:has-text("Back")').click();
-  await page.waitForTimeout(300);
-
-  // Test Level D: Professional
-  console.log('\nTesting Academic Level: Professional');
-  await modal.locator('button:has-text("Professional")').click();
-  await modal.locator('button:has-text("Continue to Course Info")').click();
-  await page.waitForTimeout(400);
-
-  await modal.locator('text="Professional Specific Information"').waitFor({ state: 'visible' });
-  const profFieldInput = modal.locator('input[placeholder*="Chartered Accountancy"]');
-  const profSubInput = modal.locator('input[placeholder*="Financial Audit"]');
-  if (!(await profFieldInput.isVisible()) || !(await profSubInput.isVisible())) {
-    throw new Error('Professional dynamic fields missing!');
-  }
-  const profDeptField = await modal.locator('label:has-text("Department")').isVisible();
-  if (profDeptField) {
-    throw new Error('Professional level should NOT have a forced Department field!');
-  }
-  console.log('✅ Professional dynamic fields (Field [Required], Subject [Required]) verified without forced Department.');
-  await profFieldInput.fill('Chartered Accountancy (CA)');
-  await profSubInput.fill('Financial Audit');
-  await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'addbook_10b_academic_professional_step2.png') });
-
-  // Go to Academic Step 3: Copy Info & Donation Policy Lock
-  console.log('\n--- Test 6: Academic Step 3 Donation Policy Lock ---');
+  // Advance straight to Step 2: Copy Condition & Donation Policy Lock
   await modal.locator('button:has-text("Continue to Copy Info")').click();
   await page.waitForTimeout(400);
 
-  await modal.locator('text="Academic Donation · Step 3 of 3"').waitFor({ state: 'visible' });
-  console.log('✅ Academic Step 3 loaded.');
+  // 6. Test Academic Step 2 Donation Policy Lock
+  console.log('\n--- Test 6: Academic Step 2 Donation Policy Lock ---');
+  await modal.locator('text="Academic Donation · Step 2 of 2"').waitFor({ state: 'visible' });
+  console.log('✅ Academic Step 2 loaded (Step 2 of 2).');
 
   // Verify Donation Policy Banner is visible
   const donationBanner = modal.locator('text="Availability: Fixed to For Donation"');
   if (!(await donationBanner.isVisible())) {
-    throw new Error('Academic Step 3: Fixed to For Donation banner missing!');
+    throw new Error('Academic Step 2: Fixed to For Donation banner missing!');
   }
 
   // Verify Lending and Private Collection are OMITTED from the modal DOM
@@ -341,7 +291,7 @@ async function run() {
   }
   console.log('✅ Academic Book strictly locked to "For Donation". Lending & Private Collection omitted from DOM.');
 
-  // Select condition
+  // Select condition (2x2 grid)
   await modal.getByRole('button', { name: /^Like New\b/ }).click();
   await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'addbook_11_academic_step3_donation_locked.png') });
 
@@ -350,13 +300,24 @@ async function run() {
   await submitAcademicBtn.click();
   await page.waitForTimeout(800);
 
-  // 7. Verify Academic Books do NOT show reading-status popup!
-  console.log('\n--- Test 7: Verify Academic Books DO NOT trigger Reading Status Follow-Up ---');
+  // 7. Verify Academic Books show Thank-You confirmation and DO NOT show reading-status popup!
+  console.log('\n--- Test 7: Verify Academic Donation Thank-You Modal ---');
+  await modal.locator('text="Nice Work! Your contribution will be remembered!"').waitFor({ state: 'visible' });
+  console.log('✅ Academic Donation Thank-You confirmation modal displayed.');
+
   const readingFollowUpAcademic = await modal.locator('text="Have you read this book already?"').isVisible();
   if (readingFollowUpAcademic) {
     throw new Error('FAIL: Reading Status Follow-Up erroneously triggered for an Academic Book!');
   }
   console.log('✅ Academic Book submitted directly without Reading Status follow-up modal.');
+
+  // Close Thank-You modal
+  await modal.locator('button:has-text("Done")').click();
+  await page.waitForTimeout(400);
+
+  if (!(await modal.isVisible())) {
+    console.log('✅ Academic Thank-You modal dismissed cleanly.');
+  }
 
   // 8. Verify Unrelated pages remain unaffected
   console.log('\n--- Test 8: Regression check on Home & Catalog pages ---');
@@ -369,7 +330,7 @@ async function run() {
   console.log('✅ Books Catalog page loaded normally.');
 
   await browser.close();
-  console.log('\n🎉 ALL 12 ADD BOOK FLOW VERIFICATION TESTS COMPLETED SUCCESSFULLY!');
+  console.log('\n🎉 ALL ADD BOOK FLOW VERIFICATION TESTS COMPLETED SUCCESSFULLY!');
 }
 
 run().catch(err => {

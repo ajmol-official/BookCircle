@@ -149,7 +149,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
   // Navigation / Step state
   const [classification, setClassification] = useState<BookClassification | null>(null);
   const [generalStep, setGeneralStep] = useState<1 | 2>(1);
-  const [academicStep, setAcademicStep] = useState<1 | 2 | 3>(1);
+  const [academicStep, setAcademicStep] = useState<1 | 2>(1);
 
   // General Book State
   const [generalType, setGeneralType] = useState<GeneralBookType>('original');
@@ -165,16 +165,13 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
   const [isCustomUploaded, setIsCustomUploaded] = useState(false);
   const [matchedCatalogId, setMatchedCatalogId] = useState<string | null>(null);
 
-  // Academic Book State
+  // Academic Book State (Streamlined 2-Step)
   const [educationLevel, setEducationLevel] = useState<AcademicEducationLevel>('University');
+  const [academicSubject, setAcademicSubject] = useState('');
   const [schoolGrade, setSchoolGrade] = useState('');
-  const [schoolSubject, setSchoolSubject] = useState('');
   const [collegeGroup, setCollegeGroup] = useState<CollegeAcademicGroup>('Science');
-  const [collegeSubject, setCollegeSubject] = useState('');
   const [universityDepartment, setUniversityDepartment] = useState('');
-  const [universityCourse, setUniversityCourse] = useState('');
   const [professionalField, setProfessionalField] = useState('');
-  const [professionalSubject, setProfessionalSubject] = useState('');
 
   // Catalog Matching & Autocomplete State
   const [isTitleFocused, setIsTitleFocused] = useState(false);
@@ -186,9 +183,10 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Post-submission reading status modal state (General Books only)
+  // Post-submission modals
   const [showReadingStatusPrompt, setShowReadingStatusPrompt] = useState(false);
   const [submittedBookInfo, setSubmittedBookInfo] = useState<{ title: string; catalogId: string } | null>(null);
+  const [showAcademicThankYou, setShowAcademicThankYou] = useState(false);
 
   // Feedback & Validation Errors
   const [formError, setFormError] = useState<string | null>(null);
@@ -252,18 +250,16 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
     setIsCustomUploaded(false);
     setMatchedCatalogId(null);
     setEducationLevel('University');
+    setAcademicSubject('');
     setSchoolGrade('');
-    setSchoolSubject('');
     setCollegeGroup('Science');
-    setCollegeSubject('');
     setUniversityDepartment('');
-    setUniversityCourse('');
     setProfessionalField('');
-    setProfessionalSubject('');
     setCommunityMatches([]);
     setFormError(null);
     setShowReadingStatusPrompt(false);
     setSubmittedBookInfo(null);
+    setShowAcademicThankYou(false);
   };
 
   const handleModalClose = () => {
@@ -326,13 +322,11 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
     // 2. Merge and Deduplicate by unique canonical identity key
     const mergedMap = new Map<string, CatalogMatchItem>();
 
-    // Add canonical entries first (authoritative)
     for (const item of canonicalResults) {
       const key = `${item.classification}-${item.id}`;
       mergedMap.set(key, item);
     }
 
-    // Add community results, deduplicating multiple copies of same book
     for (const item of communityMatches) {
       const dedupKey = item.classification === 'academic'
         ? `academic-${item.title.toLowerCase()}-${item.educationLevel || ''}-${item.subject || ''}`
@@ -347,7 +341,6 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
 
     const allMatches = Array.from(mergedMap.values());
 
-    // 3. Filter strictly based on active classification path
     if (classification === 'general') {
       if (generalType === 'original') {
         return allMatches.filter((m) => m.classification === 'general' && m.generalType !== 'translated').slice(0, 6);
@@ -378,10 +371,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
         setEducationLevel(match.educationLevel as AcademicEducationLevel);
       }
       if (match.subject) {
-        if (educationLevel === 'School') setSchoolSubject(match.subject);
-        if (educationLevel === 'College') setCollegeSubject(match.subject);
-        if (educationLevel === 'University') setUniversityDepartment(match.subject);
-        if (educationLevel === 'Professional') setProfessionalSubject(match.subject);
+        setAcademicSubject(match.subject);
       }
     }
 
@@ -393,7 +383,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
     setMatchedCatalogId(null);
   };
 
-  // Image Upload Handling (File Picker & Drag-and-Drop)
+  // Image Upload Handling
   const processImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('Please upload a valid image file (PNG, JPG, or WEBP).');
@@ -467,59 +457,35 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
     setGeneralStep(2);
   };
 
-  // Academic Step 1 Validation
+  // Academic Step 1 Validation (Streamlined: Title, Author, Subject & Curricular Field)
   const handleAcademicStep1Continue = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setFormError('Please enter the textbook or academic book title.');
+      setFormError('Please enter the textbook title.');
       return;
     }
     if (!author.trim()) {
       setFormError('Please enter the author or editor name.');
       return;
     }
-    setFormError(null);
-    setAcademicStep(2);
-  };
-
-  // Academic Step 2 Validation
-  const handleAcademicStep2Continue = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (educationLevel === 'School') {
-      if (!schoolGrade.trim()) {
-        setFormError('Please enter the Class / Grade for this school textbook.');
-        return;
-      }
-      if (!schoolSubject.trim()) {
-        setFormError('Please enter the Subject (e.g. Mathematics, Science).');
-        return;
-      }
-    } else if (educationLevel === 'College') {
-      if (!collegeGroup) {
-        setFormError('Please select a College Group.');
-        return;
-      }
-      if (!collegeSubject.trim()) {
-        setFormError('Please enter the Subject (e.g. Physics, Accounting).');
-        return;
-      }
-    } else if (educationLevel === 'University') {
-      if (!universityDepartment.trim()) {
-        setFormError('Please enter the University Department.');
-        return;
-      }
-    } else if (educationLevel === 'Professional') {
-      if (!professionalField.trim()) {
-        setFormError('Please specify the Professional Field / Specialization.');
-        return;
-      }
-      if (!professionalSubject.trim()) {
-        setFormError('Please enter the Subject or Course Name.');
-        return;
-      }
+    if (!academicSubject.trim()) {
+      setFormError('Please enter the subject (e.g. Physics, Calculus, General Science).');
+      return;
+    }
+    if (educationLevel === 'School' && !schoolGrade.trim()) {
+      setFormError('Please enter the Class / Grade for this school textbook.');
+      return;
+    }
+    if (educationLevel === 'University' && !universityDepartment.trim()) {
+      setFormError('Please enter the Department & Course.');
+      return;
+    }
+    if (educationLevel === 'Professional' && !professionalField.trim()) {
+      setFormError('Please enter the Professional Field / Track.');
+      return;
     }
     setFormError(null);
-    setAcademicStep(3);
+    setAcademicStep(2); // Advances directly to Step 2: Copy Condition & Donation
   };
 
   // Final Submission Handler
@@ -566,20 +532,19 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
 
       if (educationLevel === 'School') {
         academicMeta.schoolGrade = schoolGrade.trim();
-        academicMeta.schoolSubject = schoolSubject.trim();
-        descSummary += ` Class/Grade: ${schoolGrade.trim()} | Subject: ${schoolSubject.trim()}.`;
+        academicMeta.schoolSubject = academicSubject.trim();
+        descSummary += ` Class/Grade: ${schoolGrade.trim()} | Subject: ${academicSubject.trim()}.`;
       } else if (educationLevel === 'College') {
         academicMeta.collegeGroup = collegeGroup;
-        academicMeta.collegeSubject = collegeSubject.trim();
-        descSummary += ` Group: ${collegeGroup} | Subject: ${collegeSubject.trim()}.`;
+        academicMeta.collegeSubject = academicSubject.trim();
+        descSummary += ` Group: ${collegeGroup} | Subject: ${academicSubject.trim()}.`;
       } else if (educationLevel === 'University') {
         academicMeta.universityDepartment = universityDepartment.trim();
-        if (universityCourse.trim()) academicMeta.universityCourse = universityCourse.trim();
-        descSummary += ` Dept: ${universityDepartment.trim()}${universityCourse.trim() ? ` | Course: ${universityCourse.trim()}` : ''}.`;
+        descSummary += ` Dept/Course: ${universityDepartment.trim()} | Subject: ${academicSubject.trim()}.`;
       } else if (educationLevel === 'Professional') {
         academicMeta.professionalField = professionalField.trim();
-        academicMeta.professionalSubject = professionalSubject.trim();
-        descSummary += ` Field: ${professionalField.trim()} | Course: ${professionalSubject.trim()}.`;
+        academicMeta.professionalSubject = academicSubject.trim();
+        descSummary += ` Field: ${professionalField.trim()} | Subject: ${academicSubject.trim()}.`;
       }
 
       if (edition.trim()) descSummary += ` Edition: ${edition.trim()}.`;
@@ -601,8 +566,8 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
 
       onBookAdded?.(bookPayload);
 
-      // Academic Books DO NOT show reading status follow-up. Directly close modal.
-      handleModalClose();
+      // Show the dedicated Academic Donation Thank-You Modal
+      setShowAcademicThankYou(true);
     }
   };
 
@@ -617,12 +582,12 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-book-dialog-title"
-        className="relative w-full max-w-xl bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-[704px] bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Hidden File Input for Image Upload */}
@@ -637,57 +602,86 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
         {/* Close Button */}
         <button
           onClick={handleModalClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-ink-muted hover:text-ink-primary hover:bg-surface-subtle transition cursor-pointer touch-target-44"
+          className="absolute top-5 right-5 sm:top-6 sm:right-6 p-2 rounded-full text-ink-muted hover:text-ink-primary hover:bg-surface-subtle transition cursor-pointer touch-target-44"
           aria-label="Close modal"
         >
-          <HugeiconsIcon icon={Cancel01Icon} size={18} />
+          <HugeiconsIcon icon={Cancel01Icon} size={20} />
         </button>
 
         {/* ─────────────────────────────────────────────────────────────
-            POST-SUBMISSION READING STATUS POPUP (GENERAL BOOKS ONLY)
+            ACADEMIC DONATION CONFIRMATION MODAL (ACADEMIC BOOKS ONLY)
         ───────────────────────────────────────────────────────────── */}
-        {showReadingStatusPrompt ? (
-          <div className="py-4 animate-in fade-in text-center">
-            <div className="w-14 h-14 rounded-2xl bg-brand/10 text-brand mx-auto flex items-center justify-center mb-4">
-              <HugeiconsIcon icon={BookOpen01Icon} size={28} />
+        {showAcademicThankYou ? (
+          <div className="py-6 animate-in fade-in text-center max-w-md mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-4 border border-emerald-200 shadow-sm">
+              <HugeiconsIcon icon={GiftIcon} size={32} />
             </div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              Academic Donation Listed!
+            </span>
+            <h3 className="font-serif text-2xl font-semibold text-ink-primary mt-3">
+              Nice Work! Your contribution will be remembered!
+            </h3>
+            <p className="text-xs sm:text-sm text-ink-muted mt-2 leading-relaxed">
+              Your textbook is now listed for donation to students and readers in your circle.
+            </p>
+            <div className="mt-8 pt-4 border-t border-surface-border">
+              <button
+                type="button"
+                onClick={handleModalClose}
+                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition active:scale-95 shadow-sm cursor-pointer touch-target-44"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        ) : showReadingStatusPrompt ? (
+          /* ─────────────────────────────────────────────────────────────
+              POST-SUBMISSION READING STATUS POPUP (GENERAL BOOKS ONLY)
+          ───────────────────────────────────────────────────────────── */
+          <div className="py-6 animate-in fade-in text-center max-w-md mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand mx-auto flex items-center justify-center mb-4">
+              <HugeiconsIcon icon={BookOpen01Icon} size={30} />
+            </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
               Book Added Successfully!
             </span>
-            <h3 className="font-serif text-xl sm:text-2xl font-semibold text-ink-primary mt-2">
+            <h3 className="font-serif text-2xl font-semibold text-ink-primary mt-3">
               Have you read this book already?
             </h3>
-            <p className="text-xs text-ink-muted mt-1 max-w-sm mx-auto">
+            <p className="text-xs sm:text-sm text-ink-muted mt-1 leading-relaxed">
               Help organize your personal reading library. (Kept private on your profile).
             </p>
 
-            <div className="mt-6 space-y-2.5 max-w-sm mx-auto text-left">
+            <div className="mt-6 space-y-3 text-left">
               {[
-                { status: 'read' as UserReadingStatusValue, label: "Yes, I've read it.", desc: 'Finished reading this title', emoji: '✅' },
-                { status: 'reading' as UserReadingStatusValue, label: "I'm currently reading it.", desc: 'In progress on your nightstand', emoji: '📖' },
-                { status: 'want_to_read' as UserReadingStatusValue, label: "No, I haven't read it yet.", desc: 'Saved for later on your wishlist', emoji: '🔖' },
+                { status: 'read' as UserReadingStatusValue, label: "Yes, I've read it.", desc: 'Finished reading this title' },
+                { status: 'reading' as UserReadingStatusValue, label: "I'm currently reading it.", desc: 'In progress on your nightstand' },
+                { status: 'want_to_read' as UserReadingStatusValue, label: "No, I haven't read it yet.", desc: 'Saved for later on your wishlist' },
               ].map((item) => (
                 <button
                   key={item.status}
                   type="button"
                   onClick={() => handleReadingStatusSelect(item.status)}
-                  className="w-full p-3.5 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-brand/40 transition flex items-center justify-between cursor-pointer group active:scale-[0.99] touch-target-44 shadow-sm"
+                  className="w-full p-4 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-brand/40 transition flex items-center justify-between cursor-pointer group active:scale-[0.99] touch-target-44 shadow-sm"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{item.emoji}</span>
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center group-hover:bg-brand group-hover:text-white transition-colors flex-shrink-0">
+                      <HugeiconsIcon icon={BookOpen01Icon} size={20} />
+                    </div>
                     <div>
-                      <p className="text-xs sm:text-sm font-semibold text-ink-primary group-hover:text-brand transition-colors">
+                      <p className="text-sm font-semibold text-ink-primary group-hover:text-brand transition-colors">
                         {item.label}
                       </p>
-                      <p className="text-[11px] text-ink-muted">{item.desc}</p>
+                      <p className="text-xs text-ink-muted">{item.desc}</p>
                     </div>
                   </div>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="text-ink-muted group-hover:text-brand transition-colors" />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={18} className="text-ink-muted group-hover:text-brand transition-colors" />
                 </button>
               ))}
             </div>
 
-            <div className="mt-6 pt-3 border-t border-surface-border">
+            <div className="mt-6 pt-4 border-t border-surface-border">
               <button
                 type="button"
                 onClick={handleModalClose}
@@ -705,15 +699,15 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
             {classification === null ? (
               <div className="py-2">
                 <div className="mb-6">
-                  <h3 id="add-book-dialog-title" className="font-serif text-2xl font-semibold text-ink-primary">
+                  <h3 id="add-book-dialog-title" className="font-serif text-2xl sm:text-3xl font-semibold text-ink-primary">
                     Add a Book to BookCircle
                   </h3>
-                  <p className="mt-1 text-xs sm:text-sm text-ink-secondary">
+                  <p className="mt-1.5 text-xs sm:text-sm text-ink-secondary">
                     Select which type of book you would like to list in your community circle.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Option 1: General Book */}
                   <button
                     type="button"
@@ -721,22 +715,22 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       setClassification('general');
                       setGeneralStep(1);
                     }}
-                    className="p-5 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-brand/50 hover:shadow-sm transition-all text-left flex flex-col justify-between group cursor-pointer active:scale-[0.98]"
+                    className="p-6 rounded-2xl border-2 border-surface-border hover:border-brand bg-surface-subtle hover:bg-white hover:shadow-md transition-all text-left flex flex-col justify-between group cursor-pointer active:scale-[0.98]"
                   >
                     <div>
-                      <div className="w-12 h-12 rounded-xl bg-brand/10 text-brand flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                        <HugeiconsIcon icon={BookOpen01Icon} size={24} />
+                      <div className="w-12 h-12 rounded-xl bg-brand/10 text-brand flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                        <HugeiconsIcon icon={BookOpen01Icon} size={26} />
                       </div>
-                      <h4 className="font-serif text-lg font-semibold text-ink-primary group-hover:text-brand transition-colors">
+                      <h4 className="font-serif text-xl font-semibold text-ink-primary group-hover:text-brand transition-colors">
                         General Book
                       </h4>
-                      <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+                      <p className="text-xs text-ink-muted mt-2 leading-relaxed">
                         Novels, literature, poetry, science, history, memoirs, and general leisure reading.
                       </p>
                     </div>
-                    <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-brand">
+                    <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-brand">
                       <span>Add General Book</span>
-                      <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+                      <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
                     </div>
                   </button>
 
@@ -748,30 +742,34 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       setAcademicStep(1);
                       setAvailability('donation'); // Enforce donation policy
                     }}
-                    className="p-5 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-amber-400 hover:shadow-sm transition-all text-left flex flex-col justify-between group cursor-pointer active:scale-[0.98]"
+                    className="p-6 rounded-2xl border-2 border-surface-border hover:border-amber-400 bg-surface-subtle hover:bg-white hover:shadow-md transition-all text-left flex flex-col justify-between group cursor-pointer active:scale-[0.98]"
                   >
                     <div>
-                      <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                        <HugeiconsIcon icon={GraduationCapIcon} size={24} />
+                      <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                        <HugeiconsIcon icon={GraduationCapIcon} size={26} />
                       </div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-serif text-lg font-semibold text-ink-primary group-hover:text-amber-800 transition-colors">
+                        <h4 className="font-serif text-xl font-semibold text-ink-primary group-hover:text-amber-800 transition-colors">
                           Academic Book
                         </h4>
-                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">
                           Donation
                         </span>
                       </div>
-                      <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+                      <p className="text-xs text-ink-muted mt-2 leading-relaxed">
                         School, college, university textbooks, and professional curriculum course materials.
                       </p>
                     </div>
-                    <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-amber-700">
+                    <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-amber-800">
                       <span>Donate Academic Book</span>
-                      <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+                      <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
                     </div>
                   </button>
                 </div>
+
+                <p className="text-xs text-ink-muted mt-5 text-center sm:text-left">
+                  Note: Academic books are only for donation now.
+                </p>
               </div>
             ) : classification === 'general' ? (
               /* ─────────────────────────────────────────────────────────────
@@ -779,7 +777,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
               ───────────────────────────────────────────────────────────── */
               <div>
                 {/* Header & Step Indicator */}
-                <div className="pb-4 border-b border-surface-border mb-4 pr-10">
+                <div className="pb-4 border-b border-surface-border mb-5 pr-10">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-brand bg-brand/10 px-2.5 py-0.5 rounded-full">
                       General Book · Step {generalStep} of 2
@@ -789,11 +787,11 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       onClick={() => setClassification(null)}
                       className="text-xs text-ink-muted hover:text-ink-primary font-medium hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      <HugeiconsIcon icon={ArrowLeft01Icon} size={12} />
+                      <HugeiconsIcon icon={ArrowLeft01Icon} size={13} />
                       <span>Switch Type</span>
                     </button>
                   </div>
-                  <h3 id="add-book-dialog-title" className="font-serif text-xl sm:text-2xl font-semibold text-ink-primary mt-1.5">
+                  <h3 id="add-book-dialog-title" className="font-serif text-2xl font-semibold text-ink-primary mt-2">
                     {generalStep === 1 ? 'Book Information' : 'Copy Information & Condition'}
                   </h3>
                   <p className="text-xs text-ink-muted mt-0.5">
@@ -817,7 +815,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
                         Copy Type
                       </label>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="grid grid-cols-2 gap-3 text-xs">
                         {[
                           { id: 'original' as GeneralBookType, label: 'Original Copy', desc: 'Authored in original language' },
                           { id: 'translated' as GeneralBookType, label: 'Translated Copy', desc: 'Translated from another language' },
@@ -829,14 +827,14 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                               setGeneralType(item.id);
                               setFormError(null);
                             }}
-                            className={`p-2.5 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
+                            className={`p-3 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
                               generalType === item.id
                                 ? 'bg-brand text-white border-brand shadow-sm font-semibold'
                                 : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
                             }`}
                           >
-                            <p className="font-semibold text-xs">{item.label}</p>
-                            <p className={`text-[10px] mt-0.5 ${generalType === item.id ? 'text-white/80' : 'text-ink-muted'}`}>
+                            <p className="font-semibold text-xs sm:text-sm">{item.label}</p>
+                            <p className={`text-[11px] mt-0.5 ${generalType === item.id ? 'text-white/80' : 'text-ink-muted'}`}>
                               {item.desc}
                             </p>
                           </button>
@@ -941,7 +939,6 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                     ) : (
                       /* Translated Copy: Original Author in a single line, Translator + Translation Language in a single line */
                       <div className="space-y-3.5">
-                        {/* 1. Original Author (Single Line) */}
                         <div>
                           <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
                             Original Author <span className="text-red-500">*</span>
@@ -956,7 +953,6 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                           />
                         </div>
 
-                        {/* 2. Translator + Translation Language (Single Line, 2 Columns) */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
@@ -1002,13 +998,13 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
                         Genre / Category <span className="text-red-500">*</span>
                       </label>
-                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 text-xs">
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-xs">
                         {CATEGORY_OPTIONS.map((cat) => (
                           <button
                             key={cat}
                             type="button"
                             onClick={() => setCategory(cat)}
-                            className={`min-h-[38px] py-1.5 px-2 rounded-xl border text-center transition font-medium cursor-pointer touch-target-44 ${
+                            className={`min-h-[40px] py-2 px-2.5 rounded-xl border text-center transition font-medium cursor-pointer touch-target-44 ${
                               category === cat
                                 ? 'bg-brand text-white border-brand shadow-sm font-semibold'
                                 : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
@@ -1036,7 +1032,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                     </div>
 
                     {/* Step 1 Actions */}
-                    <div className="pt-3 border-t border-surface-border flex items-center justify-between gap-3">
+                    <div className="pt-4 border-t border-surface-border flex items-center justify-between gap-3">
                       <button
                         type="button"
                         onClick={() => setClassification(null)}
@@ -1046,7 +1042,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
+                        className="px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
                       >
                         <span>Continue to Copy Info</span>
                         <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
@@ -1058,29 +1054,32 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                 {/* GENERAL STEP 2: COPY INFORMATION */}
                 {generalStep === 2 && (
                   <form onSubmit={handleFinalSubmit} className="space-y-4">
-                    {/* Book Condition (Required) */}
+                    {/* Book Condition (2x2 Grid) */}
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
                         Book Condition <span className="text-red-500">*</span>
                       </label>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        {CONDITION_OPTIONS.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => setCondition(c.id)}
-                            className={`p-2.5 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
-                              condition === c.id
-                                ? 'bg-brand text-white border-brand shadow-sm font-semibold'
-                                : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
-                            }`}
-                          >
-                            <p className="font-semibold">{c.label}</p>
-                            <p className={`text-[11px] mt-0.5 ${condition === c.id ? 'text-white/80' : 'text-ink-muted'}`}>
-                              {c.desc}
-                            </p>
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        {CONDITION_OPTIONS.map((c) => {
+                          const isSelected = condition === c.id;
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => setCondition(c.id)}
+                              className={`p-3 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
+                                isSelected
+                                  ? 'bg-brand text-white border-brand shadow-sm font-semibold'
+                                  : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
+                              }`}
+                            >
+                              <p className="font-semibold text-xs sm:text-sm">{c.label}</p>
+                              <p className={`text-[11px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-ink-muted'}`}>
+                                {c.desc}
+                              </p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1089,7 +1088,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
                         Availability <span className="text-red-500">*</span>
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                         {AVAILABILITY_OPTIONS.map((a) => {
                           const IconComp = a.icon;
                           const isSelected = availability === a.id;
@@ -1098,16 +1097,16 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                               key={a.id}
                               type="button"
                               onClick={() => setAvailability(a.id)}
-                              className={`p-2.5 rounded-xl border text-left transition cursor-pointer touch-target-44 flex sm:flex-col items-center sm:items-start gap-2.5 ${
+                              className={`p-3.5 rounded-xl border text-left transition cursor-pointer touch-target-44 flex sm:flex-col items-center sm:items-start gap-2.5 ${
                                 isSelected
                                   ? 'bg-brand text-white border-brand shadow-sm font-semibold'
                                   : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
                               }`}
                             >
-                              <HugeiconsIcon icon={IconComp} size={18} className={isSelected ? 'text-white' : 'text-brand'} />
+                              <HugeiconsIcon icon={IconComp} size={20} className={isSelected ? 'text-white' : 'text-brand'} />
                               <div>
-                                <p className="font-semibold text-xs">{a.label}</p>
-                                <p className={`text-[10px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-ink-muted'}`}>
+                                <p className="font-semibold text-xs sm:text-sm">{a.label}</p>
+                                <p className={`text-[11px] mt-0.5 leading-snug ${isSelected ? 'text-white/80' : 'text-ink-muted'}`}>
                                   {a.desc}
                                 </p>
                               </div>
@@ -1119,37 +1118,39 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
 
                     {/* Upload Book Cover (Required) */}
                     <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5 flex items-center justify-between">
-                        <span>Upload Book Cover <span className="text-red-500">*</span></span>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-ink-secondary">
+                          Upload Cover Image <span className="text-red-500">*</span>
+                        </label>
                         {coverUrl && (
                           <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
                             Cover photo ready
                           </span>
                         )}
-                      </label>
+                      </div>
 
                       {coverUrl ? (
-                        <div className="p-3 bg-surface-subtle rounded-2xl border border-brand/40 shadow-sm flex items-center gap-3.5">
+                        <div className="p-3.5 bg-surface-subtle rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
                           <img
                             src={coverUrl}
                             alt="Book cover preview"
-                            className="w-14 h-20 object-cover rounded-xl shadow-sm border border-surface-border flex-shrink-0"
+                            className="w-16 h-20 object-cover rounded-xl shadow-sm border border-surface-border flex-shrink-0"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-ink-primary truncate">
+                            <p className="text-sm font-semibold text-ink-primary truncate">
                               {isCustomUploaded ? 'Custom Photo Uploaded' : 'Catalog / Sample Cover Selected'}
                             </p>
-                            <p className="text-[11px] text-ink-muted mt-0.5">
-                              {isCustomUploaded ? 'From your device' : 'Ready to be saved with your physical copy'}
+                            <p className="text-xs text-ink-muted mt-0.5">
+                              From your device
                             </p>
                             <div className="flex items-center gap-2 mt-2">
                               <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="text-xs font-medium text-brand hover:text-brand-dark bg-brand/10 px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                className="text-xs font-semibold text-brand hover:text-brand-dark bg-brand/10 hover:bg-brand/15 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer touch-target-44"
                               >
-                                <HugeiconsIcon icon={Upload01Icon} size={12} />
+                                <HugeiconsIcon icon={Upload01Icon} size={13} />
                                 <span>Replace Photo</span>
                               </button>
                               <button
@@ -1158,9 +1159,9 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                                   setCoverUrl('');
                                   setIsCustomUploaded(false);
                                 }}
-                                className="text-xs font-medium text-red-500 hover:text-red-700 px-2 py-1 flex items-center gap-1 transition cursor-pointer"
+                                className="text-xs font-medium text-red-500 hover:text-red-700 px-2 py-1 flex items-center gap-1 transition cursor-pointer touch-target-44"
                               >
-                                <HugeiconsIcon icon={Delete02Icon} size={12} />
+                                <HugeiconsIcon icon={Delete02Icon} size={13} />
                                 <span>Remove</span>
                               </button>
                             </div>
@@ -1183,10 +1184,10 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             <span className="text-[9px] font-semibold mt-0.5 text-brand uppercase tracking-wider">Cover</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-ink-primary">
+                            <p className="text-xs sm:text-sm font-semibold text-ink-primary">
                               Upload a photo of your book cover
                             </p>
-                            <p className="text-[11px] text-ink-muted mt-1 leading-normal">
+                            <p className="text-[11px] text-ink-muted mt-0.5 leading-normal">
                               Click to browse or drag & drop (PNG, JPG, WEBP up to 5MB)
                             </p>
                           </div>
@@ -1195,7 +1196,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                     </div>
 
                     {/* Step 2 Actions */}
-                    <div className="pt-3 border-t border-surface-border flex items-center justify-between gap-3">
+                    <div className="pt-4 border-t border-surface-border flex items-center justify-between gap-3">
                       <button
                         type="button"
                         onClick={() => setGeneralStep(1)}
@@ -1206,7 +1207,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
+                        className="px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
                       >
                         <HugeiconsIcon icon={BookOpen01Icon} size={15} />
                         <span>List Book to Circle</span>
@@ -1217,36 +1218,32 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
               </div>
             ) : classification === 'academic' ? (
               /* ─────────────────────────────────────────────────────────────
-                  PATH 2: ACADEMIC BOOK MULTI-STEP FLOW (3 STEPS, DONATION ONLY)
+                  PATH 2: ACADEMIC BOOK FLOW (STREAMLINED 2-STEP, DONATION ONLY)
               ───────────────────────────────────────────────────────────── */
               <div>
                 {/* Header & Step Indicator */}
-                <div className="pb-4 border-b border-surface-border mb-4 pr-10">
+                <div className="pb-4 border-b border-surface-border mb-5 pr-10">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                      Academic Donation · Step {academicStep} of 3
+                      Academic Donation · Step {academicStep} of 2
                     </span>
                     <button
                       type="button"
                       onClick={() => setClassification(null)}
                       className="text-xs text-ink-muted hover:text-ink-primary font-medium hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      <HugeiconsIcon icon={ArrowLeft01Icon} size={12} />
+                      <HugeiconsIcon icon={ArrowLeft01Icon} size={13} />
                       <span>Switch Type</span>
                     </button>
                   </div>
-                  <h3 id="add-book-dialog-title" className="font-serif text-xl sm:text-2xl font-semibold text-ink-primary mt-1.5">
+                  <h3 id="add-book-dialog-title" className="font-serif text-2xl font-semibold text-ink-primary mt-2">
                     {academicStep === 1
                       ? 'Academic Book & Education Level'
-                      : academicStep === 2
-                      ? `${educationLevel} Specific Information`
                       : 'Copy Condition & Donation'}
                   </h3>
                   <p className="text-xs text-ink-muted mt-0.5">
                     {academicStep === 1
-                      ? 'Specify education tier, book title, and author/editor.'
-                      : academicStep === 2
-                      ? 'Provide syllabus or course details for students.'
+                      ? 'Specify education tier, book title, author, and curricular information.'
                       : 'Review donation policy, set physical condition and book cover.'}
                   </p>
                 </div>
@@ -1257,7 +1254,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                   </div>
                 )}
 
-                {/* ACADEMIC STEP 1: BASIC BOOK INFO */}
+                {/* ACADEMIC STEP 1: TEXTBOOK & CURRICULAR INFO */}
                 {academicStep === 1 && (
                   <form onSubmit={handleAcademicStep1Continue} className="space-y-4">
                     {/* Education Level (Required) */}
@@ -1379,6 +1376,96 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       />
                     </div>
 
+                    {/* Subject Field */}
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
+                        Subject <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={academicSubject}
+                        onChange={(e) => setAcademicSubject(e.target.value)}
+                        placeholder="e.g. General Science, Mathematics, Physics, Chemistry, Economics"
+                        className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
+                      />
+                    </div>
+
+                    {/* Smart Adaptive Curricular Field */}
+                    <div>
+                      {educationLevel === 'School' && (
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
+                            Class / Grade <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={schoolGrade}
+                            onChange={(e) => setSchoolGrade(e.target.value)}
+                            placeholder="e.g. Class 9, Class 10, Grade 11, O Level, Year 8"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
+                          />
+                        </div>
+                      )}
+
+                      {educationLevel === 'College' && (
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
+                            College Group / Stream <span className="text-red-500">*</span>
+                          </label>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            {(['Science', 'Business Studies', 'Humanities'] as CollegeAcademicGroup[]).map((group) => (
+                              <button
+                                key={group}
+                                type="button"
+                                onClick={() => setCollegeGroup(group)}
+                                className={`min-h-[42px] py-2 px-2 rounded-xl border text-center transition font-semibold cursor-pointer touch-target-44 ${
+                                  collegeGroup === group
+                                    ? 'bg-brand text-white border-brand shadow-sm'
+                                    : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
+                                }`}
+                              >
+                                {group}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {educationLevel === 'University' && (
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
+                            Department & Course <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={universityDepartment}
+                            onChange={(e) => setUniversityDepartment(e.target.value)}
+                            placeholder="e.g. Computer Science (CSE 101), Law, BBA, Economics"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
+                          />
+                        </div>
+                      )}
+
+                      {educationLevel === 'Professional' && (
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
+                            Professional Field / Track <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={professionalField}
+                            onChange={(e) => setProfessionalField(e.target.value)}
+                            placeholder="e.g. Chartered Accountancy (CA), Medical / USMLE, ACCA, Bar, PMP"
+                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
+                          />
+                        </div>
+                      )}
+                    </div>
+
                     {/* Edition (Optional) */}
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5 flex items-center justify-between">
@@ -1395,7 +1482,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                     </div>
 
                     {/* Step 1 Actions */}
-                    <div className="pt-3 border-t border-surface-border flex items-center justify-between gap-3">
+                    <div className="pt-4 border-t border-surface-border flex items-center justify-between gap-3">
                       <button
                         type="button"
                         onClick={() => setClassification(null)}
@@ -1405,171 +1492,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
-                      >
-                        <span>Continue to Course Info</span>
-                        <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {/* ACADEMIC STEP 2: DYNAMIC EDUCATION-SPECIFIC INFO */}
-                {academicStep === 2 && (
-                  <form onSubmit={handleAcademicStep2Continue} className="space-y-4">
-                    {/* Dynamic Form: School */}
-                    {educationLevel === 'School' && (
-                      <div className="space-y-3.5">
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
-                            Class / Grade <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={schoolGrade}
-                            onChange={(e) => setSchoolGrade(e.target.value)}
-                            placeholder="e.g. Class 9, Grade 10, O Level, Year 8"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
-                            Subject <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={schoolSubject}
-                            onChange={(e) => setSchoolSubject(e.target.value)}
-                            placeholder="e.g. General Science, Mathematics, English, History"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Dynamic Form: College (No Department field) */}
-                    {educationLevel === 'College' && (
-                      <div className="space-y-3.5">
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
-                            Group <span className="text-red-500">*</span>
-                          </label>
-                          <div className="grid grid-cols-3 gap-2 text-xs">
-                            {(['Science', 'Business Studies', 'Humanities'] as CollegeAcademicGroup[]).map((group) => (
-                              <button
-                                key={group}
-                                type="button"
-                                onClick={() => setCollegeGroup(group)}
-                                className={`min-h-[44px] py-2 px-2 rounded-xl border text-center transition font-semibold cursor-pointer touch-target-44 ${
-                                  collegeGroup === group
-                                    ? 'bg-brand text-white border-brand shadow-sm'
-                                    : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
-                                }`}
-                              >
-                                {group}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
-                            Subject <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={collegeSubject}
-                            onChange={(e) => setCollegeSubject(e.target.value)}
-                            placeholder="e.g. Physics 1st Paper, Accounting, Economics"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Dynamic Form: University */}
-                    {educationLevel === 'University' && (
-                      <div className="space-y-3.5">
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
-                            Department <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={universityDepartment}
-                            onChange={(e) => setUniversityDepartment(e.target.value)}
-                            placeholder="e.g. Computer Science & Engineering, Law, Economics"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5 flex items-center justify-between">
-                            <span>Course Name</span>
-                            <span className="text-[11px] text-ink-muted normal-case font-normal">(Optional)</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={universityCourse}
-                            onChange={(e) => setUniversityCourse(e.target.value)}
-                            placeholder="e.g. Algorithms & Complexity, Constitutional Law"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Dynamic Form: Professional (No forced Department field) */}
-                    {educationLevel === 'Professional' && (
-                      <div className="space-y-3.5">
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
-                            Professional Field / Specialization <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={professionalField}
-                            onChange={(e) => setProfessionalField(e.target.value)}
-                            placeholder="e.g. Chartered Accountancy (CA), Medical / USMLE, Law / Bar, PMP"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
-                            Subject or Course Name <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={professionalSubject}
-                            onChange={(e) => setProfessionalSubject(e.target.value)}
-                            placeholder="e.g. Financial Audit, Pathology, Corporate Taxation"
-                            className="w-full px-3.5 py-2.5 bg-surface-subtle rounded-xl border border-surface-border text-xs sm:text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Step 2 Actions */}
-                    <div className="pt-3 border-t border-surface-border flex items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setAcademicStep(1)}
-                        className="px-4 py-2.5 rounded-xl border border-surface-border text-ink-secondary hover:bg-surface-subtle text-xs font-semibold transition flex items-center gap-1 cursor-pointer touch-target-44"
-                      >
-                        <HugeiconsIcon icon={ArrowLeft01Icon} size={14} />
-                        <span>Back</span>
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
+                        className="px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
                       >
                         <span>Continue to Copy Info</span>
                         <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
@@ -1578,13 +1501,13 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                   </form>
                 )}
 
-                {/* ACADEMIC STEP 3: COPY INFORMATION & DONATION LOCK */}
-                {academicStep === 3 && (
+                {/* ACADEMIC STEP 2: COPY INFORMATION & DONATION LOCK */}
+                {academicStep === 2 && (
                   <form onSubmit={handleFinalSubmit} className="space-y-4">
                     {/* Fixed Availability Banner (Policy Enforced) */}
                     <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-left">
                       <div className="flex items-center gap-2 text-emerald-800 font-bold">
-                        <HugeiconsIcon icon={GiftIcon} size={16} />
+                        <HugeiconsIcon icon={GiftIcon} size={18} />
                         <span>Availability: Fixed to For Donation</span>
                       </div>
                       <p className="text-ink-secondary mt-1 text-[11px] leading-relaxed">
@@ -1592,65 +1515,70 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </p>
                     </div>
 
-                    {/* Book Condition (Required) */}
+                    {/* Book Condition (2x2 Grid) */}
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
                         Book Condition <span className="text-red-500">*</span>
                       </label>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        {CONDITION_OPTIONS.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => setCondition(c.id)}
-                            className={`p-2.5 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
-                              condition === c.id
-                                ? 'bg-brand text-white border-brand shadow-sm font-semibold'
-                                : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
-                            }`}
-                          >
-                            <p className="font-semibold">{c.label}</p>
-                            <p className={`text-[11px] mt-0.5 ${condition === c.id ? 'text-white/80' : 'text-ink-muted'}`}>
-                              {c.desc}
-                            </p>
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        {CONDITION_OPTIONS.map((c) => {
+                          const isSelected = condition === c.id;
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => setCondition(c.id)}
+                              className={`p-3 rounded-xl border text-left transition cursor-pointer touch-target-44 ${
+                                isSelected
+                                  ? 'bg-brand text-white border-brand shadow-sm font-semibold'
+                                  : 'bg-surface-subtle hover:bg-surface-card text-ink-secondary border-surface-border'
+                              }`}
+                            >
+                              <p className="font-semibold text-xs sm:text-sm">{c.label}</p>
+                              <p className={`text-[11px] mt-0.5 ${isSelected ? 'text-white/80' : 'text-ink-muted'}`}>
+                                {c.desc}
+                              </p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
                     {/* Upload Book Cover (Required) */}
                     <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5 flex items-center justify-between">
-                        <span>Upload Book Cover <span className="text-red-500">*</span></span>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-ink-secondary">
+                          Upload Book Cover <span className="text-red-500">*</span>
+                        </label>
                         {coverUrl && (
                           <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
                             <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
                             Cover photo ready
                           </span>
                         )}
-                      </label>
+                      </div>
 
                       {coverUrl ? (
-                        <div className="p-3 bg-surface-subtle rounded-2xl border border-brand/40 shadow-sm flex items-center gap-3.5">
+                        <div className="p-3.5 bg-surface-subtle rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
                           <img
                             src={coverUrl}
                             alt="Book cover preview"
-                            className="w-14 h-20 object-cover rounded-xl shadow-sm border border-surface-border flex-shrink-0"
+                            className="w-16 h-20 object-cover rounded-xl shadow-sm border border-surface-border flex-shrink-0"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-ink-primary truncate">
+                            <p className="text-sm font-semibold text-ink-primary truncate">
                               {isCustomUploaded ? 'Custom Photo Uploaded' : 'Sample Cover Selected'}
                             </p>
-                            <p className="text-[11px] text-ink-muted mt-0.5">
-                              Ready to be saved with textbook donation listing
+                            <p className="text-xs text-ink-muted mt-0.5">
+                              From your device
                             </p>
                             <div className="flex items-center gap-2 mt-2">
                               <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="text-xs font-medium text-brand hover:text-brand-dark bg-brand/10 px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                className="text-xs font-semibold text-brand hover:text-brand-dark bg-brand/10 hover:bg-brand/15 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer touch-target-44"
                               >
-                                <HugeiconsIcon icon={Upload01Icon} size={12} />
+                                <HugeiconsIcon icon={Upload01Icon} size={13} />
                                 <span>Replace Photo</span>
                               </button>
                               <button
@@ -1659,9 +1587,9 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                                   setCoverUrl('');
                                   setIsCustomUploaded(false);
                                 }}
-                                className="text-xs font-medium text-red-500 hover:text-red-700 px-2 py-1 flex items-center gap-1 transition cursor-pointer"
+                                className="text-xs font-medium text-red-500 hover:text-red-700 px-2 py-1 flex items-center gap-1 transition cursor-pointer touch-target-44"
                               >
-                                <HugeiconsIcon icon={Delete02Icon} size={12} />
+                                <HugeiconsIcon icon={Delete02Icon} size={13} />
                                 <span>Remove</span>
                               </button>
                             </div>
@@ -1684,10 +1612,10 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                             <span className="text-[9px] font-semibold mt-0.5 text-brand uppercase tracking-wider">Cover</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-ink-primary">
+                            <p className="text-xs sm:text-sm font-semibold text-ink-primary">
                               Upload a photo of textbook cover
                             </p>
-                            <p className="text-[11px] text-ink-muted mt-1 leading-normal">
+                            <p className="text-[11px] text-ink-muted mt-0.5 leading-normal">
                               Click to browse from device or drag & drop photo
                             </p>
                           </div>
@@ -1695,11 +1623,11 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       )}
                     </div>
 
-                    {/* Step 3 Actions */}
-                    <div className="pt-3 border-t border-surface-border flex items-center justify-between gap-3">
+                    {/* Step 2 Actions */}
+                    <div className="pt-4 border-t border-surface-border flex items-center justify-between gap-3">
                       <button
                         type="button"
-                        onClick={() => setAcademicStep(2)}
+                        onClick={() => setAcademicStep(1)}
                         className="px-4 py-2.5 rounded-xl border border-surface-border text-ink-secondary hover:bg-surface-subtle text-xs font-semibold transition flex items-center gap-1 cursor-pointer touch-target-44"
                       >
                         <HugeiconsIcon icon={ArrowLeft01Icon} size={14} />
@@ -1707,7 +1635,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
+                        className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer touch-target-44"
                       >
                         <HugeiconsIcon icon={GiftIcon} size={15} />
                         <span>Donate Academic Book</span>
