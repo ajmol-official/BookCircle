@@ -318,11 +318,10 @@ export const WritersBrowsePage: React.FC<WritersBrowsePageProps> = ({
             <button
               type="button"
               onClick={() => setQuickFilter('all')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer active:scale-95 ${
-                quickFilter === 'all'
-                  ? 'bg-brand text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
-              }`}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer active:scale-95 ${quickFilter === 'all'
+                ? 'bg-brand text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
+                }`}
             >
               All Authors ({overallMetrics.totalAuthors})
             </button>
@@ -330,11 +329,10 @@ export const WritersBrowsePage: React.FC<WritersBrowsePageProps> = ({
             <button
               type="button"
               onClick={() => setQuickFilter('copies')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer active:scale-95 flex items-center gap-1.5 ${
-                quickFilter === 'copies'
-                  ? 'bg-brand text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
-              }`}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer active:scale-95 flex items-center gap-1.5 ${quickFilter === 'copies'
+                ? 'bg-brand text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
+                }`}
             >
               <span className={`w-1.5 h-1.5 rounded-full ${quickFilter === 'copies' ? 'bg-white' : 'bg-brand'}`} />
               <span>With Available Copies ({overallMetrics.authorsWithCopies})</span>
@@ -343,11 +341,10 @@ export const WritersBrowsePage: React.FC<WritersBrowsePageProps> = ({
             <button
               type="button"
               onClick={() => setQuickFilter('verified')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer active:scale-95 flex items-center gap-1.5 ${
-                quickFilter === 'verified'
-                  ? 'bg-brand text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
-              }`}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer active:scale-95 flex items-center gap-1.5 ${quickFilter === 'verified'
+                ? 'bg-brand text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
+                }`}
             >
               <HugeiconsIcon
                 icon={CheckmarkBadge01Icon}
@@ -383,11 +380,10 @@ export const WritersBrowsePage: React.FC<WritersBrowsePageProps> = ({
             <button
               type="button"
               onClick={() => setIsFilterDrawerOpen(true)}
-              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl border text-xs font-semibold shadow-2xs transition active:scale-95 flex-shrink-0 cursor-pointer ${
-                drawerFiltersCount > 0
-                  ? 'border-brand bg-brand/10 text-brand ring-1 ring-brand/30'
-                  : 'border-slate-200/90 bg-slate-50 text-slate-700 hover:bg-slate-100'
-              }`}
+              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl border text-xs font-semibold shadow-2xs transition active:scale-95 flex-shrink-0 cursor-pointer ${drawerFiltersCount > 0
+                ? 'border-brand bg-brand/10 text-brand ring-1 ring-brand/30'
+                : 'border-slate-200/90 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                }`}
             >
               <HugeiconsIcon icon={FilterHorizontalIcon} size={15} className="text-brand" />
               <span>More Filters</span>
@@ -531,11 +527,10 @@ export const WritersBrowsePage: React.FC<WritersBrowsePageProps> = ({
                       <button
                         type="button"
                         onClick={() => setSelectedNationality('all')}
-                        className={`p-2 rounded-xl text-xs text-left transition cursor-pointer border ${
-                          selectedNationality === 'all'
-                            ? 'bg-brand text-white border-brand font-semibold shadow-xs'
-                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                        }`}
+                        className={`p-2 rounded-xl text-xs text-left transition cursor-pointer border ${selectedNationality === 'all'
+                          ? 'bg-brand text-white border-brand font-semibold shadow-xs'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
                       >
                         All Origins
                       </button>
@@ -544,21 +539,19 @@ export const WritersBrowsePage: React.FC<WritersBrowsePageProps> = ({
                           key={opt.nationality}
                           type="button"
                           onClick={() => setSelectedNationality(opt.nationality)}
-                          className={`p-2 rounded-xl text-xs text-left transition cursor-pointer border flex items-center justify-between ${
-                            selectedNationality.toLowerCase() === opt.nationality.toLowerCase()
-                              ? 'bg-brand text-white border-brand font-semibold shadow-xs'
-                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                          }`}
+                          className={`p-2 rounded-xl text-xs text-left transition cursor-pointer border flex items-center justify-between ${selectedNationality.toLowerCase() === opt.nationality.toLowerCase()
+                            ? 'bg-brand text-white border-brand font-semibold shadow-xs'
+                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
                         >
                           <span className="truncate">
                             {opt.flag ? `${opt.flag} ` : ''}
                             {opt.nationality}
                           </span>
-                          <span className={`text-[10px] ml-1 ${
-                            selectedNationality.toLowerCase() === opt.nationality.toLowerCase()
-                              ? 'text-white/80'
-                              : 'text-slate-400'
-                          }`}>
+                          <span className={`text-[10px] ml-1 ${selectedNationality.toLowerCase() === opt.nationality.toLowerCase()
+                            ? 'text-white/80'
+                            : 'text-slate-400'
+                            }`}>
                             {opt.count}
                           </span>
                         </button>
@@ -587,11 +580,10 @@ export const WritersBrowsePage: React.FC<WritersBrowsePageProps> = ({
                         key={genre}
                         type="button"
                         onClick={() => setSelectedGenre(genre)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border ${
-                          selectedGenre === genre
-                            ? 'bg-brand text-white border-brand shadow-xs'
-                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border ${selectedGenre === genre
+                          ? 'bg-brand text-white border-brand shadow-xs'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
                       >
                         {genre}
                       </button>
