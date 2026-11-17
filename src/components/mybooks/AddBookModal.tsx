@@ -612,11 +612,11 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
             ACADEMIC DONATION CONFIRMATION MODAL (ACADEMIC BOOKS ONLY)
         ───────────────────────────────────────────────────────────── */}
         {showAcademicThankYou ? (
-          <div className="py-6 animate-in fade-in text-center max-w-md mx-auto">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-4 border border-emerald-200 shadow-sm">
-              <HugeiconsIcon icon={GiftIcon} size={32} />
+          <div className="py-6 animate-in fade-in text-center w-full max-w-lg mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-3 border border-emerald-200 shadow-sm">
+              <HugeiconsIcon icon={GiftIcon} size={28} />
             </div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+            <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200">
               Academic Donation Listed!
             </span>
             <h3 className="font-serif text-2xl font-semibold text-ink-primary mt-3">
@@ -629,7 +629,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
               <button
                 type="button"
                 onClick={handleModalClose}
-                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition active:scale-95 shadow-sm cursor-pointer touch-target-44"
+                className="w-full sm:w-auto px-8 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition active:scale-95 shadow-sm cursor-pointer touch-target-44"
               >
                 Done
               </button>
@@ -639,44 +639,69 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
           /* ─────────────────────────────────────────────────────────────
               POST-SUBMISSION READING STATUS POPUP (GENERAL BOOKS ONLY)
           ───────────────────────────────────────────────────────────── */
-          <div className="py-6 animate-in fade-in text-center max-w-md mx-auto">
-            <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand mx-auto flex items-center justify-center mb-4">
-              <HugeiconsIcon icon={BookOpen01Icon} size={30} />
+          <div className="py-4 sm:py-6 animate-in fade-in text-center w-full max-w-lg mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 mx-auto flex items-center justify-center mb-3 shadow-sm">
+              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={28} />
             </div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+            <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200">
               Book Added Successfully!
             </span>
-            <h3 className="font-serif text-2xl font-semibold text-ink-primary mt-3">
+            <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-ink-primary mt-2.5">
               Have you read this book already?
             </h3>
-            <p className="text-xs sm:text-sm text-ink-muted mt-1 leading-relaxed">
+            <p className="text-xs sm:text-sm text-ink-muted mt-1 leading-relaxed max-w-md mx-auto">
               Help organize your personal reading library. (Kept private on your profile).
             </p>
 
             <div className="mt-6 space-y-3 text-left">
               {[
-                { status: 'read' as UserReadingStatusValue, label: "Yes, I've read it.", desc: 'Finished reading this title' },
-                { status: 'reading' as UserReadingStatusValue, label: "I'm currently reading it.", desc: 'In progress on your nightstand' },
-                { status: 'want_to_read' as UserReadingStatusValue, label: "No, I haven't read it yet.", desc: 'Saved for later on your wishlist' },
+                {
+                  status: 'read' as UserReadingStatusValue,
+                  label: "Yes, I've read it.",
+                  desc: 'Finished reading this book',
+                  icon: CheckmarkCircle02Icon,
+                  boxClass: 'bg-emerald-50 text-emerald-600 border border-emerald-200/80 group-hover:bg-emerald-600 group-hover:text-white',
+                  activeText: 'group-hover:text-emerald-700',
+                },
+                {
+                  status: 'reading' as UserReadingStatusValue,
+                  label: "I'm currently reading it.",
+                  desc: 'In progress on your nightstand',
+                  icon: BookOpen01Icon,
+                  boxClass: 'bg-brand/10 text-brand border border-brand/20 group-hover:bg-brand group-hover:text-white',
+                  activeText: 'group-hover:text-brand',
+                },
+                {
+                  status: 'want_to_read' as UserReadingStatusValue,
+                  label: "No, I haven't read it yet.",
+                  desc: 'Saved for later on your wishlist',
+                  icon: Bookmark02Icon,
+                  boxClass: 'bg-amber-50 text-amber-700 border border-amber-200/80 group-hover:bg-amber-600 group-hover:text-white',
+                  activeText: 'group-hover:text-amber-800',
+                },
               ].map((item) => (
                 <button
                   key={item.status}
                   type="button"
                   onClick={() => handleReadingStatusSelect(item.status)}
-                  className="w-full p-4 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-surface-card hover:border-brand/40 transition flex items-center justify-between cursor-pointer group active:scale-[0.99] touch-target-44 shadow-sm"
+                  className="w-full p-3.5 sm:p-4 rounded-2xl border border-surface-border bg-surface-subtle hover:bg-white hover:border-brand/40 hover:shadow-md transition-all flex items-center justify-between cursor-pointer group active:scale-[0.99] touch-target-44"
                 >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center group-hover:bg-brand group-hover:text-white transition-colors flex-shrink-0">
-                      <HugeiconsIcon icon={BookOpen01Icon} size={20} />
+                  <div className="flex items-center gap-3.5 sm:gap-4 text-left min-w-0">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors shadow-xs ${item.boxClass}`}>
+                      <HugeiconsIcon icon={item.icon} size={22} />
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-ink-primary group-hover:text-brand transition-colors">
+                    <div className="flex flex-col justify-center min-w-0">
+                      <p className={`text-sm sm:text-base font-semibold text-ink-primary transition-colors leading-snug truncate ${item.activeText}`}>
                         {item.label}
                       </p>
-                      <p className="text-xs text-ink-muted">{item.desc}</p>
+                      <p className="text-xs text-ink-muted mt-0.5 leading-normal">
+                        {item.desc}
+                      </p>
                     </div>
                   </div>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={18} className="text-ink-muted group-hover:text-brand transition-colors" />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted group-hover:text-brand group-hover:translate-x-0.5 transition-all flex-shrink-0 ml-2">
+                    <HugeiconsIcon icon={ArrowRight01Icon} size={18} />
+                  </div>
                 </button>
               ))}
             </div>
