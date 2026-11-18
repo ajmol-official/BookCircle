@@ -325,6 +325,29 @@ export const initialAuthors: Author[] = [
     isClaimed: false,
     isVerified: false,
     followersCount: 1650
+  },
+  {
+    id: 'author-kazuo-ishiguro',
+    slug: 'kazuo-ishiguro',
+    name: 'Kazuo Ishiguro',
+    photo: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400',
+    nationality: 'British',
+    countryFlag: '🇬🇧',
+    profession: 'Novelist, Screenwriter & Nobel Laureate',
+    bio: 'Sir Kazuo Ishiguro OBE FRSA FRSL is a British novelist, screenwriter, and musician. He was awarded the Nobel Prize in Literature in 2017, praised by the Swedish Academy as a writer who, "in novels of great emotional force, has uncovered the abyss beneath our illusory sense of connection with the world." His acclaimed works include The Remains of the Day, Never Let Me Go, and Klara and the Sun.',
+    born: '1954',
+    birthPlace: 'Nagasaki, Japan',
+    literaryAchievements: [
+      'Nobel Prize in Literature (2017)',
+      'Booker Prize for Fiction (1989)',
+      'Order of the British Empire (OBE, 1995)',
+      'Knight Bachelor (2018)'
+    ],
+    notableWorks: ['The Remains of the Day', 'Never Let Me Go', 'Klara and the Sun'],
+    websiteUrl: 'https://www.nobelprize.org/prizes/literature/2017/ishiguro/biographical/',
+    isClaimed: false,
+    isVerified: true,
+    followersCount: 2840
   }
 ];
 

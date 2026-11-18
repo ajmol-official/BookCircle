@@ -638,6 +638,50 @@ export const canonicalCatalogBooks: CatalogBook[] = [
     publishedYear: '2001',
     synopsis: 'A fresh collection of ecstatic poetry exploring divine love, spiritual friendship, and human transcendence.',
     existingOwners: []
+  },
+
+  // ─── Kazuo Ishiguro ───
+  {
+    id: 'klara-and-the-sun',
+    title: 'Klara and the Sun',
+    author: 'Kazuo Ishiguro',
+    authorId: 'kazuo-ishiguro',
+    authorCountry: 'United Kingdom',
+    coverImage: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
+    rating: 4.7,
+    reviewsCount: 389,
+    category: 'Fiction',
+    publishedYear: '2021',
+    synopsis: 'Klara and the Sun, the first novel by Kazuo Ishiguro since he was awarded the Nobel Prize in Literature, tells the story of Klara, an Artificial Friend with outstanding observational qualities, who, from her place in the store, watches carefully the behavior of those who come in to browse, and of those who pass on the street outside. She remains hopeful that a customer will soon choose her.',
+    existingOwners: []
+  },
+  {
+    id: 'never-let-me-go',
+    title: 'Never Let Me Go',
+    author: 'Kazuo Ishiguro',
+    authorId: 'kazuo-ishiguro',
+    authorCountry: 'United Kingdom',
+    coverImage: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+    rating: 4.8,
+    reviewsCount: 512,
+    category: 'Fiction',
+    publishedYear: '2005',
+    synopsis: 'A dystopian masterpiece set in an ostensibly idyllic English boarding school where students grow up to discover the chilling, heartbreaking reality of their true existence and purpose.',
+    existingOwners: []
+  },
+  {
+    id: 'the-remains-of-the-day',
+    title: 'The Remains of the Day',
+    author: 'Kazuo Ishiguro',
+    authorId: 'kazuo-ishiguro',
+    authorCountry: 'United Kingdom',
+    coverImage: 'https://images.unsplash.com/photo-1476275466078-4007374efbbe?auto=format&fit=crop&q=80&w=800',
+    rating: 4.9,
+    reviewsCount: 640,
+    category: 'Fiction',
+    publishedYear: '1989',
+    synopsis: 'A profound and poignant portrait of the perfect English butler, Stevens, as he embarks on a motoring trip through the West Country and reflects upon a life dedicated to unquestioning service and missed love.',
+    existingOwners: []
   }
 ];
 

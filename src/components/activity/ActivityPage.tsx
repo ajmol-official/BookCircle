@@ -818,8 +818,14 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                       setSuggestTimeTarget(r);
                     }}
                     onSelectBook={(_title, id) => {
-                      if (id) {
-                        navigate(`/book/${id}`);
+                      const target = id || _title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      if (target) {
+                        navigate(`/book/${encodeURIComponent(target)}`);
+                      }
+                    }}
+                    onSelectRequester={(name) => {
+                      if (name) {
+                        navigate(`/reader/${encodeURIComponent(name)}`);
                       }
                     }}
                   />
@@ -869,8 +875,14 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                     }}
                     onMessage={(name, title) => onNavigateToMessages?.(name, title)}
                     onSelectBook={(_title, id) => {
-                      if (id) {
-                        navigate(`/book/${id}`);
+                      const target = id || _title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      if (target) {
+                        navigate(`/book/${encodeURIComponent(target)}`);
+                      }
+                    }}
+                    onSelectParticipant={(name) => {
+                      if (name) {
+                        navigate(`/reader/${encodeURIComponent(name)}`);
                       }
                     }}
                   />
@@ -1177,8 +1189,14 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                     }}
                     onMessage={(name, title) => onNavigateToMessages?.(name, title)}
                     onSelectBook={(_title, id) => {
-                      if (id) {
-                        navigate(`/book/${id}`);
+                      const target = id || _title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      if (target) {
+                        navigate(`/book/${encodeURIComponent(target)}`);
+                      }
+                    }}
+                    onSelectParticipant={(name) => {
+                      if (name) {
+                        navigate(`/reader/${encodeURIComponent(name)}`);
                       }
                     }}
                   />

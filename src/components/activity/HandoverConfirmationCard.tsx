@@ -235,7 +235,7 @@ export const HandoverConfirmationCard: React.FC<HandoverConfirmationCardProps> =
 
             {/* Row 2: Book Title in Serif */}
             <h4
-              onClick={() => onSelectBook?.(exchange.bookTitle, exchange.bookId)}
+              onClick={() => onSelectBook?.(exchange.bookTitle, exchange.catalogId || exchange.bookId)}
               className="font-serif text-base sm:text-lg font-bold text-slate-900 mt-0.5 sm:mt-1 truncate cursor-pointer hover:text-brand transition"
               title={exchange.bookTitle}
             >
@@ -248,13 +248,21 @@ export const HandoverConfirmationCard: React.FC<HandoverConfirmationCardProps> =
                 Handover Scheduled
               </span>
 
-              <span
-                onClick={() => partnerId && onSelectParticipant?.(partnerName, partnerId)}
-                className={`text-xs sm:text-[13px] text-slate-500 font-normal truncate ${
-                  partnerId && onSelectParticipant ? 'cursor-pointer hover:text-slate-800' : ''
-                }`}
-              >
-                · With {partnerName}
+              <span className="text-xs sm:text-[13px] text-slate-500 font-normal truncate">
+                · With{' '}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (partnerName) {
+                      onSelectParticipant?.(partnerName, partnerId);
+                    }
+                  }}
+                  className="font-semibold text-slate-700 hover:text-brand hover:underline cursor-pointer transition text-left inline"
+                  title={`View ${partnerName}'s profile & shelf`}
+                >
+                  {partnerName}
+                </button>
               </span>
 
               {/* If other party already confirmed first */}
