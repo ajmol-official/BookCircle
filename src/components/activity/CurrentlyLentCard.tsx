@@ -145,7 +145,7 @@ export const CurrentlyLentCard: React.FC<CurrentlyLentCardProps> = ({
             {/* Row 2: Book Title in Serif */}
             <h4
               onClick={() => onSelectBook?.(loan.bookTitle, loan.catalogId || loan.bookId)}
-              className="font-serif text-base sm:text-lg font-bold text-slate-900 mt-0.5 sm:mt-1 truncate cursor-pointer hover:text-brand transition"
+              className="font-serif text-base sm:text-lg font-semibold text-slate-900 mt-0.5 sm:mt-1 truncate cursor-pointer hover:text-brand transition"
               title={loan.bookTitle}
             >
               {loan.bookTitle}
