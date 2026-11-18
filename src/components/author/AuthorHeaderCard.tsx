@@ -95,8 +95,25 @@ export const AuthorHeaderCard: React.FC<AuthorHeaderCardProps> = ({
                   {author.name}
                 </h1>
                 {author.isVerified && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 text-brand text-xs font-semibold border border-purple-200/80">
-                    <HugeiconsIcon icon={SparklesIcon} size={12} className="text-brand" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-brand text-xs font-semibold border border-purple-200/80">
+                    <svg
+                      className="w-3.5 h-3.5 flex-shrink-0 text-brand"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M18.9905 19H19M18.9905 19C18.3678 19.6175 17.2393 19.4637 16.4479 19.4637C15.4765 19.4637 15.0087 19.6537 14.3154 20.347C13.7251 20.9374 12.9337 22 12 22C11.0663 22 10.2749 20.9374 9.68457 20.347C8.99128 19.6537 8.52349 19.4637 7.55206 19.4637C6.76068 19.4637 5.63218 19.6175 5.00949 19C4.38181 18.3776 4.53628 17.2444 4.53628 16.4479C4.53628 15.4414 4.31616 14.9786 3.59938 14.2618C2.53314 13.1956 2.00002 12.6624 2 12C2.00001 11.3375 2.53312 10.8044 3.59935 9.73817C4.2392 9.09832 4.53628 8.46428 4.53628 7.55206C4.53628 6.76065 4.38249 5.63214 5 5.00944C5.62243 4.38178 6.7556 4.53626 7.55208 4.53626C8.46427 4.53626 9.09832 4.2392 9.73815 3.59937C10.8044 2.53312 11.3375 2 12 2C12.6625 2 13.1956 2.53312 14.2618 3.59937C14.9015 4.23907 15.5355 4.53626 16.4479 4.53626C17.2393 4.53626 18.3679 4.38247 18.9906 5C19.6182 5.62243 19.4637 6.75559 19.4637 7.55206C19.4637 8.55858 19.6839 9.02137 20.4006 9.73817C21.4669 10.8044 22 11.3375 22 12C22 12.6624 21.4669 13.1956 20.4006 14.2618C19.6838 14.9786 19.4637 15.4414 19.4637 16.4479C19.4637 17.2444 19.6182 18.3776 18.9905 19Z"
+                        fill="currentColor"
+                      />
+                      <path
+                        d="M8.5 12.5L10.8 14.8L15.5 9.5"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                     <span>Verified Author</span>
                   </span>
                 )}
@@ -118,7 +135,7 @@ export const AuthorHeaderCard: React.FC<AuthorHeaderCardProps> = ({
                   className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-purple-50 text-brand border border-purple-200 text-xs sm:text-sm font-semibold hover:bg-purple-100 transition shadow-xs active:scale-95 cursor-pointer"
                 >
                   <HugeiconsIcon icon={SparklesIcon} size={15} />
-                  <span>Edit Writer Profile</span>
+                  <span>Edit Profile</span>
                 </button>
               ) : (
                 <button
