@@ -95,9 +95,13 @@ export const AuthorHeaderCard: React.FC<AuthorHeaderCardProps> = ({
                   {author.name}
                 </h1>
                 {author.isVerified && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-brand text-xs font-semibold border border-purple-200/80">
+                  <span
+                    title="Verified Author"
+                    aria-label="Verified Author"
+                    className="inline-flex items-center justify-center flex-shrink-0 text-[#0F5BFF]"
+                  >
                     <svg
-                      className="w-3.5 h-3.5 flex-shrink-0 text-brand"
+                      className="w-6 h-6 flex-shrink-0"
                       viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
@@ -114,7 +118,6 @@ export const AuthorHeaderCard: React.FC<AuthorHeaderCardProps> = ({
                         strokeLinejoin="round"
                       />
                     </svg>
-                    <span>Verified Author</span>
                   </span>
                 )}
               </div>

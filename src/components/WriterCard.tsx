@@ -91,7 +91,7 @@ export const WriterCard: React.FC<WriterCardProps> = ({
             {author.isVerified && (
               <span
                 title="Verified Author"
-                className="inline-flex items-center justify-center flex-shrink-0 text-emerald-600"
+                className="inline-flex items-center justify-center flex-shrink-0 text-[#0F5BFF]"
                 aria-label="Verified Author"
               >
                 <svg
