@@ -97,7 +97,7 @@ export const ReaderCopyCard: React.FC<ReaderCopyCardProps> = ({
               <button
                 type="button"
                 onClick={() => onRequestBorrow(copy.bookCopy, copy.name)}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                className="h-8 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
                 title="Claim this free community copy"
               >
                 <HugeiconsIcon icon={GiftIcon} size={14} />
@@ -107,7 +107,7 @@ export const ReaderCopyCard: React.FC<ReaderCopyCardProps> = ({
               <button
                 type="button"
                 onClick={() => onRequestBorrow(copy.bookCopy, copy.name)}
-                className="px-3.5 py-1.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                className="h-8 px-3.5 rounded-lg bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
                 title="Request to borrow this copy"
               >
                 <HugeiconsIcon icon={BookOpen01Icon} size={14} />
@@ -119,7 +119,7 @@ export const ReaderCopyCard: React.FC<ReaderCopyCardProps> = ({
           <button
             type="button"
             disabled
-            className="w-full py-2 rounded-xl bg-purple-50/80 text-brand text-xs font-semibold text-center cursor-not-allowed"
+            className="w-full h-8 rounded-lg bg-purple-50/80 text-brand text-xs font-semibold flex items-center justify-center cursor-not-allowed"
           >
             Available Soon
           </button>
@@ -127,7 +127,7 @@ export const ReaderCopyCard: React.FC<ReaderCopyCardProps> = ({
           <button
             type="button"
             disabled
-            className="w-full py-2 rounded-xl bg-slate-100 text-slate-400 text-xs font-medium text-center cursor-not-allowed"
+            className="w-full h-8 rounded-lg bg-slate-100 text-slate-400 text-xs font-medium flex items-center justify-center cursor-not-allowed"
           >
             Unavailable
           </button>
