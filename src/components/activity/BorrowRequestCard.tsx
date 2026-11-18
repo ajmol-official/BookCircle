@@ -22,31 +22,73 @@ export interface BorrowRequestCardProps {
 
 /**
  * Format schedule display into Figma-style pipe format:
- * e.g. "11:00 AM | Saturday | 23 Apr 2026"
+ * e.g. "Saturday | 11:00 AM | 23 Apr 2026"
  */
 function formatMeetupSchedule(dateStr?: string, timeStr?: string): string {
   const time = timeStr || '11:00 AM';
-  const rawDate = dateStr || 'Upcoming';
+  const rawDate = (dateStr || 'Upcoming').trim();
 
-  // If rawDate already contains day or pipe formatting, return clean combo
-  if (rawDate.includes('|')) {
-    return `${time} | ${rawDate}`;
+  // If rawDate already contains 3 pipe segments, return as-is
+  if (rawDate.split('|').length === 3) {
+    return rawDate;
   }
 
-  // Attempt parsing as a real date if formatted as ISO or standard date
-  const parsed = new Date(rawDate);
-  if (!isNaN(parsed.getTime()) && rawDate.includes('-')) {
-    const dayName = parsed.toLocaleDateString('en-US', { weekday: 'long' });
-    const formattedDay = parsed.toLocaleDateString('en-GB', {
+  // Handle relative keywords: "Tomorrow", "Today"
+  if (rawDate.toLowerCase() === 'tomorrow') {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const formattedDate = d.toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
     });
-    return `${time} | ${dayName} | ${formattedDay}`;
+    return `${weekday} | ${time} | ${formattedDate}`;
   }
 
-  // Fallback for conversational dates ("Tomorrow", "Saturday", "23 Apr")
-  return `${time} | ${rawDate}`;
+  if (rawDate.toLowerCase() === 'today') {
+    const d = new Date();
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const formattedDate = d.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+    return `${weekday} | ${time} | ${formattedDate}`;
+  }
+
+  // Attempt parsing as a real date (e.g. ISO format or "23 Apr 2026")
+  const parsed = new Date(rawDate);
+  if (!isNaN(parsed.getTime())) {
+    const weekday = parsed.toLocaleDateString('en-US', { weekday: 'long' });
+    const formattedDate = parsed.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+    return `${weekday} | ${time} | ${formattedDate}`;
+  }
+
+  // If it's a weekday name (e.g. "Saturday", "Sunday")
+  const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const matchedDay = weekdays.find((w) => w.toLowerCase() === rawDate.toLowerCase());
+  if (matchedDay) {
+    const now = new Date();
+    const currentDayIdx = now.getDay();
+    const targetDayIdx = weekdays.indexOf(matchedDay);
+    let diff = targetDayIdx - currentDayIdx;
+    if (diff <= 0) diff += 7;
+    now.setDate(now.getDate() + diff);
+    const formattedDate = now.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+    return `${matchedDay} | ${time} | ${formattedDate}`;
+  }
+
+  // Fallback
+  return `${rawDate} | ${time}`;
 }
 
 export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
@@ -112,11 +154,11 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
 
           {/* Action Trio (Desktop: inline right / Mobile: styled below) */}
           <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-2.5 sm:gap-3 w-full sm:w-auto pt-2 sm:pt-0">
-            {/* Suggest Different time Link */}
+            {/* Suggest Different time Link (Regular weight matching Figma) */}
             <button
               type="button"
               onClick={() => onSuggestDifferentTime(request)}
-              className="text-xs sm:text-sm font-semibold text-slate-700 hover:text-brand underline decoration-slate-300 hover:decoration-brand underline-offset-4 transition cursor-pointer w-full sm:w-auto text-center sm:text-left order-3 sm:order-1 py-1 sm:py-0"
+              className="text-xs sm:text-sm font-normal text-slate-600 hover:text-brand underline decoration-slate-300 hover:decoration-brand underline-offset-4 transition cursor-pointer w-full sm:w-auto text-center sm:text-left order-3 sm:order-1 py-1 sm:py-0"
               title="Propose a different date, time, or location"
             >
               Suggest Different time
