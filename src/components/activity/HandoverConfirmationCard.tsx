@@ -313,86 +313,89 @@ export const HandoverConfirmationCard: React.FC<HandoverConfirmationCardProps> =
             <HugeiconsIcon icon={Comment01Icon} size={18} />
           </button>
 
-          {/* State 2 Overflow Menu Button (Visible when Confirmed) */}
-          {isCurrentConfirmed && (
-            <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                onClick={() => setIsMenuOpen((prev) => !prev)}
-                className={`w-10 h-10 rounded-xl border transition flex items-center justify-center flex-shrink-0 active:scale-95 ${
-                  isMenuOpen
-                    ? 'border-brand text-brand bg-purple-50/50'
-                    : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                }`}
-                title="More options"
-                aria-label="More options"
-                aria-haspopup="menu"
-                aria-expanded={isMenuOpen}
+          {/* Overflow Menu Button [⋮] (Available in both unconfirmed and confirmed states) */}
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+              className={`w-10 h-10 rounded-xl border transition flex items-center justify-center flex-shrink-0 active:scale-95 ${
+                isMenuOpen
+                  ? 'border-brand text-brand bg-purple-50/50'
+                  : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+              }`}
+              title="More options"
+              aria-label="More options"
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
+            >
+              <HugeiconsIcon icon={MoreVerticalIcon} size={18} />
+            </button>
+
+            {/* Popover Dropdown */}
+            {isMenuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-1.5 px-1 z-30 animate-in fade-in zoom-in-95 duration-100"
               >
-                <HugeiconsIcon icon={MoreVerticalIcon} size={18} />
-              </button>
-
-              {/* Popover Dropdown */}
-              {isMenuOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-1.5 px-1 z-30 animate-in fade-in zoom-in-95 duration-100"
-                >
-                  {/* Option 1: Remind */}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={handleReminderClick}
-                    disabled={hasReminderBeenSent || isSendingReminder}
-                    className={`w-full px-3 py-2 text-left rounded-xl text-xs sm:text-sm font-medium flex items-center gap-2.5 transition ${
-                      hasReminderBeenSent || isSendingReminder
-                        ? 'text-slate-400 bg-slate-50 cursor-not-allowed'
-                        : 'text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <HugeiconsIcon icon={Notification01Icon} size={16} className="text-slate-500" />
-                    <div className="flex-1 min-w-0">
-                      <div>Remind {partnerName}</div>
-                      {hasReminderBeenSent && (
-                        <div className="text-[11px] text-slate-400 font-normal">Reminder sent</div>
-                      )}
-                    </div>
-                  </button>
-
-                  {/* Option 2: View Spot on Map */}
-                  {exchange.meetupSpot && (
+                {/* Option 1: Remind Partner (when confirmed, to confirm their side) */}
+                {isCurrentConfirmed && (
+                  <>
                     <button
                       type="button"
                       role="menuitem"
-                      onClick={handleSpotClick}
-                      className="w-full px-3 py-2 text-left rounded-xl text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition"
+                      onClick={handleReminderClick}
+                      disabled={hasReminderBeenSent || isSendingReminder}
+                      className={`w-full px-3 py-2 text-left rounded-xl text-xs sm:text-sm font-medium flex items-center gap-2.5 transition ${
+                        hasReminderBeenSent || isSendingReminder
+                          ? 'text-slate-400 bg-slate-50 cursor-not-allowed'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
                     >
-                      <HugeiconsIcon icon={Location01Icon} size={16} className="text-slate-500" />
-                      <div className="flex-1 min-w-0 truncate">
-                        <div>View Meetup Spot</div>
-                        <div className="text-[11px] text-slate-400 font-normal truncate">
-                          {exchange.meetupSpot}
-                        </div>
+                      <HugeiconsIcon icon={Notification01Icon} size={16} className="text-slate-500" />
+                      <div className="flex-1 min-w-0">
+                        <div>Remind {partnerName}</div>
+                        {hasReminderBeenSent && (
+                          <div className="text-[11px] text-slate-400 font-normal">Reminder sent</div>
+                        )}
                       </div>
                     </button>
-                  )}
+                    <div className="my-1 border-t border-slate-100" />
+                  </>
+                )}
 
-                  <div className="my-1 border-t border-slate-100" />
-
-                  {/* Option 3: Report Issue */}
+                {/* Option 2: View Spot on Map */}
+                {exchange.meetupSpot && (
                   <button
                     type="button"
                     role="menuitem"
-                    onClick={handleReportIssueClick}
-                    className="w-full px-3 py-2 text-left rounded-xl text-xs sm:text-sm font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition"
+                    onClick={handleSpotClick}
+                    className="w-full px-3 py-2 text-left rounded-xl text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition"
                   >
-                    <HugeiconsIcon icon={AlertCircleIcon} size={16} className="text-amber-600" />
-                    <span>Report an Issue</span>
+                    <HugeiconsIcon icon={Location01Icon} size={16} className="text-slate-500" />
+                    <div className="flex-1 min-w-0 truncate">
+                      <div>View Meetup Spot</div>
+                      <div className="text-[11px] text-slate-400 font-normal truncate">
+                        {exchange.meetupSpot}
+                      </div>
+                    </div>
                   </button>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+
+                <div className="my-1 border-t border-slate-100" />
+
+                {/* Option 3: Report Issue */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleReportIssueClick}
+                  className="w-full px-3 py-2 text-left rounded-xl text-xs sm:text-sm font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-2.5 transition"
+                >
+                  <HugeiconsIcon icon={AlertCircleIcon} size={16} className="text-amber-600" />
+                  <span>Report an Issue</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
