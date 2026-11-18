@@ -583,14 +583,25 @@ export const ClaimGiftModal: React.FC<ClaimGiftModalProps> = ({
                       </span>
                     </div>
 
-                    {/* Note */}
+                    {/* Thank-You Note (Editable) */}
                     <div>
-                      <span className="text-slate-500 font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">
-                        Your Thank-You Message
-                      </span>
-                      <p className="mt-1 text-slate-700 italic bg-white p-2.5 rounded-xl border border-emerald-200/60 text-xs">
-                        “{claimNote}”
-                      </p>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label
+                          htmlFor="claim-note-textarea"
+                          className="text-slate-500 font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]"
+                        >
+                          Your Thank-You Message to {selectedOwner.name}
+                        </label>
+                        <span className="text-[11px] text-slate-400 font-medium">Editable</span>
+                      </div>
+                      <textarea
+                        id="claim-note-textarea"
+                        rows={3}
+                        value={claimNote}
+                        onChange={(e) => setClaimNote(e.target.value)}
+                        placeholder={`Write a thank-you note to ${selectedOwner.name}...`}
+                        className="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand placeholder:text-slate-400 resize-none transition shadow-2xs leading-relaxed"
+                      />
                     </div>
                   </div>
 

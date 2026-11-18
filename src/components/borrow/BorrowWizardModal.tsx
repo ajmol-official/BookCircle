@@ -49,6 +49,9 @@ export interface BorrowWizardModalProps {
   onBorrowRequested?: (details: BorrowHandoverDetails) => void;
 }
 
+const getDefaultBorrowNote = (ownerName?: string) =>
+  `Hi ${ownerName || 'there'}, I'd love to borrow this book. Looking forward to meeting you and exchanging books!`;
+
 export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
   isOpen,
   book,
@@ -106,17 +109,19 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
   }, [activeTargetName, book]);
 
   const [selectedOwner, setSelectedOwner] = useState(owners[0]);
-  const [borrowNote, setBorrowNote] = useState(
-    'Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.'
+  const [borrowNote, setBorrowNote] = useState(() =>
+    getDefaultBorrowNote(owners[0]?.name)
   );
+  const [isNoteCustomized, setIsNoteCustomized] = useState(false);
 
   useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (owners[0]) {
       setSelectedOwner(owners[0]);
+      setBorrowNote(getDefaultBorrowNote(owners[0]?.name));
+      setIsNoteCustomized(false);
     }
-    setBorrowNote('Hi! I’ve been meaning to read this for ages - I’d take great care of it and return it on time.');
     setStep(1);
     setIsSuccess(false);
     setIsCustomTime(false);
@@ -287,7 +292,12 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
                   return (
                     <div
                       key={owner.id}
-                      onClick={() => setSelectedOwner(owner)}
+                      onClick={() => {
+                        setSelectedOwner(owner);
+                        if (!isNoteCustomized) {
+                          setBorrowNote(getDefaultBorrowNote(owner.name));
+                        }
+                      }}
                       className={`p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                         isSelected
                           ? 'border-brand bg-brand/5 ring-1 ring-brand'
@@ -580,14 +590,28 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
                       <span className="font-semibold text-emerald-700 text-xs">30-day loan period · Free exchange</span>
                     </div>
 
-                    {/* Note */}
+                    {/* Note to Owner (Editable) */}
                     <div>
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">
-                        Your Note
-                      </span>
-                      <p className="mt-1 text-slate-700 italic bg-white p-2.5 rounded-xl border border-slate-200/70 text-xs">
-                        “{borrowNote}”
-                      </p>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label
+                          htmlFor="borrow-note-textarea"
+                          className="text-slate-500 font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]"
+                        >
+                          Note to {selectedOwner.name}
+                        </label>
+                        <span className="text-[11px] text-slate-400 font-medium">Editable</span>
+                      </div>
+                      <textarea
+                        id="borrow-note-textarea"
+                        rows={3}
+                        value={borrowNote}
+                        onChange={(e) => {
+                          setBorrowNote(e.target.value);
+                          setIsNoteCustomized(true);
+                        }}
+                        placeholder={`Write a friendly note to ${selectedOwner.name}...`}
+                        className="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand placeholder:text-slate-400 resize-none transition shadow-2xs leading-relaxed"
+                      />
                     </div>
                   </div>
                 </>

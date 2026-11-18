@@ -192,30 +192,30 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
         )}
       </div>
 
-      {/* ─── Bottom Shelf: Metadata Bar (Type, Schedule, Spot) ─── */}
-      <div className="pt-3.5 mt-1 border-t border-slate-100 flex flex-wrap items-center justify-between gap-y-2.5 gap-x-4 text-xs sm:text-sm">
+      {/* ─── Bottom Shelf: Metadata Bar (Left-aligned matching Figma) ─── */}
+      <div className="pt-3.5 mt-1 border-t border-slate-100 flex flex-wrap items-center justify-start gap-y-2.5 gap-x-6 sm:gap-x-10 text-xs sm:text-sm">
         {/* Request Type */}
         {isGiftClaim ? (
-          <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-600">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-600 flex-shrink-0">
             <HugeiconsIcon icon={GiftIcon} size={15} />
             <span>Free claim</span>
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 font-semibold text-brand">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-brand flex-shrink-0">
             <HugeiconsIcon icon={BookOpen01Icon} size={15} />
             <span>Wants to Borrow</span>
           </span>
         )}
 
         {/* Schedule */}
-        <span className="inline-flex items-center gap-1.5 text-slate-600 font-medium">
+        <span className="inline-flex items-center gap-1.5 text-slate-600 font-medium flex-shrink-0">
           <HugeiconsIcon icon={Calendar01Icon} size={15} className="text-slate-400 flex-shrink-0" />
           <span>{scheduleFormatted}</span>
         </span>
 
         {/* Location Spot */}
         <span
-          className="inline-flex items-center gap-1.5 text-slate-600 font-medium truncate max-w-[280px]"
+          className="inline-flex items-center gap-1.5 text-slate-600 font-medium truncate max-w-[320px]"
           title={request.meetupSpot}
         >
           <HugeiconsIcon icon={Location01Icon} size={15} className="text-slate-400 flex-shrink-0" />
