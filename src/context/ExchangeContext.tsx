@@ -12,6 +12,13 @@ interface ExchangeContextType {
   actionRequiredLending: number;
   actionRequiredBorrowing: number;
   acceptRequest: (exchangeId: string) => Promise<void>;
+  suggestDifferentTime: (
+    exchangeId: string,
+    newDate: string,
+    newTime: string,
+    newSpot: string,
+    note?: string
+  ) => Promise<void>;
   declineRequest: (exchangeId: string, reason?: string) => Promise<void>;
   cancelRequest: (exchangeId: string) => Promise<void>;
   confirmPickupHandover: (exchangeId: string, role: 'lender' | 'borrower') => Promise<void>;
@@ -102,6 +109,31 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await loadData();
     } catch (err: any) {
       setError(err?.message || 'Failed to accept request');
+      throw err;
+    }
+  };
+
+  const suggestDifferentTime = async (
+    exchangeId: string,
+    newDate: string,
+    newTime: string,
+    newSpot: string,
+    note?: string
+  ) => {
+    setError(null);
+    try {
+      const updated = await exchangeService.suggestDifferentTime(
+        exchangeId,
+        newDate,
+        newTime,
+        newSpot,
+        note,
+        currentUserId,
+        currentUserDisplayName
+      );
+      updateExchangeInState(updated);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update schedule');
       throw err;
     }
   };
@@ -316,6 +348,7 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     actionRequiredLending: badgeCounts.lending,
     actionRequiredBorrowing: badgeCounts.borrowing,
     acceptRequest,
+    suggestDifferentTime,
     declineRequest,
     cancelRequest,
     confirmPickupHandover,

@@ -520,6 +520,69 @@ export const exchangeService = {
   },
 
   /**
+   * Counter-proposal: Suggest Different Time & Spot for a pending request
+   */
+  async suggestDifferentTime(
+    exchangeId: string,
+    newDate: string,
+    newTime: string,
+    newSpot: string,
+    note?: string,
+    executingUserId?: string,
+    executingUserName?: string
+  ): Promise<ExchangeTransaction> {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase client not configured.');
+    }
+
+    const { data: current, error: fetchErr } = await supabase
+      .from('borrow_requests')
+      .select('*')
+      .eq('id', exchangeId)
+      .single();
+
+    if (fetchErr || !current) {
+      throw new Error(`Could not find request #${exchangeId}: ${fetchErr?.message}`);
+    }
+
+    const { message: cleanMsg, meta } = decodeMessageAndMeta(current.message);
+    let updatedMsg = cleanMsg;
+    if (note && note.trim()) {
+      updatedMsg = cleanMsg
+        ? `${cleanMsg}\n\n[Counter-proposal from ${executingUserName || 'Owner'}]: ${note.trim()}`
+        : note.trim();
+    }
+
+    const updatedMeta = {
+      ...meta,
+      counterProposedAt: new Date().toISOString(),
+      counterProposedBy: executingUserName || executingUserId || 'Owner',
+      counterProposalNote: note?.trim() || undefined,
+    };
+
+    const payload = {
+      meetup_date: newDate,
+      meetup_time: newTime,
+      meetup_spot: newSpot,
+      message: encodeMessageWithMeta(updatedMsg, updatedMeta),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: updatedRow, error: updateErr } = await supabase
+      .from('borrow_requests')
+      .update(payload)
+      .eq('id', exchangeId)
+      .select('*')
+      .single();
+
+    if (updateErr) {
+      throw new Error(`Failed to update meetup schedule: ${updateErr.message}`);
+    }
+
+    return mapRowToTransaction(updatedRow);
+  },
+
+  /**
    * Owner accepts an incoming request in Supabase.
    * Atomically declines competing requests for this book.
    */

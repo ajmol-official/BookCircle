@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Calendar01Icon,
-  Location01Icon,
   CheckmarkCircle02Icon,
   BubbleChatIcon,
   BookOpen01Icon,
@@ -18,6 +17,8 @@ import { ReturnWizardModal, type BorrowedBookItem, type ReturnHandoverDetails } 
 import { InspectReturnModal } from './InspectReturnModal';
 import { RecordDirectReturnModal } from './RecordDirectReturnModal';
 import { RateReaderModal } from './RateReaderModal';
+import { BorrowRequestCard } from './BorrowRequestCard';
+import { SuggestMeetupTimeModal } from './SuggestMeetupTimeModal';
 import { ReviewModal } from '../bookdetails/ReviewModal';
 import { reviewService } from '../../services/reviewService';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -28,50 +29,6 @@ interface ActivityPageProps {
   onNavigateToMessages?: (participantName: string, bookTitle: string) => void;
   onOpenAddBook?: () => void;
 }
-
-interface SafeAvatarProps {
-  src?: string;
-  name: string;
-  sizeClass?: string;
-  className?: string;
-}
-
-const SafeAvatar: React.FC<SafeAvatarProps> = ({
-  src,
-  name,
-  sizeClass = 'w-12 h-12',
-  className = '',
-}) => {
-  const [hasError, setHasError] = useState(false);
-  const initials = useMemo(() => {
-    if (!name) return 'R';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    return name.slice(0, 2).toUpperCase();
-  }, [name]);
-
-  if (!src || hasError) {
-    return (
-      <div
-        className={`${sizeClass} rounded-full bg-brand/10 border-2 border-brand/20 text-brand font-bold text-xs sm:text-sm flex items-center justify-center flex-shrink-0 select-none shadow-xs ${className}`}
-        aria-label={name}
-        title={name}
-      >
-        {initials}
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={src}
-      alt={name}
-      onError={() => setHasError(true)}
-      className={`${sizeClass} rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0 ${className}`}
-      loading="lazy"
-    />
-  );
-};
 
 interface SafeBookThumbnailProps {
   src?: string;
@@ -135,6 +92,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     actionRequiredLending,
     actionRequiredBorrowing,
     acceptRequest,
+    suggestDifferentTime,
     declineRequest,
     cancelRequest,
     confirmPickupHandover,
@@ -226,6 +184,9 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
   const [declineTarget, setDeclineTarget] = useState<ExchangeTransaction | null>(null);
   const [declineNote, setDeclineNote] = useState('');
   const [isSubmittingDecline, setIsSubmittingDecline] = useState(false);
+
+  // Counter-Proposal / Suggest Different Time Modal State
+  const [suggestTimeTarget, setSuggestTimeTarget] = useState<ExchangeTransaction | null>(null);
 
   // Action Confirmation Modal State (Requirement 1 & 3)
   interface ActionConfirmationTarget {
@@ -427,6 +388,26 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
       setDeclineNote('');
     } finally {
       setIsSubmittingDecline(false);
+    }
+  };
+
+  // Confirm Counter-Proposal (Suggest Different Time) Handler
+  const handleConfirmSuggestTime = async (
+    requestId: string,
+    newDate: string,
+    newTime: string,
+    newSpot: string,
+    note: string
+  ) => {
+    try {
+      await suggestDifferentTime(requestId, newDate, newTime, newSpot, note);
+      showToast(
+        `Sent counter-proposal for “${suggestTimeTarget?.bookTitle}” to ${suggestTimeTarget?.borrowerName} (${newDate} at ${newTime}).`
+      );
+      setSuggestTimeTarget(null);
+    } catch (err: any) {
+      showToast(`Failed to send counter-proposal: ${err?.message || 'Error'}`);
+      throw err;
     }
   };
 
@@ -810,109 +791,39 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
 
               <div className="space-y-4 mt-2">
                 {pendingLendingRequests.map((req) => (
-                  <div
+                  <BorrowRequestCard
                     key={req.id}
-                    className="bg-white rounded-3xl p-5 sm:p-7 border border-brand/30 shadow-card hover:shadow-card-hover transition-all"
-                  >
-                    <div className="flex flex-col lg:flex-row items-start justify-between gap-5 sm:gap-6">
-                      {/* Left: Requester Info & Book */}
-                      <div className="flex items-start gap-3.5 sm:gap-4 flex-1 min-w-0 w-full">
-                        <SafeAvatar
-                          src={req.borrowerAvatar}
-                          name={req.borrowerName}
-                          sizeClass="w-12 h-12 sm:w-14 sm:h-14"
-                        />
-                        <div className="space-y-2.5 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-sans font-semibold text-base sm:text-lg text-slate-900">
-                              {req.borrowerName}
-                            </h3>
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                req.exchangeType === 'gift'
-                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
-                                  : 'bg-brand/10 text-brand'
-                              }`}
-                            >
-                              {req.exchangeType === 'gift' ? 'Wants Free Gift' : 'Wants to Borrow'}
-                            </span>
-                            {req.borrowerTrust && (
-                              <span className="text-xs text-slate-500 font-medium">· {req.borrowerTrust}</span>
-                            )}
-                          </div>
-
-                          {/* Requested Book Box */}
-                          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <SafeBookThumbnail
-                              src={req.bookCover}
-                              title={req.bookTitle}
-                              sizeClass="w-11 h-15 sm:w-12 sm:h-16"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[11px] text-slate-500 font-medium">Requested Book</p>
-                              <h4 className="font-serif text-sm sm:text-base font-semibold text-slate-800 truncate">
-                                “{req.bookTitle}”
-                              </h4>
-                              <p className="text-xs text-slate-500 truncate">by {req.bookAuthor}</p>
-                            </div>
-                          </div>
-
-                          {req.message && (
-                            <p className="text-xs sm:text-sm text-slate-600 bg-slate-50/70 p-3 rounded-xl border border-slate-100 italic leading-relaxed">
-                              {req.message}
-                            </p>
-                          )}
-
-                          {/* Proposed Meetup Details */}
-                          <div className="pt-1 flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-600">
-                            <span className="inline-flex items-center gap-1 font-medium text-slate-700">
-                              <HugeiconsIcon icon={Calendar01Icon} size={14} className="text-brand flex-shrink-0" />
-                              <span>{req.meetupDate} at {req.meetupTime}</span>
-                            </span>
-                            <span className="inline-flex items-center gap-1 font-medium text-slate-700 min-w-0">
-                              <HugeiconsIcon icon={Location01Icon} size={14} className="text-brand flex-shrink-0" />
-                              <span className="truncate max-w-[180px] xs:max-w-[240px] sm:max-w-xs" title={req.meetupSpot}>{req.meetupSpot}</span>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right/Footer: Action Buttons */}
-                      <div className="flex items-center justify-end gap-2.5 w-full lg:w-auto pt-3.5 lg:pt-0 border-t lg:border-t-0 border-slate-100 flex-shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDeclineTarget(req);
-                            setDeclineNote('');
-                          }}
-                          className="flex-1 sm:flex-initial px-4 py-2.5 sm:py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition text-center"
-                        >
-                          Decline
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActionConfirmTarget({
-                              type: 'accept_meetup',
-                              exchange: req,
-                              title: req.exchangeType === 'gift' ? 'Accept Gift Claim Meetup' : 'Accept Meetup & Lend Book',
-                              description: `Are you ready to accept the meetup with ${req.borrowerName} to ${req.exchangeType === 'gift' ? 'gift' : 'lend'} “${req.bookTitle}”?`,
-                              confirmLabel: 'Confirm Accept',
-                              cancelLabel: 'Cancel',
-                              details: {
-                                date: req.meetupDate,
-                                time: req.meetupTime,
-                                spot: req.meetupSpot,
-                              },
-                            });
-                          }}
-                          className="flex-1 sm:flex-initial px-4 py-2.5 sm:py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
-                        >
-                          Accept Meetup
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    request={req}
+                    onAcceptMeetup={(r) => {
+                      setActionConfirmTarget({
+                        type: 'accept_meetup',
+                        exchange: r,
+                        title: r.exchangeType === 'gift' ? 'Accept Gift Claim Meetup' : 'Accept Meetup & Lend Book',
+                        description: `Are you ready to accept the meetup with ${r.borrowerName} to ${
+                          r.exchangeType === 'gift' ? 'gift' : 'lend'
+                        } “${r.bookTitle}”?`,
+                        confirmLabel: 'Confirm Accept',
+                        cancelLabel: 'Cancel',
+                        details: {
+                          date: r.meetupDate,
+                          time: r.meetupTime,
+                          spot: r.meetupSpot,
+                        },
+                      });
+                    }}
+                    onDecline={(r) => {
+                      setDeclineTarget(r);
+                      setDeclineNote('');
+                    }}
+                    onSuggestDifferentTime={(r) => {
+                      setSuggestTimeTarget(r);
+                    }}
+                    onSelectBook={(_title, id) => {
+                      if (id) {
+                        navigate(`/book/${id}`);
+                      }
+                    }}
+                  />
                 ))}
               </div>
             </div>
@@ -2174,6 +2085,16 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* COUNTER-PROPOSAL / SUGGEST DIFFERENT TIME MODAL                     */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <SuggestMeetupTimeModal
+        request={suggestTimeTarget}
+        isOpen={Boolean(suggestTimeTarget)}
+        onClose={() => setSuggestTimeTarget(null)}
+        onSubmit={handleConfirmSuggestTime}
+      />
 
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* DECLINE REQUEST CONFIRMATION MODAL (REQUIREMENT 2)                  */}
