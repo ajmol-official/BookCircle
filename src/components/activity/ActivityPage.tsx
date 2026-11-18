@@ -2,13 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  Calendar01Icon,
   CheckmarkCircle02Icon,
   BubbleChatIcon,
   BookOpen01Icon,
   StarIcon,
   AlertCircleIcon,
-  Notification01Icon,
   Cancel01Icon,
 } from '@hugeicons/core-free-icons';
 import { useExchanges } from '../../context/ExchangeContext';
@@ -18,6 +16,7 @@ import { InspectReturnModal } from './InspectReturnModal';
 import { RecordDirectReturnModal } from './RecordDirectReturnModal';
 import { RateReaderModal } from './RateReaderModal';
 import { BorrowRequestCard } from './BorrowRequestCard';
+import { HandoverConfirmationCard } from './HandoverConfirmationCard';
 import { SuggestMeetupTimeModal } from './SuggestMeetupTimeModal';
 import { ReviewModal } from '../bookdetails/ReviewModal';
 import { reviewService } from '../../services/reviewService';
@@ -840,135 +839,42 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
               </p>
 
               <div className="space-y-3 mt-2">
-                {pendingLendingHandovers.map((item) => {
-                  const lenderConfirmed = item.pickupConfirmation.lenderConfirmed;
-                  const isDisputed = item.status === 'disputed_handover';
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`bg-white rounded-2xl p-5 border shadow-card flex flex-col gap-3 transition ${
-                        isDisputed ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200/90'
-                      }`}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                          <SafeBookThumbnail
-                            src={item.bookCover}
-                            title={item.bookTitle}
-                            sizeClass="w-12 h-16"
-                          />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-brand">
-                                Handover Scheduled
-                              </span>
-                              <span className="text-xs text-slate-500">· With {item.borrowerName}</span>
-                              {isDisputed && (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
-                                  Issue Flagged
-                                </span>
-                              )}
-                            </div>
-                            <h4 className="font-serif text-base font-semibold text-slate-800 mt-1 truncate">
-                              {item.bookTitle}
-                            </h4>
-                            <p className="text-xs text-slate-500 flex items-center gap-2 mt-0.5 min-w-0">
-                              <span className="flex-shrink-0">{item.meetupDate} @ {item.meetupTime}</span>
-                              <span className="flex-shrink-0">·</span>
-                              <span className="truncate max-w-[160px] xs:max-w-[220px] sm:max-w-xs" title={item.meetupSpot}>{item.meetupSpot}</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-end sm:justify-start gap-2.5 flex-wrap w-full sm:w-auto pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                          {lenderConfirmed ? (
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
-                                <span>You confirmed · Waiting for the other person to confirm.</span>
-                              </div>
-                              {item.reminderSentAt ? (
-                                <span className="text-[11px] text-slate-500 font-medium bg-slate-100 px-2.5 py-1 rounded-lg">
-                                  Reminder sent
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={async () => {
-                                    await sendHandoverReminder(item.id, 'lender');
-                                    showToast(`Reminder sent to ${item.borrowerName}!`);
-                                  }}
-                                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold flex items-center gap-1 transition"
-                                  title="Send handover reminder"
-                                >
-                                  <HugeiconsIcon icon={Notification01Icon} size={13} />
-                                  <span>Remind</span>
-                                </button>
-                              )}
-                              <button
-                                onClick={() => {
-                                  setDisputeTarget(item);
-                                  setDisputeCustomText('');
-                                }}
-                                className="px-2.5 py-1.5 rounded-xl border border-amber-200 bg-amber-50/60 hover:bg-amber-100/60 text-amber-900 text-xs font-semibold transition"
-                              >
-                                Report Issue
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-                              {item.pickupConfirmation?.borrowerConfirmed && (
-                                <span className="text-[11px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl">
-                                  {item.borrowerName} confirmed pickup
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActionConfirmTarget({
-                                    type: 'lender_handover',
-                                    exchange: item,
-                                    title: 'Confirm Book Handover',
-                                    description: `Confirm that you met ${item.borrowerName} and handed over “${item.bookTitle}”?`,
-                                    confirmLabel: 'Confirm Handover',
-                                    cancelLabel: 'Cancel',
-                                    details: {
-                                      date: item.meetupDate,
-                                      time: item.meetupTime,
-                                      spot: item.meetupSpot,
-                                    },
-                                  });
-                                }}
-                                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
-                              >
-                                I Handed Over Book
-                              </button>
-                            </div>
-                          )}
-
-                          <button
-                            onClick={() => onNavigateToMessages?.(item.borrowerName, item.bookTitle)}
-                            className="w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition flex items-center justify-center flex-shrink-0"
-                            title="Message neighbor"
-                            aria-label={`Message ${item.borrowerName}`}
-                          >
-                            <HugeiconsIcon icon={BubbleChatIcon} size={16} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Disputed Status Notice */}
-                      {isDisputed && (
-                        <div className="pt-2 border-t border-amber-200/60 flex items-start gap-2 text-xs text-amber-900">
-                          <HugeiconsIcon icon={AlertCircleIcon} size={15} className="text-amber-700 flex-shrink-0 mt-0.5" />
-                          <span>
-                            <strong>Handover Issue Reported:</strong> {item.disputeReason || 'Issue flagged during meetup.'} — Community support has been notified.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {pendingLendingHandovers.map((item) => (
+                  <HandoverConfirmationCard
+                    key={item.id}
+                    exchange={item}
+                    perspective="lender"
+                    onConfirmHandover={(ex) => {
+                      setActionConfirmTarget({
+                        type: 'lender_handover',
+                        exchange: ex,
+                        title: 'Confirm Book Handover',
+                        description: `Confirm that you met ${ex.borrowerName} and handed over “${ex.bookTitle}”?`,
+                        confirmLabel: 'Confirm Handover',
+                        cancelLabel: 'Cancel',
+                        details: {
+                          date: ex.meetupDate,
+                          time: ex.meetupTime,
+                          spot: ex.meetupSpot,
+                        },
+                      });
+                    }}
+                    onSendReminder={async (exchangeId) => {
+                      await sendHandoverReminder(exchangeId, 'lender');
+                      showToast(`Reminder sent to ${item.borrowerName}!`);
+                    }}
+                    onReportIssue={(ex) => {
+                      setDisputeTarget(ex);
+                      setDisputeCustomText('');
+                    }}
+                    onMessage={(name, title) => onNavigateToMessages?.(name, title)}
+                    onSelectBook={(_title, id) => {
+                      if (id) {
+                        navigate(`/book/${id}`);
+                      }
+                    }}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -1241,134 +1147,42 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
               </p>
 
               <div className="space-y-3 mt-2">
-                {pendingBorrowHandovers.map((item) => {
-                  const borrowerConfirmed = item.pickupConfirmation.borrowerConfirmed;
-                  const isDisputed = item.status === 'disputed_handover';
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`bg-white rounded-2xl p-5 border shadow-card flex flex-col gap-3 transition ${
-                        isDisputed ? 'border-amber-300 bg-amber-50/20' : 'border-brand/30'
-                      }`}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                          <SafeBookThumbnail
-                            src={item.bookCover}
-                            title={item.bookTitle}
-                            sizeClass="w-12 h-16"
-                          />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-brand">
-                                Ready for Collection
-                              </span>
-                              <span className="text-xs text-slate-500">· Owner: {item.ownerName}</span>
-                              {isDisputed && (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
-                                  Issue Flagged
-                                </span>
-                              )}
-                            </div>
-                            <h4 className="font-serif text-base font-semibold text-slate-800 mt-1 truncate">
-                              {item.bookTitle}
-                            </h4>
-                            <p className="text-xs text-slate-600 mt-0.5 flex items-center gap-1.5">
-                              <HugeiconsIcon icon={Calendar01Icon} size={13} className="text-brand flex-shrink-0" />
-                              <span className="truncate">{item.meetupDate} at {item.meetupTime} ({item.meetupSpot})</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-end sm:justify-start gap-2.5 flex-wrap w-full sm:w-auto pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                          {borrowerConfirmed ? (
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
-                                <span>You confirmed · Waiting for the other person to confirm.</span>
-                              </div>
-                              {item.reminderSentAt ? (
-                                <span className="text-[11px] text-slate-500 font-medium bg-slate-100 px-2.5 py-1 rounded-lg">
-                                  Reminder sent
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={async () => {
-                                    await sendHandoverReminder(item.id, 'borrower');
-                                    showToast(`Reminder sent to ${item.ownerName}!`);
-                                  }}
-                                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold flex items-center gap-1 transition"
-                                  title="Send handover reminder"
-                                >
-                                  <HugeiconsIcon icon={Notification01Icon} size={13} />
-                                  <span>Remind</span>
-                                </button>
-                              )}
-                              <button
-                                onClick={() => {
-                                  setDisputeTarget(item);
-                                  setDisputeCustomText('');
-                                }}
-                                className="px-2.5 py-1.5 rounded-xl border border-amber-200 bg-amber-50/60 hover:bg-amber-100/60 text-amber-900 text-xs font-semibold transition"
-                              >
-                                Report Issue
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-                              {item.pickupConfirmation?.lenderConfirmed && (
-                                <span className="text-[11px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl">
-                                  {item.ownerName} confirmed handover
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActionConfirmTarget({
-                                    type: 'borrower_handover',
-                                    exchange: item,
-                                    title: 'Confirm Book Receipt',
-                                    description: `Confirm that you received “${item.bookTitle}” from ${item.ownerName}?`,
-                                    confirmLabel: 'Confirm Receipt',
-                                    cancelLabel: 'Cancel',
-                                    details: {
-                                      date: item.meetupDate,
-                                      time: item.meetupTime,
-                                      spot: item.meetupSpot,
-                                    },
-                                  });
-                                }}
-                                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
-                              >
-                                I Received the Book
-                              </button>
-                            </div>
-                          )}
-
-                          <button
-                            onClick={() => onNavigateToMessages?.(item.ownerName, item.bookTitle)}
-                            className="w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition flex items-center justify-center flex-shrink-0"
-                            title="Message owner"
-                            aria-label={`Message ${item.ownerName}`}
-                          >
-                            <HugeiconsIcon icon={BubbleChatIcon} size={16} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Disputed Status Notice */}
-                      {isDisputed && (
-                        <div className="pt-2 border-t border-amber-200/60 flex items-start gap-2 text-xs text-amber-900">
-                          <HugeiconsIcon icon={AlertCircleIcon} size={15} className="text-amber-700 flex-shrink-0 mt-0.5" />
-                          <span>
-                            <strong>Handover Issue Reported:</strong> {item.disputeReason || 'Issue flagged during meetup.'} — Community support has been notified.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {pendingBorrowHandovers.map((item) => (
+                  <HandoverConfirmationCard
+                    key={item.id}
+                    exchange={item}
+                    perspective="borrower"
+                    onConfirmHandover={(ex) => {
+                      setActionConfirmTarget({
+                        type: 'borrower_handover',
+                        exchange: ex,
+                        title: 'Confirm Book Receipt',
+                        description: `Confirm that you received “${ex.bookTitle}” from ${ex.ownerName}?`,
+                        confirmLabel: 'Confirm Receipt',
+                        cancelLabel: 'Cancel',
+                        details: {
+                          date: ex.meetupDate,
+                          time: ex.meetupTime,
+                          spot: ex.meetupSpot,
+                        },
+                      });
+                    }}
+                    onSendReminder={async (exchangeId) => {
+                      await sendHandoverReminder(exchangeId, 'borrower');
+                      showToast(`Reminder sent to ${item.ownerName}!`);
+                    }}
+                    onReportIssue={(ex) => {
+                      setDisputeTarget(ex);
+                      setDisputeCustomText('');
+                    }}
+                    onMessage={(name, title) => onNavigateToMessages?.(name, title)}
+                    onSelectBook={(_title, id) => {
+                      if (id) {
+                        navigate(`/book/${id}`);
+                      }
+                    }}
+                  />
+                ))}
               </div>
             </div>
           )}
