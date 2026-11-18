@@ -168,7 +168,7 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
             <button
               type="button"
               onClick={() => onDecline(request)}
-              className="flex-1 sm:flex-initial h-9 px-3.5 sm:px-4 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer order-1 sm:order-2"
+              className="flex-1 sm:flex-initial h-10 px-4 sm:px-5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer order-1 sm:order-2"
               title="Decline this request"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={15} />
@@ -179,7 +179,7 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
             <button
               type="button"
               onClick={() => onAcceptMeetup(request)}
-              className="flex-1 sm:flex-initial h-9 px-4 sm:px-5 rounded-lg bg-brand hover:bg-brand-dark active:scale-95 text-white text-xs sm:text-sm font-semibold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer order-2 sm:order-3"
+              className="flex-1 sm:flex-initial h-10 px-4 sm:px-5 rounded-xl bg-brand hover:bg-brand-dark active:scale-95 text-white text-xs sm:text-sm font-semibold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer order-2 sm:order-3"
               title="Accept meetup and schedule book handover"
             >
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} />

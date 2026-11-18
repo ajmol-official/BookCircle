@@ -985,7 +985,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setInspectingReturnTarget(item)}
-                      className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
+                      className="w-full sm:w-auto h-10 px-4 sm:px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold shadow-xs transition active:scale-95 flex items-center justify-center text-center whitespace-nowrap"
                     >
                       Inspect Condition & Confirm Receipt
                     </button>
@@ -1277,7 +1277,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                                 },
                               });
                             }}
-                            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition active:scale-95"
+                            className="h-10 px-4 sm:px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold shadow-xs transition active:scale-95 flex items-center justify-center text-center whitespace-nowrap"
                           >
                             I Handed Back the Book
                           </button>

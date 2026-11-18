@@ -176,7 +176,7 @@ export const RequestSentCard: React.FC<RequestSentCardProps> = ({
               <button
                 type="button"
                 onClick={() => onCancelRequest(request)}
-                className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand text-xs sm:text-sm font-semibold transition active:scale-95 flex items-center justify-center whitespace-nowrap text-center"
+                className="h-10 px-4 sm:px-5 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand text-xs sm:text-sm font-semibold transition active:scale-95 flex items-center justify-center whitespace-nowrap text-center"
               >
                 Cancel Request
               </button>
@@ -184,7 +184,7 @@ export const RequestSentCard: React.FC<RequestSentCardProps> = ({
               <button
                 type="button"
                 onClick={() => onMessage?.(request.ownerName, request.bookTitle)}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition flex items-center justify-center relative flex-shrink-0 active:scale-95"
+                className="w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition flex items-center justify-center relative flex-shrink-0 active:scale-95"
                 title={`Message ${request.ownerName}`}
                 aria-label={`Message ${request.ownerName}`}
               >
