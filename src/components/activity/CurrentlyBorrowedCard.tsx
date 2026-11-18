@@ -204,7 +204,7 @@ export const CurrentlyBorrowedCard: React.FC<CurrentlyBorrowedCardProps> = ({
           </div>
 
           {/* Full-Width Progress Bar */}
-          <div className="w-full h-2 rounded-full bg-[#E5E9F2] overflow-hidden">
+          <div className="w-full h-1.5 rounded-full bg-[#E5E9F2] overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
                 isOverdue ? 'bg-rose-500' : 'bg-brand'
