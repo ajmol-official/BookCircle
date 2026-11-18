@@ -227,11 +227,20 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
         </div>
 
         {/* ─── Personal Note / Message from Requester (Italic prose) ─── */}
-        {request.message && request.message.trim().length > 0 && (
-          <p className="italic text-xs sm:text-sm text-slate-600 leading-relaxed px-0.5 my-3.5">
-            “{request.message.trim()}”
-          </p>
-        )}
+        {(() => {
+          const displayMessage =
+            request.message && request.message.trim().length > 0
+              ? request.message.trim()
+              : request.exchangeType === 'gift'
+              ? `Hi ${request.ownerName || 'there'}, thank you so much for offering this book as a community gift!`
+              : `Hi ${request.ownerName || 'there'}, I'd love to borrow this book. Looking forward to meeting you and exchanging books!`;
+
+          return (
+            <p className="italic text-xs sm:text-sm text-slate-600 leading-relaxed px-0.5 my-3.5">
+              “{displayMessage}”
+            </p>
+          );
+        })()}
       </div>
 
       {/* ─── Bottom Shelf: Metadata Bar (Left-aligned matching Figma) ─── */}

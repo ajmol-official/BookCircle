@@ -868,7 +868,9 @@ const BookCircleMain: React.FC = () => {
       date: details.date,
       time: details.time,
       spot: details.spot,
-      note: details.note,
+      note:
+        details.note?.trim() ||
+        `Hi ${details.owner?.name || 'there'}, thank you so much for offering this book as a community gift! Looking forward to meeting you.`,
     });
 
     // 3. Trigger celebration toast for claiming a free gift
@@ -896,7 +898,9 @@ const BookCircleMain: React.FC = () => {
       date: details.date,
       time: details.time,
       spot: details.spot,
-      note: details.note,
+      note:
+        details.note?.trim() ||
+        `Hi ${details.owner?.name || 'there'}, thank you so much for offering this book as a community gift! Looking forward to meeting you.`,
     });
 
     // 3. Trigger friendly confirmation toast

@@ -154,13 +154,15 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
   const handleFinalSubmit = () => {
     setIsSuccess(true);
     setTimeout(() => {
+      const fallbackNote = getDefaultBorrowNote(selectedOwner?.name);
+      const effectiveNote = borrowNote.trim() || fallbackNote;
       const details: BorrowHandoverDetails = {
         book,
         owner: selectedOwner,
         date: selectedDate,
         time: effectiveTime,
         spot: customSpot.trim() || selectedSpot,
-        note: borrowNote,
+        note: effectiveNote,
       };
       if (onRequestSubmitted) {
         onRequestSubmitted(details);

@@ -414,7 +414,9 @@ export const exchangeService = {
       pickupConfirmation: { lenderConfirmed: false, borrowerConfirmed: false },
     };
 
-    const messageWithMeta = encodeMessageWithMeta(params.note, meta);
+    const defaultBorrowNote = `Hi ${params.owner?.name || 'there'}, I'd love to borrow this book. Looking forward to meeting you and exchanging books!`;
+    const effectiveNote = params.note && params.note.trim() ? params.note.trim() : defaultBorrowNote;
+    const messageWithMeta = encodeMessageWithMeta(effectiveNote, meta);
 
     const { data, error } = await supabase
       .from('borrow_requests')
@@ -491,7 +493,9 @@ export const exchangeService = {
       pickupConfirmation: { lenderConfirmed: false, borrowerConfirmed: false },
     };
 
-    const messageWithMeta = encodeMessageWithMeta(params.note, meta);
+    const defaultGiftNote = `Hi ${params.owner?.name || 'there'}, thank you so much for offering this book as a community gift! Looking forward to meeting you.`;
+    const effectiveNote = params.note && params.note.trim() ? params.note.trim() : defaultGiftNote;
+    const messageWithMeta = encodeMessageWithMeta(effectiveNote, meta);
 
     const { data, error } = await supabase
       .from('borrow_requests')
