@@ -615,12 +615,14 @@ const BookCircleMain: React.FC = () => {
       const stored = localStorage.getItem('bookcircle_user_settings');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.radius) return parsed.radius;
+        if (parsed.radius && ['Nearby', 'Within 5km', 'Within 10km', 'Any distance'].includes(parsed.radius)) {
+          return parsed.radius;
+        }
       }
     } catch (e) {
       // fallback
     }
-    return 'Within 5km';
+    return 'Nearby';
   });
   const [selectedChatParticipant, setSelectedChatParticipant] = useState<string | null>(null);
 

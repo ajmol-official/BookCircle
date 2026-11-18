@@ -24,7 +24,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   const { currentUser } = useAuth();
   const [isRadiusOpen, setIsRadiusOpen] = useState(false);
   const radiusDropdownRef = useRef<HTMLDivElement>(null);
-  const radiusOptions = ['Within 2km', 'Within 5km', 'Within 10km', 'Within 25km'];
+  const radiusOptions = ['Nearby', 'Within 5km', 'Within 10km', 'Any distance'];
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

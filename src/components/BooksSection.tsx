@@ -32,7 +32,11 @@ export const BooksSection: React.FC<BooksSectionProps> = ({
             Books Nearby You
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Books {selectedRadius.toLowerCase()}, updated just now.
+            {selectedRadius === 'Nearby'
+              ? 'Books nearby, updated just now.'
+              : selectedRadius === 'Any distance'
+              ? 'Books across any distance, updated just now.'
+              : `Books ${selectedRadius.toLowerCase()}, updated just now.`}
           </p>
         </div>
 

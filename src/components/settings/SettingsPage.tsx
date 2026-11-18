@@ -51,7 +51,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   profilePublic: true,
   showDistance: true,
   showRecentActivity: false,
-  radius: 'Within 5km',
+  radius: 'Nearby',
   showLocation: true,
   preferredHandoverLocations: [
     {
@@ -717,7 +717,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onRadiusChan
                   How far to search for books and readers by default across discovery and home feeds.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {['Within 2km', 'Within 5km', 'Within 10km', 'Within 25km'].map((r) => {
+                  {['Nearby', 'Within 5km', 'Within 10km', 'Any distance'].map((r) => {
                     const isSelected = settings.radius === r;
                     return (
                       <button
