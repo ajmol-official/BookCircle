@@ -107,8 +107,8 @@ const mapRowToTransaction = (item: any): ExchangeTransaction => {
     handoverDate: item.handover_date || meta.handoverDate,
     dueDate: item.due_date || meta.dueDate,
     totalDays: item.total_days || meta.totalDays || 30,
-    daysUsed: meta.daysUsed || 12,
-    daysLeft: meta.daysLeft || 18,
+    daysUsed: meta.daysUsed !== undefined ? meta.daysUsed : 12,
+    daysLeft: meta.daysLeft !== undefined ? meta.daysLeft : 18,
     returnSchedule,
     // Dual Ratings
     lenderRating: item.lender_rating ? Number(item.lender_rating) : meta.lenderRating,
@@ -1662,6 +1662,34 @@ export const exchangeService = {
           daysUsed: 10,
           totalDays: 30,
           daysLeft: 20,
+          pickupConfirmation: { lenderConfirmed: true, borrowerConfirmed: true }
+        })
+      },
+      // 7b. Borrowing - Overdue Loan (Sample for testing overdue card and extend loan modal)
+      {
+        book_id: 'the-overstory',
+        book_title: 'The Overstory',
+        owner_id: 'sample-owner-elena',
+        owner_name: 'Elena Rostova',
+        borrower_id: userId,
+        borrower_name: userDisplayName,
+        exchange_type: 'borrow',
+        status: 'handed_over',
+        meetup_date: '40 days ago',
+        meetup_time: '2:30 PM',
+        meetup_spot: 'Riverside Coffee',
+        message: encodeMessageWithMeta('10 days past due. Please talk to the lender to extend your time.', {
+          substatus: 'active_loan',
+          bookAuthor: 'Richard Powers',
+          bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
+          ownerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          ownerTrust: 'Verified Neighbor',
+          originalCondition: 'Good',
+          handoverDate: '40 days ago',
+          dueDate: '10 days overdue',
+          daysUsed: 40,
+          totalDays: 30,
+          daysLeft: -10,
           pickupConfirmation: { lenderConfirmed: true, borrowerConfirmed: true }
         })
       },

@@ -17,7 +17,9 @@ import { RecordDirectReturnModal } from './RecordDirectReturnModal';
 import { RateReaderModal } from './RateReaderModal';
 import { BorrowRequestCard } from './BorrowRequestCard';
 import { HandoverConfirmationCard } from './HandoverConfirmationCard';
+import { CurrentlyBorrowedCard } from './CurrentlyBorrowedCard';
 import { SuggestMeetupTimeModal } from './SuggestMeetupTimeModal';
+import { ExtendLoanModal } from './ExtendLoanModal';
 import { ReviewModal } from '../bookdetails/ReviewModal';
 import { reviewService } from '../../services/reviewService';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -186,6 +188,9 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
 
   // Counter-Proposal / Suggest Different Time Modal State
   const [suggestTimeTarget, setSuggestTimeTarget] = useState<ExchangeTransaction | null>(null);
+
+  // Extend Loan Period Modal State
+  const [extendModalTarget, setExtendModalTarget] = useState<ExchangeTransaction | null>(null);
 
   // Action Confirmation Modal State (Requirement 1 & 3)
   interface ActionConfirmationTarget {
@@ -1215,65 +1220,27 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                 Books currently in your possession. Keep an eye on return schedules.
               </p>
 
-              <div className="space-y-4 mt-2">
+              <div className="space-y-3 mt-2">
                 {currentlyBorrowedLoans.map((loan) => (
-                  <div
+                  <CurrentlyBorrowedCard
                     key={loan.id}
-                    className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-card flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6"
-                  >
-                    <div className="flex items-start gap-4 flex-1 min-w-0">
-                      <SafeBookThumbnail
-                        src={loan.bookCover}
-                        title={loan.bookTitle}
-                        sizeClass="w-14 h-20 sm:w-16 sm:h-22"
-                      />
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                            Reading Now
-                          </span>
-                          <span className="text-xs font-semibold text-amber-700">· {loan.dueDate || 'Due in 30 days'}</span>
-                        </div>
-
-                        <h3 className="font-serif text-lg font-semibold text-slate-800 truncate">
-                          {loan.bookTitle}
-                        </h3>
-                        <p className="text-xs text-slate-500 font-medium truncate">{loan.bookAuthor}</p>
-
-                        <div className="pt-2 flex items-center gap-3 text-xs text-slate-600 flex-wrap">
-                          <span>Owner: <strong className="font-semibold text-slate-700">{loan.ownerName}</strong></span>
-                          <span>· Collected: {loan.handoverDate || '12 days ago'}</span>
-                        </div>
-
-                        {/* Progress Bar for Loan */}
-                        <div className="pt-2 w-full max-w-md">
-                          <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium mb-1">
-                            <span>12 of 30 days used</span>
-                            <span className="text-brand font-semibold">18 days left</span>
-                          </div>
-                          <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                            <div className="h-full bg-brand rounded-full transition-all" style={{ width: '40%' }} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2.5 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                      <button
-                        onClick={() => setReturnModalTarget(loan)}
-                        className="flex-1 lg:flex-initial px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition active:scale-95 text-center"
-                      >
-                        Schedule Return Handover
-                      </button>
-
-                      <button
-                        onClick={() => onNavigateToMessages?.(loan.ownerName, loan.bookTitle)}
-                        className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition text-center"
-                      >
-                        Message Owner
-                      </button>
-                    </div>
-                  </div>
+                    loan={loan}
+                    onScheduleReturn={(l) => setReturnModalTarget(l)}
+                    onRequestExtension={(l) => setExtendModalTarget(l)}
+                    onMessage={(name, title) => onNavigateToMessages?.(name, title)}
+                    onSelectBook={(_title, id) => {
+                      const target = id || _title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      if (target) {
+                        navigate(`/book/${encodeURIComponent(target)}`);
+                      }
+                    }}
+                    onSelectParticipant={(name) => {
+                      if (name) {
+                        navigate(`/reader/${encodeURIComponent(name)}`);
+                      }
+                    }}
+                    unreadCount={loan.daysLeft !== undefined && loan.daysLeft < 0 ? 2 : 0}
+                  />
                 ))}
               </div>
             </div>
@@ -1926,6 +1893,18 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
         isOpen={Boolean(suggestTimeTarget)}
         onClose={() => setSuggestTimeTarget(null)}
         onSubmit={handleConfirmSuggestTime}
+      />
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* EXTEND LOAN PERIOD MODAL                                            */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <ExtendLoanModal
+        isOpen={Boolean(extendModalTarget)}
+        onClose={() => setExtendModalTarget(null)}
+        loan={extendModalTarget}
+        onConfirmExtension={async (targetLoan, extraDays) => {
+          showToast(`Extension request of +${extraDays} days sent to ${targetLoan.ownerName}!`);
+        }}
       />
 
       {/* ─────────────────────────────────────────────────────────────────── */}
