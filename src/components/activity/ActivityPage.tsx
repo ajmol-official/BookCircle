@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   CheckmarkCircle02Icon,
-  BubbleChatIcon,
   BookOpen01Icon,
   StarIcon,
   AlertCircleIcon,
@@ -18,6 +17,7 @@ import { RateReaderModal } from './RateReaderModal';
 import { BorrowRequestCard } from './BorrowRequestCard';
 import { HandoverConfirmationCard } from './HandoverConfirmationCard';
 import { CurrentlyBorrowedCard } from './CurrentlyBorrowedCard';
+import { CurrentlyLentCard } from './CurrentlyLentCard';
 import { SuggestMeetupTimeModal } from './SuggestMeetupTimeModal';
 import { ExtendLoanModal } from './ExtendLoanModal';
 import { ReviewModal } from '../bookdetails/ReviewModal';
@@ -908,51 +908,34 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
 
               <div className="space-y-3 mt-2">
                 {currentlyLentLoans.map((loan) => (
-                  <div
+                  <CurrentlyLentCard
                     key={loan.id}
-                    className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                      <SafeBookThumbnail
-                        src={loan.bookCover}
-                        title={loan.bookTitle}
-                        sizeClass="w-12 h-16"
-                      />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                            Active Loan
-                          </span>
-                          <span className="text-xs text-amber-700 font-semibold">· {loan.dueDate || 'Due in 30 days'}</span>
-                        </div>
-                        <h4 className="font-serif text-base font-semibold text-slate-800 mt-1 truncate">
-                          {loan.bookTitle}
-                        </h4>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                          <span>With <strong>{loan.borrowerName}</strong></span>
-                          <span>· Handed over {loan.handoverDate || 'Recently'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2 w-full sm:w-auto pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                      <button
-                        onClick={() => onNavigateToMessages?.(loan.borrowerName, loan.bookTitle)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 sm:py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition flex-1 sm:flex-initial justify-center"
-                      >
-                        <HugeiconsIcon icon={BubbleChatIcon} size={14} />
-                        <span>Message</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setDirectReturnTarget(loan)}
-                        className="px-3.5 py-2 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition flex-1 sm:flex-initial text-center active:scale-95"
-                      >
-                        Record Direct Return
-                      </button>
-                    </div>
-                  </div>
+                    loan={loan}
+                    onRecordDirectReturn={(l) => setDirectReturnTarget(l)}
+                    onSendReminder={async (l) => {
+                      await sendHandoverReminder(l.id, 'lender');
+                      showToast(`Reminder sent to ${l.borrowerName}!`);
+                    }}
+                    onOfferExtension={(l) => {
+                      setExtendModalTarget(l);
+                    }}
+                    onReportIssue={(l) => {
+                      setDisputeTarget(l);
+                    }}
+                    onMessage={(name, title) => onNavigateToMessages?.(name, title)}
+                    onSelectBook={(_title, id) => {
+                      const target = id || _title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      if (target) {
+                        navigate(`/book/${encodeURIComponent(target)}`);
+                      }
+                    }}
+                    onSelectParticipant={(name) => {
+                      if (name) {
+                        navigate(`/reader/${encodeURIComponent(name)}`);
+                      }
+                    }}
+                    unreadCount={loan.daysLeft !== undefined && loan.daysLeft < 0 ? 2 : 0}
+                  />
                 ))}
               </div>
             </div>

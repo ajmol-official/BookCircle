@@ -1561,6 +1561,34 @@ export const exchangeService = {
           pickupConfirmation: { lenderConfirmed: true, borrowerConfirmed: true }
         })
       },
+      // 3b. Lending - Overdue Loan (Marcus Vance - 12 days overdue matching design)
+      {
+        book_id: 'the-god-of-small-things',
+        book_title: 'The God of Small Things',
+        owner_id: userId,
+        owner_name: userDisplayName,
+        borrower_id: 'sample-borrower-marcus',
+        borrower_name: 'Marcus Vance',
+        exchange_type: 'borrow',
+        status: 'handed_over',
+        meetup_date: '43 days ago',
+        meetup_time: '11:00 AM',
+        meetup_spot: 'Central Library Steps',
+        message: encodeMessageWithMeta('12 days past due. Awaiting direct return.', {
+          substatus: 'active_loan',
+          bookAuthor: 'Arundhati Roy',
+          bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
+          borrowerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+          borrowerTrust: 'Active Reader',
+          originalCondition: 'Good',
+          handoverDate: '43 days ago',
+          dueDate: '12 days overdue',
+          daysUsed: 42,
+          totalDays: 30,
+          daysLeft: -12,
+          pickupConfirmation: { lenderConfirmed: true, borrowerConfirmed: true }
+        })
+      },
       // 4. Lending - Return to Review (Action Required)
       {
         book_id: 'stoner',
