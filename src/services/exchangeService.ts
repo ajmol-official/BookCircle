@@ -1621,26 +1621,48 @@ export const exchangeService = {
           }
         })
       },
-      // 5. Borrowing - Request Sent (Awaiting Owner)
+      // 5. Borrowing - Request Sent (Awaiting Owner) - Borrow Request
       {
-        book_id: 'the-night-circus',
-        book_title: 'The Night Circus',
-        owner_id: 'sample-owner-arif',
-        owner_name: 'Arif Ahmed',
+        book_id: 'the-god-of-small-things',
+        book_title: 'The God of Small Things',
+        owner_id: 'sample-owner-marcus',
+        owner_name: 'Marcus Vance',
         borrower_id: userId,
         borrower_name: userDisplayName,
         exchange_type: 'borrow',
         status: 'pending',
-        meetup_date: 'Monday',
-        meetup_time: '5:00 PM',
-        meetup_spot: 'Elm Park Green',
-        message: encodeMessageWithMeta('Looking forward to reading this magical story!', {
+        meetup_date: 'Saturday | 11:00 AM | 23 Apr, 2026',
+        meetup_time: '11:00 AM',
+        meetup_spot: 'Riverside Coffee, Rampura',
+        message: encodeMessageWithMeta('Looking forward to borrowing this book!', {
           substatus: 'pending_approval',
-          bookAuthor: 'Erin Morgenstern',
+          bookAuthor: 'Arundhati Roy',
           bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
-          ownerAvatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=200',
-          ownerTrust: 'Top Rated Lender · 5.0 ★',
-          requestDate: 'Today'
+          ownerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+          ownerTrust: 'Verified Lender · 4.8 ★',
+          requestDate: '2 days ago'
+        })
+      },
+      // 5b. Borrowing - Request Sent (Awaiting Owner) - Free Claim Request
+      {
+        book_id: 'the-night-circus',
+        book_title: 'The God of Small Things',
+        owner_id: 'sample-owner-marcus-gift',
+        owner_name: 'Marcus Vance',
+        borrower_id: userId,
+        borrower_name: userDisplayName,
+        exchange_type: 'gift',
+        status: 'pending',
+        meetup_date: 'Saturday | 11:00 AM | 23 Apr, 2026',
+        meetup_time: '11:00 AM',
+        meetup_spot: 'Riverside Coffee, Rampura',
+        message: encodeMessageWithMeta('Thank you for offering this book to our neighborhood!', {
+          substatus: 'pending_claim',
+          bookAuthor: 'Arundhati Roy',
+          bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
+          ownerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+          ownerTrust: 'Verified Neighbor · 4.9 ★',
+          requestDate: '2 days ago'
         })
       },
       // 6. Borrowing - Ready for Collection (Action Required)

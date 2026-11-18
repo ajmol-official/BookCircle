@@ -18,6 +18,7 @@ import { BorrowRequestCard } from './BorrowRequestCard';
 import { HandoverConfirmationCard } from './HandoverConfirmationCard';
 import { CurrentlyBorrowedCard } from './CurrentlyBorrowedCard';
 import { CurrentlyLentCard } from './CurrentlyLentCard';
+import { RequestSentCard } from './RequestSentCard';
 import { SuggestMeetupTimeModal } from './SuggestMeetupTimeModal';
 import { ExtendLoanModal } from './ExtendLoanModal';
 import { ReviewModal } from '../bookdetails/ReviewModal';
@@ -1082,55 +1083,38 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
 
               <div className="space-y-3 mt-2">
                 {sentBorrowRequests.map((req) => (
-                  <div
+                  <RequestSentCard
                     key={req.id}
-                    className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                      <SafeBookThumbnail
-                        src={req.bookCover}
-                        title={req.bookTitle}
-                        sizeClass="w-12 h-16"
-                      />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200/60">
-                            Awaiting Owner Response
-                          </span>
-                          <span className="text-xs text-slate-500">· Sent {req.requestDate}</span>
-                        </div>
-                        <h4 className="font-serif text-base font-semibold text-slate-800 mt-1 truncate">
-                          {req.bookTitle}
-                        </h4>
-                        <p className="text-xs text-slate-500 truncate">
-                          Owner: <strong>{req.ownerName}</strong> · Proposed meetup: {req.meetupDate} at {req.meetupTime}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActionConfirmTarget({
-                          type: 'cancel_request',
-                          exchange: req,
-                          title: 'Cancel Borrow Request',
-                          description: `Are you sure you want to cancel your request for “${req.bookTitle}” sent to ${req.ownerName}?`,
-                          confirmLabel: 'Yes, Cancel Request',
-                          cancelLabel: 'Keep Request',
-                          isDanger: true,
-                          details: {
-                            date: req.meetupDate,
-                            time: req.meetupTime,
-                            spot: req.meetupSpot,
-                          },
-                        });
-                      }}
-                      className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition text-center"
-                    >
-                      Cancel Request
-                    </button>
-                  </div>
+                    request={req}
+                    onCancelRequest={(r) => {
+                      setActionConfirmTarget({
+                        type: 'cancel_request',
+                        exchange: r,
+                        title: r.exchangeType === 'gift' ? 'Cancel Gift Claim' : 'Cancel Borrow Request',
+                        description: `Are you sure you want to cancel your request for “${r.bookTitle}” sent to ${r.ownerName}?`,
+                        confirmLabel: 'Yes, Cancel Request',
+                        cancelLabel: 'Keep Request',
+                        isDanger: true,
+                        details: {
+                          date: r.meetupDate,
+                          time: r.meetupTime,
+                          spot: r.meetupSpot,
+                        },
+                      });
+                    }}
+                    onMessage={(name, title) => onNavigateToMessages?.(name, title)}
+                    onSelectBook={(_title, id) => {
+                      const target = id || _title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      if (target) {
+                        navigate(`/book/${encodeURIComponent(target)}`);
+                      }
+                    }}
+                    onSelectParticipant={(name) => {
+                      if (name) {
+                        navigate(`/reader/${encodeURIComponent(name)}`);
+                      }
+                    }}
+                  />
                 ))}
               </div>
             </div>
