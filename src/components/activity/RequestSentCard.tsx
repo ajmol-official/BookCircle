@@ -140,7 +140,7 @@ export const RequestSentCard: React.FC<RequestSentCardProps> = ({
               {/* Book Title in Serif */}
               <h4
                 onClick={() => onSelectBook?.(request.bookTitle, request.catalogId || request.bookId)}
-                className="font-serif text-base sm:text-lg font-bold text-slate-900 truncate cursor-pointer hover:text-brand transition"
+                className="font-serif text-base sm:text-lg font-semibold text-slate-900 truncate cursor-pointer hover:text-brand transition"
                 title={request.bookTitle}
               >
                 {request.bookTitle}

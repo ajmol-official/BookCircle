@@ -217,7 +217,7 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
             <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-0.5">
               Requested Book
             </p>
-            <h4 className="font-serif text-base sm:text-lg font-bold text-slate-900 group-hover/book:text-brand transition-colors truncate">
+            <h4 className="font-serif text-base sm:text-lg font-semibold text-slate-900 group-hover/book:text-brand transition-colors truncate">
               {request.bookTitle}
             </h4>
             <p className="text-xs sm:text-sm text-slate-500 truncate">
