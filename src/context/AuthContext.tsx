@@ -88,10 +88,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        // 2. Fallback to cached local session (for demo accounts or offline preview)
+        // 2. Fallback to cached local session (for real accounts)
         const localSession = authService.getCurrentSession();
         if (localSession?.user && isMounted) {
-          setCurrentUser(localSession.user);
+          // If cached session is a legacy demo account, discard it so visitors start unauthenticated
+          if (localSession.user.authProvider === 'demo') {
+            storageService.clearSession();
+            setCurrentUser(null);
+          } else {
+            setCurrentUser(localSession.user);
+          }
         } else if (isMounted) {
           const dismissed = storageService.isOnboardingDismissed();
           if (!dismissed) {
@@ -124,9 +130,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { user, isNewUser } = await authService.syncSupabaseSession(session.user);
             handleAuthSuccess(user, isNewUser);
 
-            if (window.location.hash && window.location.hash.includes('access_token')) {
-              const redirectPath = sessionStorage.getItem('bookcircle_auth_redirect') || window.location.pathname;
-              sessionStorage.removeItem('bookcircle_auth_redirect');
+            const redirectPath = sessionStorage.getItem('bookcircle_auth_redirect') || window.location.pathname;
+            sessionStorage.removeItem('bookcircle_auth_redirect');
+            if (
+              (window.location.hash && window.location.hash.includes('access_token')) ||
+              (window.location.search && window.location.search.includes('code='))
+            ) {
               window.history.replaceState(null, '', redirectPath);
             }
           } catch (syncErr) {

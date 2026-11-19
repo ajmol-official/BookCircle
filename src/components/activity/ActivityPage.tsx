@@ -7,6 +7,7 @@ import {
   StarIcon,
   AlertCircleIcon,
   Cancel01Icon,
+  LockIcon,
 } from '@hugeicons/core-free-icons';
 import { useExchanges } from '../../context/ExchangeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -77,7 +78,7 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
   onNavigateToMessages,
   onOpenAddBook,
 }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, requireAuth } = useAuth();
   const navigate = useNavigate();
 
   // Clean isolation: only use demo fallbacks when in demo mode or without real user
@@ -642,6 +643,38 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     };
   }, [returnModalTarget]);
 
+  // Visitor Gating: Require Google Sign-In to view activity
+  if (!currentUser) {
+    return (
+      <div className="pt-16 pb-24 max-w-lg mx-auto text-center px-4 animate-in fade-in duration-300">
+        <div className="w-16 h-16 rounded-3xl bg-brand/10 text-brand flex items-center justify-center mx-auto mb-5 shadow-2xs">
+          <HugeiconsIcon icon={LockIcon} size={28} />
+        </div>
+        <h1 className="font-serif text-3xl font-semibold text-slate-800 tracking-tight">
+          Sign In to View Activity
+        </h1>
+        <p className="mt-2 text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
+          Sign in with your Google account to track your borrowed books, incoming lending requests, and meetup handovers with neighbors.
+        </p>
+        <div className="mt-8">
+          <button
+            type="button"
+            onClick={() => {
+              requireAuth({
+                title: 'Sign In to View Activity',
+                message: 'Sign in with your Google account to access your personal book loans and requests.',
+                onAuthorized: () => {},
+              });
+            }}
+            className="w-full py-3.5 px-6 rounded-2xl bg-brand hover:bg-brand-dark text-white font-semibold text-sm shadow-md transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Sign In with Google</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pt-8 pb-20 animate-in fade-in duration-200">
       {/* 1. Page Header */}
@@ -711,32 +744,34 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
           })}
         </div>
 
-        {/* Quick sample controls */}
-        <div className="flex items-center gap-2 pb-2 self-end sm:self-auto">
-          {lendingExchanges.length > 0 || borrowingExchanges.length > 0 || historyExchanges.length > 0 ? (
+        {/* Quick sample controls (Demo only) */}
+        {isDemoSession && (
+          <div className="flex items-center gap-2 pb-2 self-end sm:self-auto">
+            {lendingExchanges.length > 0 || borrowingExchanges.length > 0 || historyExchanges.length > 0 ? (
+              <button
+                onClick={handleClearSampleActivities}
+                disabled={isSeeding}
+                className="text-[11px] font-medium text-slate-400 hover:text-slate-600 px-2 py-1 transition"
+                title="Clear sample activities"
+              >
+                Clear Samples
+              </button>
+            ) : null}
             <button
-              onClick={handleClearSampleActivities}
+              onClick={handleSeedSampleActivities}
               disabled={isSeeding}
-              className="text-[11px] font-medium text-slate-400 hover:text-slate-600 px-2 py-1 transition"
-              title="Clear sample activities"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200/80 text-xs font-semibold shadow-2xs transition active:scale-95 disabled:opacity-75"
+              title="Load sample activities to test the exchange engine"
             >
-              Clear Samples
+              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
+              <span>{isSeeding ? 'Loading...' : 'Load Sample Activities'}</span>
             </button>
-          ) : null}
-          <button
-            onClick={handleSeedSampleActivities}
-            disabled={isSeeding}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200/80 text-xs font-semibold shadow-2xs transition active:scale-95 disabled:opacity-75"
-            title="Load sample activities to test the exchange engine"
-          >
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
-            <span>{isSeeding ? 'Loading...' : 'Load Sample Activities'}</span>
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Helper Banner when all tabs are empty */}
-      {lendingExchanges.length === 0 && borrowingExchanges.length === 0 && historyExchanges.length === 0 && (
+      {/* Helper Banner when all tabs are empty (Demo only) */}
+      {isDemoSession && lendingExchanges.length === 0 && borrowingExchanges.length === 0 && historyExchanges.length === 0 && (
         <div className="mt-6 p-5 sm:p-6 bg-gradient-to-r from-purple-50 via-[#FDF8F2] to-amber-50 rounded-2xl border border-brand/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
           <div className="flex items-start sm:items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center flex-shrink-0 shadow-xs">
@@ -1054,18 +1089,20 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                   When neighbors request books from your shelf or schedule returns, they will appear right here.
                 </p>
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                  <button
-                    onClick={handleSeedSampleActivities}
-                    disabled={isSeeding}
-                    className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2"
-                  >
-                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
-                    <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities (See How It Works)'}</span>
-                  </button>
+                  {isDemoSession && (
+                    <button
+                      onClick={handleSeedSampleActivities}
+                      disabled={isSeeding}
+                      className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2"
+                    >
+                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
+                      <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities (See How It Works)'}</span>
+                    </button>
+                  )}
                   {onOpenAddBook && (
                     <button
                       onClick={onOpenAddBook}
-                      className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
+                      className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2 cursor-pointer"
                     >
                       + Add a Book to Your Shelf
                     </button>
@@ -1349,18 +1386,20 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                   Explore books in your neighborhood to borrow, read, and return with trust!
                 </p>
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                  <button
-                    onClick={handleSeedSampleActivities}
-                    disabled={isSeeding}
-                    className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2"
-                  >
-                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
-                    <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities (See How It Works)'}</span>
-                  </button>
+                  {isDemoSession && (
+                    <button
+                      onClick={handleSeedSampleActivities}
+                      disabled={isSeeding}
+                      className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2"
+                    >
+                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
+                      <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities (See How It Works)'}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => navigate('/books')}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition active:scale-95"
+                    className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2 cursor-pointer"
                   >
                     + Explore Community Books
                   </button>
@@ -1417,16 +1456,18 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
               <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
                 Completed loans, verified returns, and gift claims will be archived here.
               </p>
-              <div className="mt-5 flex justify-center">
-                <button
-                  onClick={handleSeedSampleActivities}
-                  disabled={isSeeding}
-                  className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2"
-                >
-                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
-                  <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities (See How It Works)'}</span>
-                </button>
-              </div>
+              {isDemoSession && (
+                <div className="mt-5 flex justify-center">
+                  <button
+                    onClick={handleSeedSampleActivities}
+                    disabled={isSeeding}
+                    className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-2"
+                  >
+                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} />
+                    <span>{isSeeding ? 'Loading Samples...' : 'Load Sample Activities (See How It Works)'}</span>
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-3.5 mt-4">
