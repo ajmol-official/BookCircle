@@ -17,6 +17,7 @@ import { ProfileMeetupSpotsTab } from './ProfileMeetupSpotsTab';
 import { ReturnReliabilityModal } from './ReturnReliabilityModal';
 import { EditProfileModal } from './EditProfileModal';
 import { useAuth } from '../../context/AuthContext';
+import { cleanAvatarUrl } from '../../utils/avatarUtils';
 
 interface PublicProfilePageProps {
   reader: Reader;
@@ -45,6 +46,15 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
         (currentUser.displayName &&
           reader.name &&
           currentUser.displayName.toLowerCase().trim() === reader.name.toLowerCase().trim()))
+  );
+
+  const isMockProfile = Boolean(
+    reader.id &&
+      (reader.id.startsWith('mock-') ||
+        reader.id === 'demo-user' ||
+        reader.name === 'Hana Yamada' ||
+        reader.name === 'Diego Ramirez' ||
+        reader.name === 'Priya Shah')
   );
 
   const [activeSubTab, setActiveSubTab] = useState<
@@ -90,30 +100,37 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
       return reader.preferredHandoverLocations.slice(0, 2);
     }
 
-    // Default mock neighborhood spots
-    return [
-      {
-        id: `spot-${reader.id || '1'}-1`,
-        name: 'Camden Coffee Roasters',
-        instructions: 'Main entrance foyer · Usually weekdays 5pm – 7pm',
-      },
-      {
-        id: `spot-${reader.id || '1'}-2`,
-        name: 'Primrose Hill Community Library',
-        instructions: 'Front reception desk · Saturdays 10am – 1pm',
-      },
-    ];
-  }, [isOwnProfile, currentUser, reader]);
+    if (isMockProfile) {
+      return [
+        {
+          id: `spot-${reader.id || '1'}-1`,
+          name: 'Camden Coffee Roasters',
+          instructions: 'Main entrance foyer · Usually weekdays 5pm – 7pm',
+        },
+        {
+          id: `spot-${reader.id || '1'}-2`,
+          name: 'Primrose Hill Community Library',
+          instructions: 'Front reception desk · Saturdays 10am – 1pm',
+        },
+      ];
+    }
+
+    return [];
+  }, [isOwnProfile, currentUser, reader, isMockProfile]);
 
   // Filter books owned by this reader
   const readerBooks = useMemo(() => {
     const readerNameNormalized = reader.name.toLowerCase().trim();
-    const books = allBooks.filter((book) => {
+    const readerIdNormalized = (reader.id || '').toLowerCase().trim();
+
+    return allBooks.filter((book) => {
       const ownerNormalized = book.ownerName.toLowerCase().trim();
+      const ownerIdNormalized = (book.ownerId || '').toLowerCase().trim();
+
       const isOwner =
-        ownerNormalized === readerNameNormalized ||
-        ownerNormalized.includes(readerNameNormalized) ||
-        readerNameNormalized.includes(ownerNormalized);
+        (readerIdNormalized && ownerIdNormalized && ownerIdNormalized === readerIdNormalized) ||
+        ownerNormalized === readerNameNormalized;
+
       if (!isOwner) return false;
 
       // Privacy Isolation: Non-owners NEVER see private collection books on another user's public profile
@@ -128,22 +145,6 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
       }
       return true;
     });
-
-    if (books.length === 0) {
-      return allBooks.slice(0, 4).map((b, idx) => ({
-        ...b,
-        id: `profile-${reader.id || 'r'}-${idx}`,
-        ownerName: reader.name,
-        ownerAvatar: reader.avatar,
-        distance: reader.distance,
-        availabilityMode: (idx % 2 === 0 ? 'lending' : 'donation') as 'lending' | 'donation' | 'personal',
-        status: (idx === 3 ? 'lent_out' : idx % 2 === 0 ? 'available' : 'donation') as
-          | 'available'
-          | 'lent_out'
-          | 'donation',
-      }));
-    }
-    return books;
   }, [allBooks, reader, isOwnProfile]);
 
   // Derived counts
@@ -200,42 +201,44 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
     }
   };
 
-  // Mock community reviews given to this user by fellow neighbors
-  const neighborReviews = [
-    {
-      id: 'rev-n1',
-      neighborName: 'Maya Lin',
-      neighborAvatar:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
-      bookTitle: 'Pachinko',
-      date: '1 week ago',
-      rating: 5,
-      type: 'Borrower',
-      comment: `${reader.name} is one of the most generous and reliable readers in our neighborhood! Met at Camden Coffee right on time. The book was in immaculate condition with a handwritten reading card.`,
-    },
-    {
-      id: 'rev-n2',
-      neighborName: 'Diego Ramirez',
-      neighborAvatar:
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
-      bookTitle: 'The Godfather',
-      date: '3 weeks ago',
-      rating: 5,
-      type: 'Borrower',
-      comment: `Smooth and prompt handover. Highly recommend borrowing from or donating books to ${reader.name}. 10/10 community neighbor!`,
-    },
-    {
-      id: 'rev-n3',
-      neighborName: 'Priya Shah',
-      neighborAvatar:
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150',
-      bookTitle: 'The Alchemist',
-      date: '1 month ago',
-      rating: 5,
-      type: 'Recipient (Donation)',
-      comment: `Received a wonderful donation copy from ${reader.name}’s shelf to keep forever. What an amazing way to spread love for literature across our community.`,
-    },
-  ];
+  // Community reviews: Real users have only real reviews (start at 0); mock demo accounts keep illustrative reviews
+  const neighborReviews = useMemo(() => {
+    if (!isMockProfile) {
+      return [];
+    }
+    return [
+      {
+        id: 'rev-n1',
+        neighborName: 'Maya Lin',
+        neighborAvatar: '',
+        bookTitle: 'Pachinko',
+        date: '1 week ago',
+        rating: 5,
+        type: 'Borrower',
+        comment: `${reader.name} is one of the most generous and reliable readers in our neighborhood! Met right on time. The book was in immaculate condition.`,
+      },
+      {
+        id: 'rev-n2',
+        neighborName: 'Diego Ramirez',
+        neighborAvatar: '',
+        bookTitle: 'The Godfather',
+        date: '3 weeks ago',
+        rating: 5,
+        type: 'Borrower',
+        comment: `Smooth and prompt handover. Highly recommend borrowing from or donating books to ${reader.name}. 10/10 community neighbor!`,
+      },
+      {
+        id: 'rev-n3',
+        neighborName: 'Priya Shah',
+        neighborAvatar: '',
+        bookTitle: 'The Alchemist',
+        date: '1 month ago',
+        rating: 5,
+        type: 'Recipient (Donation)',
+        comment: `Received a wonderful donation copy from ${reader.name}’s shelf to keep forever. What an amazing way to spread love for literature across our community.`,
+      },
+    ];
+  }, [isMockProfile, reader.name]);
 
   return (
     <>
@@ -267,11 +270,8 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
           name={reader.name}
           location={reader.location || `${reader.distance} away`}
           memberSince={reader.memberSince || 'February 2024'}
-          bio={
-            reader.bio ||
-            'Passionate book lover and community member. Happy to share my shelf with neighborhood readers and donate extra paperbacks to good homes.'
-          }
-          avatar={reader.avatar}
+          bio={reader.bio || undefined}
+          avatar={cleanAvatarUrl(reader.avatar)}
           initials={initials}
           stats={{
             totalBooks: totalBooksCount,
@@ -280,10 +280,15 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
             lentOut: lentOutCount,
           }}
           trustStats={{
-            onTimeReturnsRatio: '32/32',
-            communityContributions: donationCount || 5,
-            activeBorrows: reader.totalBorrows || 16,
-            generousListerBooks: totalBooksCount || 14,
+            onTimeReturnsRatio:
+              reader.totalBorrows && reader.totalBorrows > 0
+                ? `${reader.totalBorrows}/${reader.totalBorrows}`
+                : isMockProfile
+                ? '32/32'
+                : '0/0',
+            communityContributions: donationCount,
+            activeBorrows: reader.totalBorrows || 0,
+            generousListerBooks: totalBooksCount,
           }}
           isOwnProfile={isOwnProfile}
           onEditProfile={isOwnProfile ? () => setIsEditModalOpen(true) : undefined}
@@ -449,23 +454,31 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                   <HugeiconsIcon icon={BookOpen01Icon} size={24} />
                 </div>
                 <h3 className="font-serif text-base font-semibold text-slate-800">
-                  No matching books found
+                  {searchQuery
+                    ? 'No matching books found'
+                    : readerBooks.length === 0
+                    ? `${firstName} hasn’t added any books yet`
+                    : 'No books in this filter'}
                 </h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   {searchQuery
                     ? `No books found matching "${searchQuery}" on ${firstName}’s shelf.`
+                    : readerBooks.length === 0
+                    ? `Check back soon when ${firstName} lists books for lending or community donation!`
                     : `No books available under the selected filter on ${firstName}’s shelf.`}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAvailabilityFilter('all');
-                    setSearchQuery('');
-                  }}
-                  className="mt-2 text-xs font-semibold text-brand hover:underline cursor-pointer"
-                >
-                  Clear all filters
-                </button>
+                {(searchQuery || availabilityFilter !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvailabilityFilter('all');
+                      setSearchQuery('');
+                    }}
+                    className="mt-2 text-xs font-semibold text-brand hover:underline cursor-pointer"
+                  >
+                    Clear all filters
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -542,48 +555,66 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                 Reviews from local neighbors who have completed handovers, borrowed books, or received donations from {firstName}.
               </p>
 
-              <div className="divide-y divide-slate-100 space-y-6">
-                {neighborReviews.map((rev) => (
-                  <div key={rev.id} className="pt-6 first:pt-0 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={rev.neighborAvatar}
-                          alt={rev.neighborName}
-                          className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0"
-                        />
-                        <div>
-                          <h4 className="font-sans font-semibold text-sm text-slate-900">
-                            {rev.neighborName}
-                          </h4>
-                          <div className="flex items-center gap-2 text-[11px] text-slate-500 flex-wrap">
-                            <span className="font-medium text-brand">{rev.type}</span>
-                            <span>·</span>
-                            <span>For “{rev.bookTitle}”</span>
-                            <span>·</span>
-                            <span>{rev.date}</span>
+              {neighborReviews.length > 0 ? (
+                <div className="divide-y divide-slate-100 space-y-6">
+                  {neighborReviews.map((rev) => (
+                    <div key={rev.id} className="pt-6 first:pt-0 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {rev.neighborAvatar ? (
+                            <img
+                              src={rev.neighborAvatar}
+                              alt={rev.neighborName}
+                              className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-11 h-11 rounded-full bg-brand/10 text-brand flex items-center justify-center font-bold text-sm ring-2 ring-slate-100 flex-shrink-0">
+                              {rev.neighborName.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="font-sans font-semibold text-sm text-slate-900">
+                              {rev.neighborName}
+                            </h4>
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500 flex-wrap">
+                              <span className="font-medium text-brand">{rev.type}</span>
+                              <span>·</span>
+                              <span>For “{rev.bookTitle}”</span>
+                              <span>·</span>
+                              <span>{rev.date}</span>
+                            </div>
                           </div>
+                        </div>
+
+                        <div className="flex items-center text-amber-500">
+                          {[...Array(rev.rating)].map((_, i) => (
+                            <HugeiconsIcon
+                              key={i}
+                              icon={StarIcon}
+                              size={15}
+                              className="fill-amber-400 text-amber-500"
+                            />
+                          ))}
                         </div>
                       </div>
 
-                      <div className="flex items-center text-amber-500">
-                        {[...Array(rev.rating)].map((_, i) => (
-                          <HugeiconsIcon
-                            key={i}
-                            icon={StarIcon}
-                            size={15}
-                            className="fill-amber-400 text-amber-500"
-                          />
-                        ))}
-                      </div>
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans pl-14 italic">
+                        “{rev.comment}”
+                      </p>
                     </div>
-
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans pl-14 italic">
-                      “{rev.comment}”
-                    </p>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-slate-200 rounded-2xl p-10 text-center space-y-2">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-brand mx-auto flex items-center justify-center">
+                    <HugeiconsIcon icon={StarIcon} size={20} />
                   </div>
-                ))}
-              </div>
+                  <h4 className="font-serif font-semibold text-sm text-slate-800">No community reviews yet</h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Reviews from fellow readers will appear here after {firstName} completes book loans or handovers.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -596,45 +627,63 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                 Neighbor Feedback & Trust Record
               </h3>
               <p className="text-xs sm:text-sm text-slate-500">
-                Verified reviews from completed physical book handovers across London neighborhoods.
+                Verified reviews from completed physical book handovers across local neighborhoods.
               </p>
 
-              <div className="space-y-4 pt-2">
-                {neighborReviews.map((fb) => (
-                  <div
-                    key={`fb-${fb.id}`}
-                    className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <img
-                        src={fb.neighborAvatar}
-                        alt={fb.neighborName}
-                        className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0"
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-sm text-slate-800">{fb.neighborName}</h4>
-                          <span className="text-xs text-slate-500">· {fb.type}</span>
+              {neighborReviews.length > 0 ? (
+                <div className="space-y-4 pt-2">
+                  {neighborReviews.map((fb) => (
+                    <div
+                      key={`fb-${fb.id}`}
+                      className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        {fb.neighborAvatar ? (
+                          <img
+                            src={fb.neighborAvatar}
+                            alt={fb.neighborName}
+                            className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-11 h-11 rounded-full bg-brand/10 text-brand flex items-center justify-center font-bold text-sm ring-2 ring-slate-100 flex-shrink-0">
+                            {fb.neighborName.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-sm text-slate-800">{fb.neighborName}</h4>
+                            <span className="text-xs text-slate-500">· {fb.type}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 mt-1 italic leading-relaxed">
+                            “{fb.comment}”
+                          </p>
                         </div>
-                        <p className="text-xs text-slate-600 mt-1 italic leading-relaxed">
-                          “{fb.comment}”
-                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-amber-500 self-end sm:self-auto">
+                        {[...Array(fb.rating)].map((_, i) => (
+                          <HugeiconsIcon
+                            key={i}
+                            icon={StarIcon}
+                            size={14}
+                            className="fill-amber-400 text-amber-500"
+                          />
+                        ))}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1 text-amber-500 self-end sm:self-auto">
-                      {[...Array(fb.rating)].map((_, i) => (
-                        <HugeiconsIcon
-                          key={i}
-                          icon={StarIcon}
-                          size={14}
-                          className="fill-amber-400 text-amber-500"
-                        />
-                      ))}
-                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-slate-200 rounded-2xl p-10 text-center space-y-2">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-brand mx-auto flex items-center justify-center">
+                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} />
                   </div>
-                ))}
-              </div>
+                  <h4 className="font-serif font-semibold text-sm text-slate-800">No exchange feedback yet</h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Feedback from neighbors who exchange books with {firstName} will appear here.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

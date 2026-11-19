@@ -37,7 +37,7 @@ const DEMO_OWNER_PROFILES: Array<{
   { name: 'Cody Fisher', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200', distance: '2.1 km away', condition: 'Like New', status: 'available', mode: 'borrow' },
   { name: 'Robert Fox', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200', distance: '4.2 km away', condition: 'Like New', status: 'donation', mode: 'donation' },
   { name: 'Brooklyn Simmons', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', distance: '2.1 km away', condition: 'Like New', status: 'available', mode: 'borrow' },
-  { name: 'Devon Lane', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200', distance: '4.2 km away', condition: 'Like New', status: 'donation', mode: 'donation' },
+  { name: 'Devon Lane', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=200', distance: '4.2 km away', condition: 'Like New', status: 'donation', mode: 'donation' },
   { name: 'Marvin McKinney', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200', distance: '3.5 km away', condition: 'Very Good', status: 'lent_out', mode: 'borrow' },
   { name: 'Bessie Cooper', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200', distance: '4.8 km away', condition: 'Good', status: 'claimed', mode: 'borrow' },
 ];

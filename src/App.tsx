@@ -28,6 +28,7 @@ import { BookReviewsPage } from './components/reviews/BookReviewsPage';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { PublicProfilePage } from './components/profile/PublicProfilePage';
 import { WishlistModal } from './components/profile/WishlistModal';
+import { cleanAvatarUrl } from './utils/avatarUtils';
 import { InboxPage } from './components/inbox/InboxPage';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { LogoutConfirmDialog } from './components/LogoutConfirmDialog';
@@ -301,22 +302,19 @@ const ReaderProfileRoute: React.FC<{
     return {
       id: `reader-${decoded.replace(/\s+/g, '-')}`,
       name: decodeURIComponent(readerId),
-      avatar:
-        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-      distance: '1.2 km away',
-      location: 'Local Neighborhood',
-      memberSince: 'March 2026',
+      avatar: '',
+      distance: 'Nearby Neighborhood',
+      location: 'Nearby Neighborhood',
+      memberSince: 'Recently Joined',
       booksAvailable: booksList.filter(
         (b) => b.ownerName.toLowerCase().trim() === decoded
       ).length,
-      rating: 4.9,
-      totalBorrows: 24,
-      trustTier: 'Tier 4 · Highly Reliable',
-      trustScore: '100% on schedule · 24/24 on time',
-      bio: `Hi, I am ${decodeURIComponent(
-        readerId
-      )}. I love sharing books with my neighbors in BookCircle! Check out my lending and donation shelf below.`,
-      favoriteGenres: ['All', 'Fiction', 'History', 'Science'],
+      rating: 5.0,
+      totalBorrows: 0,
+      trustTier: 'Tier 1 · Novice Reader',
+      trustScore: 'New Reader',
+      bio: '',
+      favoriteGenres: ['All', 'Fiction', 'Non-fiction'],
       verified: true,
     } as Reader;
   }, [readersList, booksList, readerId]);
@@ -865,7 +863,7 @@ const BookCircleMain: React.FC = () => {
       borrower: {
         id: currentUser?.id || 'demo-user',
         name: currentUser?.displayName || 'Maya Lin',
-        avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        avatar: cleanAvatarUrl(currentUser?.avatar),
       },
       date: details.date,
       time: details.time,
@@ -895,7 +893,7 @@ const BookCircleMain: React.FC = () => {
       borrower: {
         id: currentUser?.id || 'demo-user',
         name: currentUser?.displayName || 'Maya Lin',
-        avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        avatar: cleanAvatarUrl(currentUser?.avatar),
       },
       date: details.date,
       time: details.time,
@@ -982,7 +980,7 @@ const BookCircleMain: React.FC = () => {
           distance: '0.1 km',
           ownersCount: 1,
           ownerName: currentUser?.displayName || 'You',
-          ownerAvatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          ownerAvatar: cleanAvatarUrl(currentUser?.avatar),
           ownerTrust: 'Verified Lender',
         },
         currentUser?.id || 'demo-user'

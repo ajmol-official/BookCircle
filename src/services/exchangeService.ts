@@ -94,9 +94,7 @@ const mapRowToTransaction = (item: any): ExchangeTransaction => {
     borrowerDistance: meta.borrowerDistance,
     ownerId: item.owner_id || meta.ownerId || '',
     ownerName: item.owner_name || 'Book Owner',
-    ownerAvatar:
-      meta.ownerAvatar ||
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    ownerAvatar: meta.ownerAvatar || '',
     ownerTrust: meta.ownerTrust,
     requestDate: meta.requestDate || (item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recently'),
     meetupDate: item.meetup_date || 'Upcoming',
@@ -1509,7 +1507,7 @@ export const exchangeService = {
           substatus: 'pending_approval',
           bookAuthor: 'Richard Powers',
           bookCover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300',
-          borrowerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          borrowerAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
           borrowerTrust: 'Reliable Neighbor · 5.0 ★',
           requestDate: 'Today',
           pickupConfirmation: { lenderConfirmed: false, borrowerConfirmed: false }
@@ -1687,7 +1685,7 @@ export const exchangeService = {
           substatus: 'accepted',
           bookAuthor: 'Arundhati Roy',
           bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
-          ownerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          ownerAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
           ownerTrust: 'Verified Lender · 4.8 ★',
           pickupConfirmation: { lenderConfirmed: false, borrowerConfirmed: false }
         })
@@ -1737,7 +1735,7 @@ export const exchangeService = {
           substatus: 'active_loan',
           bookAuthor: 'Richard Powers',
           bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
-          ownerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          ownerAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
           ownerTrust: 'Verified Neighbor',
           originalCondition: 'Good',
           handoverDate: '40 days ago',

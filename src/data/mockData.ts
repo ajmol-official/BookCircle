@@ -67,7 +67,7 @@ export const mockCatalogBooks: CatalogBook[] = [
     existingOwners: [
       {
         name: 'Amira Khan',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        avatar: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=200',
         condition: 'Like New',
         distance: '2.1 km away'
       }
@@ -263,7 +263,7 @@ export const mockBooks: Book[] = [
     status: 'available',
     wishlistCount: 22,
     ownerName: 'Amira Khan',
-    ownerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    ownerAvatar: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=200',
     ownerTrust: 'Fair (23 lends)',
     condition: 'Like New',
     availabilityMode: 'lending',
@@ -722,7 +722,7 @@ export const mockReaders: Reader[] = [
   {
     id: 'reader-3',
     name: 'Amira Khan',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    avatar: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=200',
     distance: '1.8 km',
     location: 'Highgate · 1.8 km away',
     memberSince: '2023',

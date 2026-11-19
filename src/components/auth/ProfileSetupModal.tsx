@@ -10,9 +10,9 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { modalBackdropVariants, modalContentVariants } from '../../animations/motionVariants';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { cleanAvatarUrl } from '../../utils/avatarUtils';
 
 const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
@@ -25,7 +25,7 @@ export const ProfileSetupModal: React.FC = () => {
   useBodyScrollLock(isProfileSetupOpen);
 
   const [displayName, setDisplayName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState(PRESET_AVATARS[0]);
+  const [selectedAvatar, setSelectedAvatar] = useState(cleanAvatarUrl(currentUser?.avatar));
   const [location, setLocation] = useState('');
   const [bio, setBio] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,7 +34,7 @@ export const ProfileSetupModal: React.FC = () => {
   useEffect(() => {
     if (currentUser) {
       setDisplayName(currentUser.displayName || '');
-      setSelectedAvatar(currentUser.avatar || PRESET_AVATARS[0]);
+      setSelectedAvatar(cleanAvatarUrl(currentUser.avatar));
       setLocation(currentUser.location || '');
       setBio(currentUser.bio || '');
     }
@@ -132,12 +132,30 @@ export const ProfileSetupModal: React.FC = () => {
               Choose an Avatar (Optional)
             </label>
             <div className="flex items-center gap-3">
-              <img
-                src={selectedAvatar}
-                alt="Selected avatar"
-                className="w-16 h-16 rounded-full object-cover ring-4 ring-brand/20 shadow-md flex-shrink-0"
-              />
-              <div className="flex flex-wrap gap-2">
+              {selectedAvatar ? (
+                <img
+                  src={selectedAvatar}
+                  alt="Selected avatar"
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover ring-4 ring-brand/20 shadow-md flex-shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-brand/10 border-2 border-brand/30 text-brand font-serif font-bold text-xl flex items-center justify-center shadow-md flex-shrink-0">
+                  {displayName ? displayName.charAt(0).toUpperCase() : 'BC'}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedAvatar('')}
+                  className={`w-9 h-9 rounded-full font-serif font-bold text-xs flex items-center justify-center border-2 transition ${
+                    !selectedAvatar
+                      ? 'border-brand bg-brand/15 text-brand ring-2 ring-brand/20 scale-105'
+                      : 'border-slate-200 bg-slate-100 text-slate-600 opacity-70 hover:opacity-100'
+                  }`}
+                  title="Use default initials badge"
+                >
+                  {displayName ? displayName.charAt(0).toUpperCase() : 'BC'}
+                </button>
                 {PRESET_AVATARS.map((url, idx) => (
                   <button
                     key={idx}

@@ -8,6 +8,7 @@ import {
   BookOpen01Icon
 } from '@hugeicons/core-free-icons';
 import type { Reader } from '../types';
+import { cleanAvatarUrl } from '../utils/avatarUtils';
 
 interface ReaderCardProps {
   reader: Reader;
@@ -179,9 +180,9 @@ export const ReaderCard: React.FC<ReaderCardProps> = ({ reader, onBrowseShelf })
         <div className="order-1 flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0">
           {/* Avatar (56px on mobile, 60px on tablet, 64px on desktop) */}
           <div className="relative flex-shrink-0">
-            {reader.avatar && !avatarError ? (
+            {cleanAvatarUrl(reader.avatar) && !avatarError ? (
               <img
-                src={reader.avatar}
+                src={cleanAvatarUrl(reader.avatar)}
                 alt={reader.name}
                 onError={() => setAvatarError(true)}
                 className="w-14 h-14 sm:w-15 sm:h-15 lg:w-16 lg:h-16 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-brand/30 transition-all duration-300 shadow-xs"

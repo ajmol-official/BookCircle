@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { mockBooks, mockReaders } from '../data/mockData';
 import type { Book, Reader, UserReadingStatusValue } from '../types';
+import { cleanAvatarUrl } from '../utils/avatarUtils';
 
 function mapDbBookToBook(item: any): Book {
   const isPersonal =
@@ -19,8 +20,9 @@ function mapDbBookToBook(item: any): Book {
     ownersCount: item.owners_count || 1,
     category: item.category || 'Fiction',
     status: item.status || 'available',
+    ownerId: item.owner_id || undefined,
     ownerName: item.owner_name || 'Neighbor',
-    ownerAvatar: item.owner_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    ownerAvatar: cleanAvatarUrl(item.owner_avatar),
     ownerTrust: 'Verified Neighbor',
     description: item.description,
     condition: item.condition || 'Like New',
@@ -155,7 +157,7 @@ export const dbService = {
       return data.map((item: any) => ({
         id: item.id,
         name: item.full_name,
-        avatar: item.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        avatar: cleanAvatarUrl(item.avatar_url),
         distance: item.distance || 'Nearby',
         location: item.location,
         memberSince: item.member_since || '2024',

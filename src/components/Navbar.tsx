@@ -19,6 +19,7 @@ import { NotificationDropdown, type NotificationItem } from './NotificationDropd
 import { useAuth } from '../context/AuthContext';
 import { useWriter } from '../context/WriterContext';
 import { dropdownVariants } from '../animations/motionVariants';
+import { cleanAvatarUrl, getUserInitials } from '../utils/avatarUtils';
 
 interface NavbarProps {
   activeTab: string;
@@ -296,13 +297,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                   aria-label="User profile menu"
                 >
                   <div className="relative">
-                    <img
-                      src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                      alt={currentUser?.displayName || 'User profile'}
-                      className={`w-10 h-10 rounded-full object-cover ring-2 transition-all shadow-sm ${
-                        isProfileMenuOpen ? 'ring-brand' : 'ring-slate-200 group-hover:ring-brand'
-                      }`}
-                    />
+                    {cleanAvatarUrl(currentUser?.avatar) ? (
+                      <img
+                        src={cleanAvatarUrl(currentUser?.avatar)}
+                        alt={currentUser?.displayName || 'User profile'}
+                        className={`w-10 h-10 rounded-full object-cover ring-2 transition-all shadow-sm ${
+                          isProfileMenuOpen ? 'ring-brand' : 'ring-slate-200 group-hover:ring-brand'
+                        }`}
+                      />
+                    ) : (
+                      <div
+                        className={`w-10 h-10 rounded-full bg-brand/10 border-2 text-brand font-serif font-bold text-sm flex items-center justify-center transition-all shadow-sm ${
+                          isProfileMenuOpen ? 'border-brand ring-2 ring-brand/20' : 'border-brand/20 group-hover:border-brand'
+                        }`}
+                      >
+                        {getUserInitials(currentUser?.displayName)}
+                      </div>
+                    )}
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-cream rounded-full" />
                   </div>
                   <HugeiconsIcon
@@ -327,19 +338,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                     
                     {/* User Identity Header */}
                     <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-3.5">
-                      <img
-                        src={
-                          experienceMode === 'writer' && activeWriterProfile?.photo
-                            ? activeWriterProfile.photo
-                            : currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
-                        }
-                        alt={
-                          experienceMode === 'writer' && activeWriterProfile
-                            ? activeWriterProfile.name
-                            : currentUser?.displayName || 'User'
-                        }
-                        className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0"
-                      />
+                      {experienceMode === 'writer' && activeWriterProfile?.photo ? (
+                        <img
+                          src={activeWriterProfile.photo}
+                          alt={activeWriterProfile.name}
+                          className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0"
+                        />
+                      ) : cleanAvatarUrl(currentUser?.avatar) ? (
+                        <img
+                          src={cleanAvatarUrl(currentUser?.avatar)}
+                          alt={currentUser?.displayName || 'User'}
+                          className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-brand/10 border-2 border-brand/20 text-brand font-serif font-bold text-base flex items-center justify-center flex-shrink-0">
+                          {getUserInitials(
+                            experienceMode === 'writer' && activeWriterProfile
+                              ? activeWriterProfile.name
+                              : currentUser?.displayName
+                          )}
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <h4 className="font-serif text-sm font-semibold text-slate-900 truncate">
                           {experienceMode === 'writer' && activeWriterProfile

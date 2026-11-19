@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import type { Conversation, ChatMessage, ActiveFloatingChat } from '../types/messaging';
 import { useAuth } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { cleanAvatarUrl } from '../utils/avatarUtils';
 
 const isRealUuid = (id?: string): boolean =>
   Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
@@ -10,7 +11,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
   {
     id: 'conv-elena',
     participantName: 'Elena Rostova',
-    participantAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    participantAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
     participantTrust: '5.0 ★ (Reliable Neighbor)',
     bookTitle: 'The Overstory',
     bookAuthor: 'Richard Powers',
@@ -31,7 +32,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
         id: 'msg-e1',
         sender: 'other',
         senderName: 'Elena Rostova',
-        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
         text: 'Hi Maya! Would love to borrow The Overstory for our local book circle next week.',
         time: 'Yesterday 3:15 PM'
       },
@@ -39,7 +40,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
         id: 'msg-e2',
         sender: 'user',
         senderName: 'You',
-        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        senderAvatar: '',
         text: 'Hello Elena! Happy to lend it. Riverside Coffee works well for me.',
         time: 'Yesterday 4:02 PM'
       },
@@ -47,7 +48,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
         id: 'msg-e3',
         sender: 'other',
         senderName: 'Elena Rostova',
-        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
         text: 'Hi! Looking forward to meeting tomorrow at Riverside Coffee.',
         time: '10:14 AM'
       }
@@ -85,7 +86,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
         id: 'm-2',
         sender: 'user',
         senderName: 'You',
-        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        senderAvatar: '',
         text: 'Thank you so much Diego! I have been looking for this edition for months. Where is best to meet?',
         time: 'Yesterday 4:18 PM'
       },
@@ -131,7 +132,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
         id: 'm-202',
         sender: 'user',
         senderName: 'You',
-        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        senderAvatar: '',
         text: 'Hi Hana! I just finished the final chapter yesterday. Saturday works great!',
         time: '2 days ago'
       }
@@ -298,9 +299,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         for (const [otherId, mList] of msgsByOther.entries()) {
           const profile = profileMap.get(otherId);
           const otherName = profile?.full_name || 'Community Reader';
-          const otherAvatar =
-            profile?.avatar_url ||
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+          const otherAvatar = cleanAvatarUrl(profile?.avatar_url);
 
           const formattedMessages: ChatMessage[] = mList.map((m) => {
             const isMe = m.sender_id === currentUserId;
@@ -310,8 +309,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               sender: isMe ? 'user' : 'other',
               senderName: isMe ? currentUser?.displayName || 'You' : otherName,
               senderAvatar: isMe
-                ? currentUser?.avatar ||
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
+                ? cleanAvatarUrl(currentUser?.avatar)
                 : otherAvatar,
               text: m.content,
               time: createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -444,9 +442,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: targetId,
           participantId: fallbackData?.participantId,
           participantName,
-          participantAvatar:
-            fallbackData?.participantAvatar ||
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          participantAvatar: cleanAvatarUrl(fallbackData?.participantAvatar),
           participantTrust: fallbackData?.participantTrust || '4.9 ★ (Verified Reader)',
           bookTitle: bookTitle || fallbackData?.bookTitle || 'Community Book',
           bookAuthor: fallbackData?.bookAuthor || 'Neighbor',
@@ -549,9 +545,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: messageId,
         sender: 'user',
         senderName: currentUser?.displayName || 'You',
-        senderAvatar:
-          currentUser?.avatar ||
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        senderAvatar: cleanAvatarUrl(currentUser?.avatar),
         text: clean,
         time: timeStr,
         timestamp: messageTimestamp,

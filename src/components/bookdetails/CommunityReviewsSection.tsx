@@ -6,6 +6,7 @@ import {
   ArrowUp01Icon
 } from '@hugeicons/core-free-icons';
 import type { Review } from '../../types/review';
+import { cleanAvatarUrl } from '../../utils/avatarUtils';
 
 interface CommunityReviewsSectionProps {
   reviews: Review[];
@@ -89,12 +90,18 @@ export const CommunityReviewsSection: React.FC<CommunityReviewsSectionProps> = (
               >
                 {/* 1. Reviewer Header: Avatar, Name, Relative Date */}
                 <div className="flex items-center gap-3 mb-2.5">
-                  <img
-                    src={rev.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150'}
-                    alt={rev.author}
-                    className="w-10 h-10 rounded-full object-cover ring-1 ring-slate-200 flex-shrink-0"
-                    loading="lazy"
-                  />
+                  {cleanAvatarUrl(rev.avatar) ? (
+                    <img
+                      src={cleanAvatarUrl(rev.avatar)}
+                      alt={rev.author}
+                      className="w-10 h-10 rounded-full object-cover ring-1 ring-slate-200 flex-shrink-0"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-brand/10 border border-brand/20 text-brand font-serif font-bold text-sm flex items-center justify-center flex-shrink-0">
+                      {rev.author ? rev.author.charAt(0).toUpperCase() : 'BC'}
+                    </div>
+                  )}
                   <div>
                     <h4 className="font-semibold text-sm text-slate-900 leading-snug">
                       {rev.author}

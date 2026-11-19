@@ -1,6 +1,7 @@
 import type { User, AuthSession, PhoneOtpVerification } from '../types/auth';
 import { storageService } from './storageService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { cleanAvatarUrl } from '../utils/avatarUtils';
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -173,10 +174,7 @@ export class AuthService {
     const meta = supabaseUser.user_metadata || {};
     const displayName =
       meta.full_name || meta.name || (email ? email.split('@')[0].replace(/[._-]/g, ' ') : 'Community Reader');
-    const avatar =
-      meta.avatar_url ||
-      meta.picture ||
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+    const avatar = cleanAvatarUrl(meta.avatar_url || meta.picture || '');
 
     let profile: any = null;
     let isNewUser = false;
@@ -234,7 +232,7 @@ export class AuthService {
       id: userId,
       email,
       displayName: profile?.full_name || displayName,
-      avatar: profile?.avatar_url || avatar,
+      avatar: cleanAvatarUrl(profile?.avatar_url) || avatar,
       location: profile?.location || 'Local Community Reader',
       bio: profile?.bio || '',
       memberSince:
@@ -423,8 +421,7 @@ export class AuthService {
       phoneNumber: fullPhone,
       countryCode: record.countryCode,
       displayName: `Reader ${record.phoneNumber.slice(-4)}`,
-      avatar:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      avatar: '',
       location: 'Local Neighborhood',
       memberSince: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
       trustScore: 5.0,

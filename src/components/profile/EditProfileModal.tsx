@@ -9,9 +9,9 @@ import {
   Tick01Icon,
 } from '@hugeicons/core-free-icons';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { cleanAvatarUrl } from '../../utils/avatarUtils';
 
 export const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=250',
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=250',
@@ -60,7 +60,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [name, setName] = useState(userProfile.name);
   const [location, setLocation] = useState(userProfile.location);
   const [bio, setBio] = useState(userProfile.bio);
-  const [avatar, setAvatar] = useState(userProfile.avatar || PRESET_AVATARS[0]);
+  const [avatar, setAvatar] = useState(cleanAvatarUrl(userProfile.avatar));
   const [selectedGenres, setSelectedGenres] = useState<string[]>(
     userProfile.favoriteGenres && userProfile.favoriteGenres.length > 0
       ? userProfile.favoriteGenres.filter((g) => g.toLowerCase() !== 'all')
@@ -281,11 +281,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               {/* Avatar Preview & Presets Row */}
               <div className="flex flex-wrap items-center gap-4 pt-1">
                 <div className="relative group flex-shrink-0">
-                  <img
-                    src={avatar}
-                    alt="Active Avatar"
-                    className="w-16 h-16 rounded-full object-cover ring-4 ring-brand/30 shadow-md"
-                  />
+                  {avatar ? (
+                    <img
+                      src={avatar}
+                      alt="Active Avatar"
+                      className="w-16 h-16 rounded-full object-cover ring-4 ring-brand/30 shadow-md"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-brand/10 border-2 border-brand/30 text-brand font-serif font-bold text-2xl flex items-center justify-center shadow-md">
+                      {name ? name.charAt(0).toUpperCase() : 'BC'}
+                    </div>
+                  )}
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="absolute inset-0 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
@@ -300,6 +306,23 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     Or pick a community avatar:
                   </p>
                   <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    <button
+                      type="button"
+                      onClick={() => setAvatar('')}
+                      className={`relative w-9 h-9 rounded-full font-serif font-bold text-xs flex items-center justify-center transition transform active:scale-90 flex-shrink-0 border-2 ${
+                        !avatar
+                          ? 'border-brand bg-brand/15 text-brand ring-2 ring-brand ring-offset-2 scale-105'
+                          : 'border-slate-200 bg-slate-100 text-slate-600 opacity-70 hover:opacity-100'
+                      }`}
+                      title="Initials badge (No photo)"
+                    >
+                      {name ? name.charAt(0).toUpperCase() : 'BC'}
+                      {!avatar && (
+                        <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-brand text-white flex items-center justify-center shadow-xs">
+                          <HugeiconsIcon icon={Tick01Icon} size={10} />
+                        </span>
+                      )}
+                    </button>
                     {PRESET_AVATARS.map((url, idx) => {
                       const isSelected = avatar === url;
                       return (

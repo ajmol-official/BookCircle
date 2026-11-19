@@ -15,7 +15,7 @@ export const INITIAL_USERS: User[] = [
     phoneNumber: '+44 7700 900077',
     countryCode: '+44',
     displayName: 'Maya Lin',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
     location: 'Elm Park, North London',
     bio: 'Slow reader. Love novels that feel like long walks. Currently working through Elena Ferrante.',
     memberSince: 'February 2024',

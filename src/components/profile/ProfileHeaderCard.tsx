@@ -8,12 +8,13 @@ import {
   Camera01Icon,
   CheckmarkCircle02Icon,
 } from '@hugeicons/core-free-icons';
+import { cleanAvatarUrl } from '../../utils/avatarUtils';
 
 export interface ProfileHeaderCardProps {
   name: string;
   location: string;
   memberSince?: string;
-  bio: string;
+  bio?: string;
   avatar?: string;
   initials: string;
   stats: {
@@ -61,9 +62,9 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-7 min-w-0 flex-1">
           {/* Avatar with Camera or Online Indicator */}
           <div className="relative flex-shrink-0 group">
-            {avatar && !avatarError ? (
+            {cleanAvatarUrl(avatar) && !avatarError ? (
               <img
-                src={avatar}
+                src={cleanAvatarUrl(avatar)}
                 alt={name}
                 onError={() => setAvatarError(true)}
                 className="w-24 h-24 sm:w-28 sm:h-28 md:w-[132px] md:h-[132px] rounded-full object-cover ring-4 ring-slate-100 shadow-md"

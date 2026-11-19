@@ -114,7 +114,7 @@ const INITIAL_SEEDED_REVIEWS: Review[] = [
     bookTitle: 'The Night Circus',
     userId: 'user-maya',
     author: 'Maya Lin',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150',
     rating: 5,
     title: 'Pure enchantment from the opening sentence',
     text: 'The circus arrives without warning. It is simply there, when yesterday it was not. Morgenstern weaves an intoxicating world of monochrome tents, ice gardens, and clockwork magic. Reading it felt like falling into a warm dream.',
@@ -146,7 +146,7 @@ const INITIAL_SEEDED_REVIEWS: Review[] = [
     bookTitle: 'The Night Circus',
     userId: 'user-elena',
     author: 'Elena Rostova',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150',
     rating: 4,
     title: 'Gorgeous imagery and unforgettable setting',
     text: 'The Le Cirque des Rêves is the true main character here. Marco and Celia’s duel is more artistic collaboration than combat. Beautifully written and comforting.',
@@ -503,9 +503,7 @@ class ReviewService {
       bookTitle: params.bookTitle,
       userId: params.userId || 'guest-user',
       author: params.author || 'Community Reader',
-      avatar:
-        params.avatar ||
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+      avatar: params.avatar || '',
       rating: Math.max(1, Math.min(5, params.rating)),
       title: params.title?.trim() || undefined,
       text: params.text.trim(),

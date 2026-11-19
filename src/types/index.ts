@@ -47,6 +47,7 @@ export interface Book {
   ownersCount: number;
   category: BookCategory;
   status: 'available' | 'lent_out' | 'donation' | 'claimed';
+  ownerId?: string;
   ownerName: string;
   ownerAvatar: string;
   ownerTrust: string;

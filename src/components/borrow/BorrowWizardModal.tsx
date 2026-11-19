@@ -70,9 +70,7 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
       {
         id: 'owner-target',
         name: activeTargetName || book?.ownerName || 'Aisha Patel',
-        avatar:
-          book?.ownerAvatar ||
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+        avatar: book?.ownerAvatar || '',
         distance: book?.distance || '0.4 km away',
         memberSince: '2023',
         lendsCount: 42,
@@ -82,7 +80,7 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
       {
         id: 'owner-amira',
         name: 'Amira Khan',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+        avatar: '',
         distance: '1.8 km away',
         memberSince: '2023',
         lendsCount: 19,

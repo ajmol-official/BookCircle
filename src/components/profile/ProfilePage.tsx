@@ -222,10 +222,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             lentOut: lentOutCount,
           }}
           trustStats={{
-            onTimeReturnsRatio: '32/32',
-            communityContributions: availableDonationCount || 5,
-            activeBorrows: 16,
-            generousListerBooks: totalBooksCount || 14,
+            onTimeReturnsRatio:
+              currentUser?.borrowsCount && currentUser.borrowsCount > 0
+                ? `${currentUser.borrowsCount}/${currentUser.borrowsCount}`
+                : '0/0',
+            communityContributions: availableDonationCount,
+            activeBorrows: currentUser?.borrowsCount || 0,
+            generousListerBooks: totalBooksCount,
           }}
           isOwnProfile={true}
           onEditProfile={() => setIsEditModalOpen(true)}
