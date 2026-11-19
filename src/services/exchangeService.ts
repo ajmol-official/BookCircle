@@ -677,6 +677,8 @@ export const exchangeService = {
 
     if (current.owner_id) {
       activeQuery = activeQuery.eq('owner_id', current.owner_id);
+    } else if (current.owner_name) {
+      activeQuery = activeQuery.eq('owner_name', current.owner_name);
     }
 
     const { data: activeOthers } = await activeQuery;
@@ -1486,6 +1488,9 @@ export const exchangeService = {
       throw new Error('Supabase client not configured.');
     }
 
+    // 1. Ensure idempotency: Clean up previous sample activities for this user before seeding fresh ones
+    await this.clearSampleActivities(userId, userDisplayName);
+
     const sampleRows = [
       // 1. Lending - Pending Borrow Request
       {
@@ -1805,29 +1810,46 @@ export const exchangeService = {
 
   /**
    * Remove or cancel sample activities created for the user.
+   * Uses efficient batch cancellation and handles demo user aliases.
    */
   async clearSampleActivities(userId: string = 'demo-user', userDisplayName: string = 'Reader'): Promise<void> {
     if (!isSupabaseConfigured()) return;
     try {
-      const orFilter = `owner_name.eq.${userDisplayName},borrower_name.eq.${userDisplayName},owner_id.eq.${userId},borrower_id.eq.${userId}`;
+      const isDemo = userId === 'demo-user' || userId === 'user-maya-lin' || userDisplayName === 'Maya Lin';
+      const filters = [
+        `owner_name.eq.${userDisplayName}`,
+        `borrower_name.eq.${userDisplayName}`,
+        `owner_id.eq.${userId}`,
+        `borrower_id.eq.${userId}`,
+      ];
+      if (isDemo) {
+        filters.push(
+          'owner_id.eq.demo-user',
+          'borrower_id.eq.demo-user',
+          'owner_id.eq.user-maya-lin',
+          'borrower_id.eq.user-maya-lin',
+          'owner_name.eq.Maya Lin',
+          'borrower_name.eq.Maya Lin'
+        );
+      }
+
+      const orFilter = Array.from(new Set(filters)).join(',');
       const { data: rows } = await supabase
         .from('borrow_requests')
-        .select('id, message')
-        .or(orFilter);
+        .select('id')
+        .or(orFilter)
+        .neq('status', 'cancelled');
 
       if (rows && rows.length > 0) {
-        await Promise.all(
-          rows.map((r) => {
-            const { message: cleanMsg, meta } = decodeMessageAndMeta(r.message);
-            return supabase
-              .from('borrow_requests')
-              .update({
-                status: 'cancelled',
-                message: encodeMessageWithMeta(cleanMsg, { ...meta, substatus: 'cancelled' }),
-              })
-              .eq('id', r.id);
-          })
-        );
+        const ids = rows.map((r) => r.id);
+        const batchSize = 30;
+        for (let i = 0; i < ids.length; i += batchSize) {
+          const batch = ids.slice(i, i + batchSize);
+          await supabase
+            .from('borrow_requests')
+            .update({ status: 'cancelled' })
+            .in('id', batch);
+        }
       }
     } catch (e) {
       console.error('Error clearing sample activities:', e);

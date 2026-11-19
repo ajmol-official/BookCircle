@@ -470,6 +470,43 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
     [lendingExchanges]
   );
 
+  // Active lending books (to prevent duplicate concurrent meetups on a copy currently out on loan)
+  const activeLendingBookIds = useMemo(() => {
+    const ids = new Set<string>();
+    lendingExchanges.forEach((e) => {
+      if (
+        e.status === 'accepted' ||
+        e.status === 'handover_in_progress' ||
+        e.status === 'claim_accepted' ||
+        e.status === 'claim_handover' ||
+        e.status === 'active_loan' ||
+        e.status === 'return_scheduled' ||
+        e.status === 'return_in_progress'
+      ) {
+        if (e.bookId) ids.add(e.bookId);
+      }
+    });
+    return ids;
+  }, [lendingExchanges]);
+
+  const activeLendingBookTitles = useMemo(() => {
+    const titles = new Set<string>();
+    lendingExchanges.forEach((e) => {
+      if (
+        e.status === 'accepted' ||
+        e.status === 'handover_in_progress' ||
+        e.status === 'claim_accepted' ||
+        e.status === 'claim_handover' ||
+        e.status === 'active_loan' ||
+        e.status === 'return_scheduled' ||
+        e.status === 'return_in_progress'
+      ) {
+        if (e.bookTitle) titles.add(e.bookTitle.toLowerCase().trim());
+      }
+    });
+    return titles;
+  }, [lendingExchanges]);
+
   // ─── BORROWING TAB DATA ───────────────────────────────────────────────────
   const borrowingExchanges = useMemo(() => exchanges.filter(isBorrower), [exchanges, currentUserId, currentUserDisplayName]);
 
@@ -795,47 +832,55 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
               </p>
 
               <div className="space-y-4 mt-2">
-                {pendingLendingRequests.map((req) => (
-                  <BorrowRequestCard
-                    key={req.id}
-                    request={req}
-                    onAcceptMeetup={(r) => {
-                      setActionConfirmTarget({
-                        type: 'accept_meetup',
-                        exchange: r,
-                        title: r.exchangeType === 'gift' ? 'Accept Gift Claim Meetup' : 'Accept Meetup & Lend Book',
-                        description: `Are you ready to accept the meetup with ${r.borrowerName} to ${
-                          r.exchangeType === 'gift' ? 'gift' : 'lend'
-                        } “${r.bookTitle}”?`,
-                        confirmLabel: 'Confirm Accept',
-                        cancelLabel: 'Cancel',
-                        details: {
-                          date: r.meetupDate,
-                          time: r.meetupTime,
-                          spot: r.meetupSpot,
-                        },
-                      });
-                    }}
-                    onDecline={(r) => {
-                      setDeclineTarget(r);
-                      setDeclineNote('');
-                    }}
-                    onSuggestDifferentTime={(r) => {
-                      setSuggestTimeTarget(r);
-                    }}
-                    onSelectBook={(_title, id) => {
-                      const target = id || _title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                      if (target) {
-                        navigate(`/book/${encodeURIComponent(target)}`);
-                      }
-                    }}
-                    onSelectRequester={(name) => {
-                      if (name) {
-                        navigate(`/reader/${encodeURIComponent(name)}`);
-                      }
-                    }}
-                  />
-                ))}
+                {pendingLendingRequests.map((req) => {
+                  const isAlreadyOnLoan = Boolean(
+                    (req.bookId && activeLendingBookIds.has(req.bookId)) ||
+                    (req.bookTitle && activeLendingBookTitles.has(req.bookTitle.toLowerCase().trim()))
+                  );
+
+                  return (
+                    <BorrowRequestCard
+                      key={req.id}
+                      request={req}
+                      isAlreadyOnLoan={isAlreadyOnLoan}
+                      onAcceptMeetup={(r) => {
+                        setActionConfirmTarget({
+                          type: 'accept_meetup',
+                          exchange: r,
+                          title: r.exchangeType === 'gift' ? 'Accept Gift Claim Meetup' : 'Accept Meetup & Lend Book',
+                          description: `Are you ready to accept the meetup with ${r.borrowerName} to ${
+                            r.exchangeType === 'gift' ? 'gift' : 'lend'
+                          } “${r.bookTitle}”?`,
+                          confirmLabel: 'Confirm Accept',
+                          cancelLabel: 'Cancel',
+                          details: {
+                            date: r.meetupDate,
+                            time: r.meetupTime,
+                            spot: r.meetupSpot,
+                          },
+                        });
+                      }}
+                      onDecline={(r) => {
+                        setDeclineTarget(r);
+                        setDeclineNote('');
+                      }}
+                      onSuggestDifferentTime={(r) => {
+                        setSuggestTimeTarget(r);
+                      }}
+                      onSelectBook={(_title, id) => {
+                        const target = id || _title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                        if (target) {
+                          navigate(`/book/${encodeURIComponent(target)}`);
+                        }
+                      }}
+                      onSelectRequester={(name) => {
+                        if (name) {
+                          navigate(`/reader/${encodeURIComponent(name)}`);
+                        }
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}

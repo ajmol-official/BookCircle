@@ -7,7 +7,8 @@ import {
   Cancel01Icon,
   BookOpen01Icon,
   GiftIcon,
-  StarIcon
+  StarIcon,
+  AlertCircleIcon
 } from '@hugeicons/core-free-icons';
 import type { ExchangeTransaction } from '../../types';
 
@@ -18,6 +19,7 @@ export interface BorrowRequestCardProps {
   onSuggestDifferentTime: (request: ExchangeTransaction) => void;
   onSelectRequester?: (borrowerName: string, borrowerId?: string) => void;
   onSelectBook?: (bookTitle: string, bookId?: string) => void;
+  isAlreadyOnLoan?: boolean;
 }
 
 /**
@@ -97,7 +99,8 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
   onDecline,
   onSuggestDifferentTime,
   onSelectRequester,
-  onSelectBook
+  onSelectBook,
+  isAlreadyOnLoan = false
 }) => {
   const [avatarError, setAvatarError] = useState(false);
   const [coverError, setCoverError] = useState(false);
@@ -175,18 +178,38 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
               <span>Decline</span>
             </button>
 
-            {/* Accept Meetup Button */}
-            <button
-              type="button"
-              onClick={() => onAcceptMeetup(request)}
-              className="flex-1 sm:flex-initial h-10 px-4 sm:px-5 rounded-xl bg-brand hover:bg-brand-dark active:scale-95 text-white text-xs sm:text-sm font-semibold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer order-2 sm:order-3"
-              title="Accept meetup and schedule book handover"
-            >
-              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} />
-              <span>Accept Meetup</span>
-            </button>
+            {/* Accept Meetup Button / Copy On Loan Status */}
+            {isAlreadyOnLoan ? (
+              <div
+                className="flex-1 sm:flex-initial h-10 px-3.5 sm:px-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed order-2 sm:order-3 select-none"
+                title="Your copy of this title is currently on loan. Once returned, you can accept new requests."
+              >
+                <HugeiconsIcon icon={AlertCircleIcon} size={15} className="text-amber-600 flex-shrink-0" />
+                <span>Copy On Loan</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onAcceptMeetup(request)}
+                className="flex-1 sm:flex-initial h-10 px-4 sm:px-5 rounded-xl bg-brand hover:bg-brand-dark active:scale-95 text-white text-xs sm:text-sm font-semibold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer order-2 sm:order-3"
+                title="Accept meetup and schedule book handover"
+              >
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} />
+                <span>Accept Meetup</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {/* ─── Informational Notice If Book Is Currently On Loan ─── */}
+        {isAlreadyOnLoan && (
+          <div className="flex items-center gap-2 bg-amber-50/90 border border-amber-200/80 rounded-xl px-3.5 py-2 my-2.5 text-xs text-amber-800">
+            <HugeiconsIcon icon={AlertCircleIcon} size={15} className="text-amber-600 flex-shrink-0" />
+            <span>
+              Your copy of this title is currently out on loan. Once the current exchange is marked as returned, you can accept new requests.
+            </span>
+          </div>
+        )}
 
         {/* ─── Middle Section: Requested Book Inset Box ─── */}
         <div
