@@ -21,7 +21,6 @@ export interface AuthorHeaderCardProps {
   onShare: () => void;
   isOwner?: boolean;
   onEditProfile?: () => void;
-  onClaimProfile?: () => void;
 }
 
 export const AuthorHeaderCard: React.FC<AuthorHeaderCardProps> = ({
@@ -34,7 +33,6 @@ export const AuthorHeaderCard: React.FC<AuthorHeaderCardProps> = ({
   onShare,
   isOwner = false,
   onEditProfile,
-  onClaimProfile,
 }) => {
   const [photoError, setPhotoError] = React.useState(false);
 
@@ -252,23 +250,6 @@ export const AuthorHeaderCard: React.FC<AuthorHeaderCardProps> = ({
               </a>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Unclaimed Profile Invitation Banner */}
-      {!author.isClaimed && !isOwner && onClaimProfile && (
-        <div className="mt-5 pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-          <p className="text-slate-500">
-            Are you <strong>{author.name}</strong> or their official literary representative?
-          </p>
-          <button
-            type="button"
-            onClick={onClaimProfile}
-            className="text-brand font-semibold hover:underline inline-flex items-center gap-1 self-start sm:self-auto cursor-pointer"
-          >
-            <span>Claim this official profile</span>
-            <span>→</span>
-          </button>
         </div>
       )}
     </div>

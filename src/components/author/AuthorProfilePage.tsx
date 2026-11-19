@@ -44,7 +44,7 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
   onBack,
   isUserProfileView = false,
 }) => {
-  const { openWriterOnboarding, openWriterDashboard, activeWriterProfile } = useWriter();
+  const { openWriterDashboard, activeWriterProfile } = useWriter();
   const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -258,7 +258,6 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
           onShare={handleShare}
           isOwner={isOwner}
           onEditProfile={openWriterDashboard}
-          onClaimProfile={() => openWriterOnboarding(author)}
         />
 
         {/* ─── SECTION B: Published Books Catalogue ─── */}
