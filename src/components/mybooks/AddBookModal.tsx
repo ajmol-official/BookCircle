@@ -16,6 +16,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { canonicalCatalogBooks } from '../../data/canonicalCatalog';
 import { dbService } from '../../services/dbService';
+import { useAuth } from '../../context/AuthContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
   BookClassification,
@@ -146,6 +147,8 @@ interface CatalogMatchItem {
 }
 
 export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, initialBook, onBookAdded }) => {
+  const { currentUser } = useAuth();
+
   // Navigation / Step state
   const [classification, setClassification] = useState<BookClassification | null>(null);
   const [generalStep, setGeneralStep] = useState<1 | 2>(1);
@@ -574,7 +577,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
   // Reading status choice handler (General Books Only)
   const handleReadingStatusSelect = async (status: UserReadingStatusValue) => {
     if (submittedBookInfo) {
-      await dbService.upsertReadingStatus('demo-user', submittedBookInfo.catalogId, status);
+      await dbService.upsertReadingStatus(currentUser?.id || 'demo-user', submittedBookInfo.catalogId, status);
     }
     handleModalClose();
   };
