@@ -37,7 +37,7 @@ type RatingOption = 'all' | '4.8' | '4.5' | '4.0';
 type SortOption = 'distance-asc' | 'rating-desc' | 'reviews-desc' | 'title-asc';
 type AvailabilityTab = 'all' | 'lending' | 'donation' | 'lent_out';
 
-const CATEGORIES = ['All', 'Fiction', 'Non-fiction', 'Science', 'History', 'Poetry'] as const;
+const CATEGORIES = ['All', 'General', 'Fiction', 'Non-fiction', 'Science', 'History', 'Poetry'] as const;
 const CONDITIONS = ['Like New', 'Very Good', 'Good', 'Fair'] as const;
 
 export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({

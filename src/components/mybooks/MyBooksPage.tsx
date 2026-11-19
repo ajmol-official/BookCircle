@@ -20,7 +20,7 @@ import {
 import { AddBookModal } from './AddBookModal';
 import { EditBookModal } from './EditBookModal';
 import { useExchanges } from '../../context/ExchangeContext';
-import type { Book } from '../../types';
+import type { Book, BookCategory } from '../../types';
 
 interface MyBooksPageProps {
   myBooks?: Book[];
@@ -32,7 +32,7 @@ interface MyBooksPageProps {
     id: string;
     title: string;
     author: string;
-    category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+    category: BookCategory;
     condition: 'Like New' | 'Very Good' | 'Good' | 'Fair';
     description?: string;
   }) => void;

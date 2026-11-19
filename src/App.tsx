@@ -65,7 +65,7 @@ import {
   canonicalCatalogBooks,
   getCatalogWorksForAuthor
 } from './data/canonicalCatalog';
-import type { Book, Reader } from './types';
+import type { Book, BookCategory, Reader } from './types';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { BookOpen01Icon, FavouriteIcon } from '@hugeicons/core-free-icons';
 
@@ -638,7 +638,7 @@ const BookCircleMain: React.FC = () => {
     author?: string;
     catalogId?: string;
     coverImage?: string;
-    category?: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+    category?: BookCategory;
   } | null>(null);
 
   const handleOpenAddBook = (initial?: {

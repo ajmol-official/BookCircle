@@ -31,6 +31,8 @@ export interface UserReadingStatus {
   updatedAt?: string;
 }
 
+export type BookCategory = 'General' | 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+
 export interface Book {
   id: string;
   catalogId?: string; // Canonical Unique Book Title ID for shared reviews and ratings
@@ -43,7 +45,7 @@ export interface Book {
   reviewsCount: number;
   distance: string;
   ownersCount: number;
-  category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+  category: BookCategory;
   status: 'available' | 'lent_out' | 'donation' | 'claimed';
   ownerName: string;
   ownerAvatar: string;
@@ -79,7 +81,7 @@ export interface CatalogBook {
   rating: number;
   reviewsCount: number;
   wishlistCount?: number;
-  category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+  category: BookCategory;
   synopsis: string;
   publishedYear?: string;
   existingOwners?: {
@@ -97,7 +99,7 @@ export interface CatalogWork {
   authorId?: string;
   authorCountry?: string;
   coverImage: string;
-  category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+  category: BookCategory;
   rating: number;
   reviewsCount: number;
   synopsis?: string;

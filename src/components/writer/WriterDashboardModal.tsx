@@ -10,7 +10,7 @@ import {
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { useWriter } from '../../context/WriterContext';
 import { getCatalogWorksForAuthor } from '../../data/canonicalCatalog';
-import type { Book, CatalogWork } from '../../types';
+import type { Book, BookCategory, CatalogWork } from '../../types';
 
 interface WriterDashboardModalProps {
   booksList?: Book[];
@@ -51,7 +51,7 @@ export const WriterDashboardModal: React.FC<WriterDashboardModalProps> = ({
   const [isSuggestingWork, setIsSuggestingWork] = useState(false);
   const [suggestTitle, setSuggestTitle] = useState('');
   const [suggestYear, setSuggestYear] = useState('');
-  const [suggestCategory, setSuggestCategory] = useState<'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry'>('Fiction');
+  const [suggestCategory, setSuggestCategory] = useState<BookCategory>('General');
   const [suggestSynopsis, setSuggestSynopsis] = useState('');
   const [suggestCover, setSuggestCover] = useState('');
   const [suggestPublisherUrl, setSuggestPublisherUrl] = useState('');
@@ -564,6 +564,7 @@ export const WriterDashboardModal: React.FC<WriterDashboardModalProps> = ({
                       onChange={(e) => setSuggestCategory(e.target.value as any)}
                       className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand/30"
                     >
+                      <option value="General">General</option>
                       <option value="Fiction">Fiction</option>
                       <option value="Non-fiction">Non-fiction</option>
                       <option value="Science">Science</option>

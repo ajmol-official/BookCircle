@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Cancel01Icon, BookOpen01Icon } from '@hugeicons/core-free-icons';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import type { Book } from '../../types';
+import type { Book, BookCategory } from '../../types';
 
 interface EditBookModalProps {
   isOpen: boolean;
@@ -12,7 +12,7 @@ interface EditBookModalProps {
     id: string;
     title: string;
     author: string;
-    category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+    category: BookCategory;
     condition: 'Like New' | 'Very Good' | 'Good' | 'Fair';
     description?: string;
   }) => void;
@@ -26,7 +26,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
-  const [category, setCategory] = useState<'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry'>('Fiction');
+  const [category, setCategory] = useState<'General' | 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry'>('General');
   const [condition, setCondition] = useState<'Like New' | 'Very Good' | 'Good' | 'Fair'>('Very Good');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
     if (book) {
       setTitle(book.title);
       setAuthor(book.author);
-      setCategory(book.category || 'Fiction');
+      setCategory(book.category || 'General');
       setCondition(book.condition || 'Very Good');
       setDescription(book.description || '');
       setError(null);
@@ -160,6 +160,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
                 onChange={(e) => setCategory(e.target.value as any)}
                 className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-brand bg-white"
               >
+                <option value="General">General</option>
                 <option value="Fiction">Fiction</option>
                 <option value="Non-fiction">Non-fiction</option>
                 <option value="Science">Science</option>

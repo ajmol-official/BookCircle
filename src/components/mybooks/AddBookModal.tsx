@@ -35,7 +35,7 @@ interface AddBookModalProps {
     author?: string;
     catalogId?: string;
     coverImage?: string;
-    category?: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+    category?: 'General' | 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
   } | null;
   onBookAdded?: (bookData: {
     title: string;
@@ -45,7 +45,7 @@ interface AddBookModalProps {
     availability: 'lending' | 'donation' | 'personal';
     coverImage: string;
     bookType?: 'Original Copy' | 'Translated Copy';
-    category?: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+    category?: 'General' | 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
     bookClassification?: BookClassification;
     generalType?: GeneralBookType;
     translator?: string;
@@ -85,7 +85,8 @@ const AVAILABILITY_OPTIONS = [
   }
 ] as const;
 
-const CATEGORY_OPTIONS: Array<'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry'> = [
+const CATEGORY_OPTIONS: Array<'General' | 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry'> = [
+  'General',
   'Fiction',
   'Non-fiction',
   'Science',
@@ -135,7 +136,7 @@ interface CatalogMatchItem {
   id: string;
   title: string;
   author: string;
-  category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+  category: 'General' | 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
   coverImage: string;
   source: 'canonical' | 'community';
   classification: 'general' | 'academic';
@@ -160,7 +161,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
   const [author, setAuthor] = useState('');
   const [translator, setTranslator] = useState('');
   const [translationLanguage, setTranslationLanguage] = useState('');
-  const [category, setCategory] = useState<'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry'>('Fiction');
+  const [category, setCategory] = useState<'General' | 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry'>('General');
   const [edition, setEdition] = useState('');
   const [condition, setCondition] = useState<string>('Like New');
   const [availability, setAvailability] = useState<'lending' | 'donation' | 'personal'>('lending');
@@ -245,7 +246,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
     setAuthor('');
     setTranslator('');
     setTranslationLanguage('');
-    setCategory('Fiction');
+    setCategory('General');
     setEdition('');
     setCondition('Like New');
     setAvailability('lending');
@@ -1019,7 +1020,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ink-secondary mb-1.5">
                         Genre / Category <span className="text-red-500">*</span>
                       </label>
-                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-xs">
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs">
                         {CATEGORY_OPTIONS.map((cat) => (
                           <button
                             key={cat}

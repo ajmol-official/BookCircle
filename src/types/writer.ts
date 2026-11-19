@@ -41,7 +41,7 @@ export interface AuthorWorkSuggestion {
   workId?: string;
   title: string;
   publishedYear?: string;
-  category: 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
+  category: 'General' | 'Fiction' | 'Non-fiction' | 'Science' | 'History' | 'Poetry';
   synopsis?: string;
   coverImage?: string;
   publisherUrl?: string;
