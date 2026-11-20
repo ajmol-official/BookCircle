@@ -32,3 +32,6 @@ dist-ssr
 # Temporary figma previews
 public/figma-previews
 
+# Scratch & test scripts
+scratch/
+

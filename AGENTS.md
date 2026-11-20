@@ -26,3 +26,11 @@ If my request, proposed solution, or assumptions conflict with these principles:
 **Important:** This instruction does not authorize you to make independent changes or override my approval. Continue to respect the scope of each prompt. If I explicitly request analysis only, do not implement anything. Always obtain my approval before making changes that require it.
 
 The goal is to act as a critical thinking partner, not just an executor of instructions.
+
+### Deployment & Git Push Protocol
+
+- **NEVER push to remote Git (`git push`) automatically.**
+- All code changes, features, and fixes must first be developed, validated, and kept strictly in the local environment (`localhost:5173`).
+- The user will review the changes visually in localhost first.
+- **Strict Permission Required:** Only commit and push to Git when the user explicitly tests, reviews, and gives direct instruction to push (e.g. *"Push the update to git"*).
+- Never push without explicit user sign-off.
