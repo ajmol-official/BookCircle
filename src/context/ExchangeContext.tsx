@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import type { ExchangeTransaction } from '../types';
 import { exchangeService } from '../services/exchangeService';
 import { useAuth } from './AuthContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface ExchangeContextType {
   exchanges: ExchangeTransaction[];
@@ -89,6 +90,30 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     loadData();
+
+    if (!isSupabaseConfigured()) return;
+
+    // Real-time subscription to borrow_requests table for instant notifications & activity updates
+    const channel = supabase
+      .channel('realtime:borrow_requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'borrow_requests' },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    // Fallback polling every 20 seconds to guarantee fresh state
+    const pollTimer = setInterval(() => {
+      loadData();
+    }, 20000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(pollTimer);
+    };
   }, [loadData]);
 
   // Helper to update a single transaction in state immutably

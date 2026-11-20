@@ -10,6 +10,7 @@ import {
   FavouriteIcon
 } from '@hugeicons/core-free-icons';
 import { dropdownVariants } from '../animations/motionVariants';
+import { cleanAvatarUrl, getUserInitials } from '../utils/avatarUtils';
 
 export interface NotificationItem {
   id: string | number;
@@ -137,11 +138,17 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             >
               {/* Avatar with Type Badge */}
               <div className="relative flex-shrink-0 mt-0.5">
-                <img
-                  src={n.avatar}
-                  alt={n.sender}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-brand/30 transition"
-                />
+                {cleanAvatarUrl(n.avatar) ? (
+                  <img
+                    src={cleanAvatarUrl(n.avatar)}
+                    alt={n.sender}
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-brand/30 transition"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-brand/10 text-brand font-semibold text-xs flex items-center justify-center ring-2 ring-slate-100 group-hover:ring-brand/30 transition shadow-xs">
+                    {getUserInitials(n.sender)}
+                  </div>
+                )}
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white shadow-xs border border-slate-200 flex items-center justify-center">
                   {getTypeIcon(n.type)}
                 </div>

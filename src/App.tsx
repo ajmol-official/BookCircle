@@ -548,8 +548,8 @@ const BookCircleMain: React.FC = () => {
     toggleWishlist,
   } = useAuth();
 
-  const { actionRequiredTotal, createBorrowRequest, createGiftClaim } = useExchanges();
-  const { openFloatingChat, totalUnreadCount } = useMessaging();
+  const { exchanges, actionRequiredTotal, createBorrowRequest, createGiftClaim } = useExchanges();
+  const { openFloatingChat, totalUnreadCount, conversations } = useMessaging();
   const { isAdminReviewOpen, closeAdminReview } = useWriter();
 
   const handleOpenFloatingChat = (name: string, bookTitle?: string) => {
@@ -675,53 +675,115 @@ const BookCircleMain: React.FC = () => {
     });
   }, []);
 
-  // Notifications State
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: 'notif-1',
-      sender: 'Hana Yamada',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-      action: 'wants to borrow',
-      book: 'Pachinko',
-      time: '3 hours ago',
-      type: 'request',
-      unread: true,
-      targetTab: 'activity',
-    },
-    {
-      id: 'notif-2',
-      sender: 'Diego Ramirez',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-      action: 'sent you a message about',
-      book: 'The Overstory',
-      time: '10:14 AM',
-      type: 'message',
-      unread: true,
-      targetTab: 'messages',
-    },
-    {
-      id: 'notif-3',
-      sender: 'Jonas Meier',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-      action: 'approved your request for',
-      book: 'The Night Circus',
-      time: '1 day ago',
-      type: 'approved',
-      unread: false,
-      targetTab: 'activity',
-    },
-    {
-      id: 'notif-4',
-      sender: 'Priya Shah',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-      action: 'confirmed meetup at Riverside Coffee for',
-      book: 'Sapiens',
-      time: '3 days ago',
-      type: 'meetup',
-      unread: false,
-      targetTab: 'activity',
-    },
-  ]);
+  // Read notification IDs stored in localStorage per user
+  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() => {
+    try {
+      const key = `bc_read_notifs_${currentUser?.id || 'guest'}`;
+      const saved = localStorage.getItem(key);
+      return saved ? new Set(JSON.parse(saved)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+
+  // Re-sync read notifications when user account changes
+  useEffect(() => {
+    try {
+      const key = `bc_read_notifs_${currentUser?.id || 'guest'}`;
+      const saved = localStorage.getItem(key);
+      setReadNotificationIds(saved ? new Set(JSON.parse(saved)) : new Set<string>());
+    } catch {
+      setReadNotificationIds(new Set<string>());
+    }
+  }, [currentUser?.id]);
+
+  // Dynamically derived notifications from live exchanges and active chat conversations
+  const notifications: NotificationItem[] = useMemo(() => {
+    if (!isAuthenticated) return [];
+
+    const list: NotificationItem[] = [];
+
+    // 1. Live Exchange Notifications from Supabase
+    (exchanges || []).forEach((e) => {
+      const isOwner =
+        (e.ownerId && e.ownerId === currentUser?.id) ||
+        (currentUser?.displayName && e.ownerName?.toLowerCase().trim() === currentUser.displayName.toLowerCase().trim());
+
+      const isBorrower =
+        (e.borrowerId && e.borrowerId === currentUser?.id) ||
+        (currentUser?.displayName && e.borrowerName?.toLowerCase().trim() === currentUser.displayName.toLowerCase().trim());
+
+      // Incoming request waiting for owner approval
+      if (isOwner && (e.status === 'pending_approval' || e.status === 'pending_claim')) {
+        const notifId = `req-${e.id}`;
+        list.push({
+          id: notifId,
+          sender: e.borrowerName || 'Community Reader',
+          avatar: cleanAvatarUrl(e.borrowerAvatar),
+          action: e.exchangeType === 'gift' ? 'wants to claim' : 'wants to borrow',
+          book: e.bookTitle,
+          time: e.requestDate || 'Recently',
+          type: 'request',
+          unread: !readNotificationIds.has(notifId),
+          targetTab: 'activity',
+        });
+      }
+
+      // Requester notification when owner approves request
+      if (isBorrower && e.status === 'accepted') {
+        const notifId = `acc-${e.id}`;
+        list.push({
+          id: notifId,
+          sender: e.ownerName || 'Book Owner',
+          avatar: cleanAvatarUrl(e.ownerAvatar),
+          action: 'approved your request for',
+          book: e.bookTitle,
+          time: e.meetupDate || 'Recently',
+          type: 'approved',
+          unread: !readNotificationIds.has(notifId),
+          targetTab: 'activity',
+        });
+      }
+
+      // Active loan notification
+      if ((isOwner || isBorrower) && e.status === 'active_loan') {
+        const notifId = `loan-${e.id}`;
+        const partnerName = isOwner ? e.borrowerName : e.ownerName;
+        const partnerAvatar = isOwner ? e.borrowerAvatar : e.ownerAvatar;
+        list.push({
+          id: notifId,
+          sender: partnerName || 'Neighbor',
+          avatar: cleanAvatarUrl(partnerAvatar),
+          action: 'handover completed for',
+          book: e.bookTitle,
+          time: 'Active Loan',
+          type: 'meetup',
+          unread: !readNotificationIds.has(notifId),
+          targetTab: 'activity',
+        });
+      }
+    });
+
+    // 2. Unread Chat Messages
+    (conversations || []).forEach((c) => {
+      if (c.unreadCount && c.unreadCount > 0) {
+        const notifId = `msg-${c.id}-${c.lastMessageTime || ''}`;
+        list.push({
+          id: notifId,
+          sender: c.participantName,
+          avatar: cleanAvatarUrl(c.participantAvatar),
+          action: 'sent you a message about',
+          book: c.bookTitle || 'Book',
+          time: c.lastMessageTime || 'Recently',
+          type: 'message',
+          unread: !readNotificationIds.has(notifId),
+          targetTab: 'messages',
+        });
+      }
+    });
+
+    return list;
+  }, [isAuthenticated, exchanges, currentUser, conversations, readNotificationIds]);
 
   const categories = ['All', 'Fiction', 'Non-fiction', 'Science', 'History', 'Poetry'];
 
@@ -945,9 +1007,17 @@ const BookCircleMain: React.FC = () => {
   };
 
   const handleNotificationClick = (item: NotificationItem) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === item.id ? { ...n, unread: false } : n))
-    );
+    // Persist read status in localStorage per user
+    const key = `bc_read_notifs_${currentUser?.id || 'guest'}`;
+    const newSet = new Set(readNotificationIds);
+    newSet.add(String(item.id));
+    setReadNotificationIds(newSet);
+    try {
+      localStorage.setItem(key, JSON.stringify(Array.from(newSet)));
+    } catch (e) {
+      console.warn('Failed to save read notification to localStorage:', e);
+    }
+
     if (item.type === 'message') {
       setSelectedChatParticipant(item.sender);
       navigate(`/messages?chat=${encodeURIComponent(item.sender)}`);
@@ -965,7 +1035,15 @@ const BookCircleMain: React.FC = () => {
   };
 
   const handleMarkAllNotificationsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    const key = `bc_read_notifs_${currentUser?.id || 'guest'}`;
+    const newSet = new Set(readNotificationIds);
+    notifications.forEach((n) => newSet.add(String(n.id)));
+    setReadNotificationIds(newSet);
+    try {
+      localStorage.setItem(key, JSON.stringify(Array.from(newSet)));
+    } catch (e) {
+      console.warn('Failed to save read notifications to localStorage:', e);
+    }
   };
 
   const handleGlobalBookAdded = async (newBook: any) => {
