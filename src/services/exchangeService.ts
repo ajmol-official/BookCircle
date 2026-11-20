@@ -378,6 +378,11 @@ export const exchangeService = {
       throw new Error(`This copy of “${params.book.title}” already has an active loan in progress.`);
     }
 
+    const effectiveOwnerId =
+      params.owner.id && params.owner.id !== 'owner-target'
+        ? params.owner.id
+        : (params.book as any).ownerId || (params.owner.id || null);
+
     // Deduplication check: if a pending request from this borrower already exists for this book copy, return it safely (prevents duplicate submission on retry)
     if (params.borrower.id) {
       let pendingQuery = supabase
@@ -388,8 +393,8 @@ export const exchangeService = {
         .in('status', ['pending', 'pending_approval', 'pending_claim'])
         .limit(1);
 
-      if (params.owner.id) {
-        pendingQuery = pendingQuery.eq('owner_id', params.owner.id);
+      if (effectiveOwnerId) {
+        pendingQuery = pendingQuery.eq('owner_id', effectiveOwnerId);
       }
 
       const { data: existingPending } = await pendingQuery;
@@ -423,7 +428,7 @@ export const exchangeService = {
         book_title: params.book.title,
         borrower_id: params.borrower.id || null,
         borrower_name: params.borrower.name,
-        owner_id: params.owner.id || null,
+        owner_id: effectiveOwnerId,
         owner_name: params.owner.name,
         exchange_type: 'borrow',
         status: 'pending',
@@ -458,6 +463,11 @@ export const exchangeService = {
       throw new Error('Supabase client not configured.');
     }
 
+    const effectiveOwnerId =
+      params.owner.id && params.owner.id !== 'owner-target'
+        ? params.owner.id
+        : (params.book as any).ownerId || (params.owner.id || null);
+
     // Deduplication check: if a pending gift claim from this recipient already exists for this book copy, return it safely (prevents duplicate submission on retry)
     if (params.borrower.id) {
       let pendingClaimQuery = supabase
@@ -468,8 +478,8 @@ export const exchangeService = {
         .in('status', ['pending', 'pending_approval', 'pending_claim'])
         .limit(1);
 
-      if (params.owner.id) {
-        pendingClaimQuery = pendingClaimQuery.eq('owner_id', params.owner.id);
+      if (effectiveOwnerId) {
+        pendingClaimQuery = pendingClaimQuery.eq('owner_id', effectiveOwnerId);
       }
 
       const { data: existingPending } = await pendingClaimQuery;
@@ -502,7 +512,7 @@ export const exchangeService = {
         book_title: params.book.title,
         borrower_id: params.borrower.id || null,
         borrower_name: params.borrower.name,
-        owner_id: params.owner.id || null,
+        owner_id: effectiveOwnerId,
         owner_name: params.owner.name,
         exchange_type: 'gift',
         status: 'pending',

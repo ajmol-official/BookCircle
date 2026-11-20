@@ -46,6 +46,7 @@ export interface ClaimGiftModalProps {
   book: Book | null;
   initialOwnerName?: string;
   targetOwnerName?: string;
+  targetOwnerId?: string;
   onClose: () => void;
   onClaimSubmitted?: (details: ClaimGiftDetails) => void;
 }
@@ -55,17 +56,19 @@ export const ClaimGiftModal: React.FC<ClaimGiftModalProps> = ({
   book,
   initialOwnerName,
   targetOwnerName,
+  targetOwnerId,
   onClose,
   onClaimSubmitted,
 }) => {
   const activeTargetName = initialOwnerName || targetOwnerName;
+  const activeTargetId = targetOwnerId || book?.ownerId || 'owner-target';
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // Dynamic simulated donor/giver for this book
   const owners: OwnerOption[] = useMemo(() => {
     const list: OwnerOption[] = [
       {
-        id: 'owner-target',
+        id: activeTargetId,
         name: activeTargetName || book?.ownerName || 'Rahim Chowdhury',
         avatar:
           book?.ownerAvatar ||
@@ -127,9 +130,16 @@ export const ClaimGiftModal: React.FC<ClaimGiftModalProps> = ({
   const handleFinalSubmit = () => {
     setIsSuccess(true);
     setTimeout(() => {
+      const resolvedOwner: OwnerOption = {
+        ...selectedOwner,
+        id:
+          selectedOwner.id && selectedOwner.id !== 'owner-target'
+            ? selectedOwner.id
+            : book.ownerId || selectedOwner.id,
+      };
       onClaimSubmitted?.({
         book,
-        owner: selectedOwner,
+        owner: resolvedOwner,
         date: selectedDate,
         time: effectiveTime,
         spot: customSpot.trim() || selectedSpot,

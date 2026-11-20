@@ -169,7 +169,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
               <button
                 type="button"
                 onClick={onShareProfile}
-                className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl border transition shadow-xs active:scale-95 cursor-pointer text-xs sm:text-sm font-semibold ${
+                className={`p-2.5 rounded-xl border transition shadow-xs active:scale-95 flex items-center justify-center cursor-pointer ${
                   copiedLink
                     ? 'border-emerald-300 bg-emerald-50 text-emerald-600'
                     : 'border-brand/20 bg-[#F3F0FC] hover:bg-[#ebe6fa] text-brand'
@@ -179,10 +179,9 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
               >
                 <HugeiconsIcon
                   icon={copiedLink ? CheckmarkCircle02Icon : Share01Icon}
-                  size={16}
+                  size={18}
                   className={copiedLink ? 'text-emerald-600' : ''}
                 />
-                <span>{copiedLink ? 'Copied!' : 'Share'}</span>
               </button>
             </>
           )}

@@ -856,10 +856,18 @@ const BookCircleMain: React.FC = () => {
       prev.map((b) => (b.id === details.book.id ? { ...b, status: 'claimed' } : b))
     );
 
+    const resolvedOwnerId =
+      details.owner.id && details.owner.id !== 'owner-target'
+        ? details.owner.id
+        : details.book.ownerId || details.owner.id;
+
     // 2. Persist to ExchangeContext & DB
     createGiftClaim({
       book: details.book,
-      owner: details.owner,
+      owner: {
+        ...details.owner,
+        id: resolvedOwnerId,
+      },
       borrower: {
         id: currentUser?.id || 'demo-user',
         name: currentUser?.displayName || 'Maya Lin',
@@ -886,10 +894,18 @@ const BookCircleMain: React.FC = () => {
       prev.map((b) => (b.id === details.book.id ? { ...b, status: 'lent_out' } : b))
     );
 
+    const resolvedOwnerId =
+      details.owner.id && details.owner.id !== 'owner-target'
+        ? details.owner.id
+        : details.book.ownerId || details.owner.id;
+
     // 2. Persist to ExchangeContext & DB
     createBorrowRequest({
       book: details.book,
-      owner: details.owner,
+      owner: {
+        ...details.owner,
+        id: resolvedOwnerId,
+      },
       borrower: {
         id: currentUser?.id || 'demo-user',
         name: currentUser?.displayName || 'Maya Lin',
@@ -1409,6 +1425,7 @@ const BookCircleMain: React.FC = () => {
         isOpen={!!selectedBorrowBook}
         book={selectedBorrowBook}
         initialOwnerName={selectedBorrowBook?.ownerName}
+        targetOwnerId={selectedBorrowBook?.ownerId}
         onClose={() => setSelectedBorrowBook(null)}
         onRequestSubmitted={handleBorrowSubmitted}
       />
@@ -1418,6 +1435,7 @@ const BookCircleMain: React.FC = () => {
         isOpen={!!selectedClaimBook}
         book={selectedClaimBook}
         initialOwnerName={selectedClaimBook?.ownerName}
+        targetOwnerId={selectedClaimBook?.ownerId}
         onClose={() => setSelectedClaimBook(null)}
         onClaimSubmitted={handleClaimSubmitted}
       />

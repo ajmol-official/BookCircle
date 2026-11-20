@@ -44,6 +44,7 @@ export interface BorrowWizardModalProps {
   book: Book | null;
   initialOwnerName?: string;
   targetOwnerName?: string;
+  targetOwnerId?: string;
   onClose: () => void;
   onRequestSubmitted?: (details: BorrowHandoverDetails) => void;
   onBorrowRequested?: (details: BorrowHandoverDetails) => void;
@@ -57,18 +58,20 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
   book,
   initialOwnerName,
   targetOwnerName,
+  targetOwnerId,
   onClose,
   onRequestSubmitted,
   onBorrowRequested,
 }) => {
   const activeTargetName = initialOwnerName || targetOwnerName;
+  const activeTargetId = targetOwnerId || book?.ownerId || 'owner-target';
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // Dynamic simulated owners for this book
   const owners: OwnerOption[] = useMemo(() => {
     const list: OwnerOption[] = [
       {
-        id: 'owner-target',
+        id: activeTargetId,
         name: activeTargetName || book?.ownerName || 'Aisha Patel',
         avatar: book?.ownerAvatar || '',
         distance: book?.distance || '0.4 km away',
@@ -154,9 +157,16 @@ export const BorrowWizardModal: React.FC<BorrowWizardModalProps> = ({
     setTimeout(() => {
       const fallbackNote = getDefaultBorrowNote(selectedOwner?.name);
       const effectiveNote = borrowNote.trim() || fallbackNote;
+      const resolvedOwner: OwnerOption = {
+        ...selectedOwner,
+        id:
+          selectedOwner.id && selectedOwner.id !== 'owner-target'
+            ? selectedOwner.id
+            : book.ownerId || selectedOwner.id,
+      };
       const details: BorrowHandoverDetails = {
         book,
-        owner: selectedOwner,
+        owner: resolvedOwner,
         date: selectedDate,
         time: effectiveTime,
         spot: customSpot.trim() || selectedSpot,
