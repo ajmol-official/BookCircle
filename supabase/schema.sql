@@ -447,17 +447,15 @@ create policy "Public profiles are viewable by everyone" on public.profiles for 
 create policy "Users can insert own profile" on public.profiles for insert with check (true);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
 
--- Books: Public community discovery excludes private personal collection and claimed donations
--- Recipients and owners can always view their own private collection.
+-- Books: Public community discovery allows viewing books that are active (excludes claimed donations and strictly private reads)
 drop policy if exists "Books are viewable by everyone" on public.books;
 drop policy if exists "Public community discovery policy" on public.books;
 
 create policy "Public community discovery policy" on public.books
   for select using (
     (
-      (availability_mode is distinct from 'personal')
-      and (status is distinct from 'claimed')
-      and (description not like '%[PRIVATE_COLLECTION]%' or description is null)
+      (status is distinct from 'claimed')
+      and (description not like '%[STRICTLY_PRIVATE]%' or description is null)
     )
     or
     (

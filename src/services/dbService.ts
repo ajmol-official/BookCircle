@@ -3,9 +3,14 @@ import { mockBooks, mockReaders } from '../data/mockData';
 import type { Book, Reader, UserReadingStatusValue } from '../types';
 import { cleanAvatarUrl } from '../utils/avatarUtils';
 
+function cleanDescription(desc?: string): string {
+  if (!desc) return '';
+  return desc.replace(/\[PERSONAL_COLLECTION\]\s*/g, '').replace(/\[PRIVATE_COLLECTION\]\s*/g, '').trim();
+}
+
 function mapDbBookToBook(item: any): Book {
   const isPersonal =
-    (item.description && item.description.includes('[PRIVATE_COLLECTION]')) ||
+    (item.description && (item.description.includes('[PRIVATE_COLLECTION]') || item.description.includes('[PERSONAL_COLLECTION]'))) ||
     item.availability_mode === 'personal';
 
   return {
@@ -24,7 +29,7 @@ function mapDbBookToBook(item: any): Book {
     ownerName: item.owner_name || 'Neighbor',
     ownerAvatar: cleanAvatarUrl(item.owner_avatar),
     ownerTrust: 'Verified Neighbor',
-    description: item.description,
+    description: cleanDescription(item.description),
     condition: item.condition || 'Like New',
     availabilityMode: isPersonal ? 'personal' : ((item.availability_mode || 'lending') as 'lending' | 'donation' | 'personal'),
     bookClassification: item.book_classification || 'general',
@@ -44,7 +49,7 @@ export const dbService = {
    */
   async getBooks(isDemoMode: boolean = false): Promise<Book[]> {
     if (!isSupabaseConfigured()) {
-      return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
+      return mockBooks.filter((b) => b.status !== 'claimed');
     }
 
     try {
@@ -52,14 +57,12 @@ export const dbService = {
         .from('books')
         .select('*')
         .neq('status', 'claimed')
-        .neq('availability_mode', 'personal')
-        .not('description', 'like', '%[PRIVATE_COLLECTION]%')
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Supabase fetch error loading books:', error.message);
         if (isDemoMode) {
-          return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
+          return mockBooks.filter((b) => b.status !== 'claimed');
         }
         throw new Error(`Database error loading books: ${error.message}`);
       }
@@ -67,7 +70,7 @@ export const dbService = {
       if (!data || data.length === 0) {
         // Authentic empty state for real database; seed mockBooks for guest demo previews
         return isDemoMode
-          ? mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed')
+          ? mockBooks.filter((b) => b.status !== 'claimed')
           : [];
       }
 
@@ -75,7 +78,7 @@ export const dbService = {
     } catch (err: any) {
       if (isDemoMode) {
         console.warn('Network error accessing Supabase in demo mode, using mock fallback:', err);
-        return mockBooks.filter((b) => b.availabilityMode !== 'personal' && b.status !== 'claimed');
+        return mockBooks.filter((b) => b.status !== 'claimed');
       }
       throw err;
     }
@@ -206,6 +209,7 @@ export const dbService = {
     }
 
     try {
+      const isPersonal = safeBook.availabilityMode === 'personal';
       const fullPayload: any = {
         title: safeBook.title,
         author: safeBook.author,
@@ -214,7 +218,9 @@ export const dbService = {
         condition: safeBook.condition,
         availability_mode: safeBook.availabilityMode,
         status: safeBook.status,
-        description: safeBook.description,
+        description: isPersonal && !safeBook.description?.includes('[PERSONAL_COLLECTION]')
+          ? `[PERSONAL_COLLECTION] ${safeBook.description || ''}`.trim()
+          : safeBook.description,
         owner_name: safeBook.ownerName,
         owner_avatar: safeBook.ownerAvatar,
         owner_id: userId || null,
@@ -230,17 +236,31 @@ export const dbService = {
 
       let result = await supabase.from('books').insert(fullPayload).select().single();
 
-      // Graceful fallback for unmigrated Supabase database schema cache
-      if (result.error && (result.error.message.includes('schema cache') || result.error.message.includes('column'))) {
+      // Graceful fallback for unmigrated Supabase database schema cache or check constraints
+      if (
+        result.error &&
+        (result.error.message.includes('schema cache') ||
+          result.error.message.includes('column') ||
+          result.error.message.includes('books_availability_mode_check') ||
+          result.error.code === '23514')
+      ) {
+        // If the database check constraint does not permit 'personal' yet, fall back to 'lending' with [PERSONAL_COLLECTION] tag
+        const fallbackMode =
+          result.error.message.includes('books_availability_mode_check') || result.error.code === '23514'
+            ? 'lending'
+            : safeBook.availabilityMode;
+
         const basePayload = {
           title: safeBook.title,
           author: safeBook.author,
           cover_image: safeBook.coverImage,
           category: safeBook.category,
           condition: safeBook.condition,
-          availability_mode: safeBook.availabilityMode,
+          availability_mode: fallbackMode,
           status: safeBook.status,
-          description: safeBook.description,
+          description: isPersonal && !safeBook.description?.includes('[PERSONAL_COLLECTION]')
+            ? `[PERSONAL_COLLECTION] ${safeBook.description || ''}`.trim()
+            : safeBook.description,
           owner_name: safeBook.ownerName,
           owner_avatar: safeBook.ownerAvatar,
           owner_id: userId || null,

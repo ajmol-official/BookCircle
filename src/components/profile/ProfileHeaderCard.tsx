@@ -22,6 +22,7 @@ export interface ProfileHeaderCardProps {
     availableLending: number;
     availableDonation: number;
     lentOut: number;
+    onShelf?: number;
   };
   trustStats: {
     onTimeReturnsRatio: string;
@@ -118,6 +119,12 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
               <span className="text-emerald-700 font-semibold">{stats.availableDonation} Available for donation</span>
               <span className="text-slate-300">|</span>
               <span className="text-amber-700 font-semibold">{stats.lentOut} Lend out</span>
+              {stats.onShelf !== undefined && stats.onShelf > 0 && (
+                <>
+                  <span className="text-slate-300">|</span>
+                  <span className="text-indigo-700 font-semibold">{stats.onShelf} On shelf</span>
+                </>
+              )}
             </div>
           </div>
         </div>

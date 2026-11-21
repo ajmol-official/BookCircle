@@ -9,6 +9,7 @@ import {
   Clock01Icon,
   Search01Icon,
   CheckmarkCircle02Icon,
+  Bookmark02Icon,
 } from '@hugeicons/core-free-icons';
 import type { Book, Reader, HandoverLocation } from '../../types';
 import { ProfileHeaderCard } from './ProfileHeaderCard';
@@ -133,12 +134,11 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
 
       if (!isOwner) return false;
 
-      // Privacy Isolation: Non-owners NEVER see private collection books on another user's public profile
+      // Privacy Isolation: Non-owners NEVER see claimed donation books or books explicitly marked private
       if (!isOwnProfile) {
         if (
-          book.availabilityMode === 'personal' ||
           book.status === 'claimed' ||
-          (book.description && book.description.includes('[PRIVATE_COLLECTION]'))
+          (book.description && book.description.includes('[STRICTLY_PRIVATE]'))
         ) {
           return false;
         }
@@ -278,6 +278,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
             availableLending: lendingCount,
             availableDonation: donationCount,
             lentOut: lentOutCount,
+            onShelf: personalCount,
           }}
           trustStats={{
             onTimeReturnsRatio:
@@ -419,7 +420,7 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                 </button>
               )}
 
-              {isOwnProfile && personalCount > 0 && (
+              {personalCount > 0 && (
                 <button
                   onClick={() => setAvailabilityFilter('personal')}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
@@ -428,7 +429,8 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
                       : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  <span>Private Collection ({personalCount})</span>
+                  <HugeiconsIcon icon={Bookmark02Icon} size={14} />
+                  <span>On Shelf ({personalCount})</span>
                 </button>
               )}
             </div>

@@ -1134,15 +1134,18 @@ const BookCircleMain: React.FC = () => {
 
   // Derive current user's personal shelf books
   const currentUserShelfBooks = useMemo(() => {
-    const list = booksList.filter((b) => {
-      if (currentUser?.displayName) {
+    if (!currentUser) return [];
+    return booksList.filter((b) => {
+      if (b.ownerId && currentUser.id && b.ownerId === currentUser.id) {
+        return true;
+      }
+      if (currentUser.displayName && b.ownerName) {
         if (b.ownerName.toLowerCase().trim() === currentUser.displayName.toLowerCase().trim()) {
           return true;
         }
       }
-      return b.ownerName === 'You' || b.ownerName === 'Maya Lin';
+      return b.ownerName === 'You';
     });
-    return list.length > 0 ? list : booksList.slice(0, 4);
   }, [booksList, currentUser]);
 
   const unreadNotificationsCount = isAuthenticated ? notifications.filter((n) => n.unread).length : 0;

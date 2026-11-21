@@ -20,6 +20,8 @@ import {
 import { AddBookModal } from './AddBookModal';
 import { EditBookModal } from './EditBookModal';
 import { useExchanges } from '../../context/ExchangeContext';
+import { useAuth } from '../../context/AuthContext';
+import { cleanAvatarUrl } from '../../utils/avatarUtils';
 import type { Book, BookCategory } from '../../types';
 
 interface MyBooksPageProps {
@@ -49,6 +51,7 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
   onUpdateBookDetails,
 }) => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const { isBookInActiveExchange, cancelPendingRequestsForBook } = useExchanges();
 
   // Local fallback books if not provided
@@ -683,8 +686,9 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
             reviewsCount: 1,
             distance: '0.1 km',
             ownersCount: 1,
-            ownerName: 'Maya Lin',
-            ownerAvatar: '',
+            ownerId: currentUser?.id,
+            ownerName: currentUser?.displayName || 'Community Reader',
+            ownerAvatar: cleanAvatarUrl(currentUser?.avatar),
             ownerTrust: 'Verified Lender',
           };
           setLocalBooks((prev) => [addedBook, ...prev]);

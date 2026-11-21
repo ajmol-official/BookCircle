@@ -35,7 +35,8 @@ export const ProfileBookCard: React.FC<ProfileBookCardProps> = ({
 
   const isDonation = book.availabilityMode === 'donation' || book.status === 'donation';
   const isLentOut = book.status === 'lent_out';
-  const isAvailable = book.status === 'available' || (!book.status && !isLentOut);
+  const isPersonal = book.availabilityMode === 'personal';
+  const isAvailable = !isPersonal && (book.status === 'available' || (!book.status && !isLentOut));
 
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.stopPropagation();

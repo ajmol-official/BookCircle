@@ -79,8 +79,8 @@ const AVAILABILITY_OPTIONS = [
   },
   {
     id: 'personal' as const,
-    label: 'Private Collection',
-    desc: 'Personal library (hidden from search)',
+    label: 'Personal Bookshelf',
+    desc: 'Showcase on your shelf (not for borrowing)',
     icon: Bookmark02Icon
   }
 ] as const;
@@ -654,7 +654,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
               Have you read this book already?
             </h3>
             <p className="text-xs sm:text-sm text-ink-muted mt-1 leading-relaxed max-w-md mx-auto">
-              Help organize your personal reading library. (Kept private on your profile).
+              Help organize your reading library and showcase your literary taste.
             </p>
 
             <div className="mt-6 space-y-3 text-left">
