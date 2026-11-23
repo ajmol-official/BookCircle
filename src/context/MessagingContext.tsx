@@ -1,166 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Conversation, ChatMessage, ActiveFloatingChat } from '../types/messaging';
 import { useAuth } from './AuthContext';
+import { useExchanges } from './ExchangeContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { cleanAvatarUrl } from '../utils/avatarUtils';
 
 const isRealUuid = (id?: string): boolean =>
   Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
 
-const INITIAL_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'conv-elena',
-    participantName: 'Elena Rostova',
-    participantAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-    participantTrust: '5.0 ★ (Reliable Neighbor)',
-    bookTitle: 'The Overstory',
-    bookAuthor: 'Richard Powers',
-    bookCover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=200',
-    catalogId: 'the-overstory',
-    role: 'Borrower',
-    status: 'accepted',
-    lastMessage: 'Hi! Looking forward to meeting tomorrow at Riverside Coffee.',
-    lastMessageTime: '10:14 AM',
-    unreadCount: 1,
-    meetupDetails: {
-      date: 'Tomorrow',
-      time: '2:30 PM',
-      spot: 'Riverside Coffee'
-    },
-    messages: [
-      {
-        id: 'msg-e1',
-        sender: 'other',
-        senderName: 'Elena Rostova',
-        senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-        text: 'Hi Maya! Would love to borrow The Overstory for our local book circle next week.',
-        time: 'Yesterday 3:15 PM'
-      },
-      {
-        id: 'msg-e2',
-        sender: 'user',
-        senderName: 'You',
-        senderAvatar: '',
-        text: 'Hello Elena! Happy to lend it. Riverside Coffee works well for me.',
-        time: 'Yesterday 4:02 PM'
-      },
-      {
-        id: 'msg-e3',
-        sender: 'other',
-        senderName: 'Elena Rostova',
-        senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
-        text: 'Hi! Looking forward to meeting tomorrow at Riverside Coffee.',
-        time: '10:14 AM'
-      }
-    ]
-  },
-  {
-    id: 'conv-1',
-    participantName: 'Diego Ramirez',
-    participantAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-    participantTrust: '4.9 ★ (Verified Lender)',
-    bookTitle: 'The Overstory',
-    bookAuthor: 'Richard Powers',
-    bookCover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=200',
-    catalogId: 'the-overstory',
-    role: 'Lender',
-    status: 'accepted',
-    lastMessage: 'Riverside Coffee works great for me tomorrow at 10 AM. See you there!',
-    lastMessageTime: 'Yesterday 4:18 PM',
-    unreadCount: 0,
-    meetupDetails: {
-      date: 'Fri 25 Apr',
-      time: '10:00 AM',
-      spot: 'Riverside Coffee, Rampura'
-    },
-    messages: [
-      {
-        id: 'm-1',
-        sender: 'other',
-        senderName: 'Diego Ramirez',
-        senderAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-        text: 'Hi Maya! I have accepted your request for The Overstory. Looking forward to lending it to you!',
-        time: 'Yesterday 4:15 PM'
-      },
-      {
-        id: 'm-2',
-        sender: 'user',
-        senderName: 'You',
-        senderAvatar: '',
-        text: 'Thank you so much Diego! I have been looking for this edition for months. Where is best to meet?',
-        time: 'Yesterday 4:18 PM'
-      },
-      {
-        id: 'm-3',
-        sender: 'other',
-        senderName: 'Diego Ramirez',
-        senderAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-        text: 'Riverside Coffee works great for me tomorrow at 10 AM. I will be sitting near the corner table with the book on the table.',
-        time: 'Yesterday 4:20 PM'
-      }
-    ]
-  },
-  {
-    id: 'conv-2',
-    participantName: 'Hana Yamada',
-    participantAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-    participantTrust: '4.8 ★ (Community Leader)',
-    bookTitle: 'Sapiens: A Brief History of Humankind',
-    bookAuthor: 'Yuval Noah Harari',
-    bookCover: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&q=80&w=200',
-    catalogId: 'sapiens',
-    role: 'Lender',
-    status: 'accepted',
-    lastMessage: 'Saturday at Elm Park Library works perfectly for me! See you at 11:30 AM.',
-    lastMessageTime: '2 days ago',
-    unreadCount: 0,
-    meetupDetails: {
-      date: 'Sat 26 Apr',
-      time: '11:30 AM',
-      spot: 'Elm Park Library entrance'
-    },
-    messages: [
-      {
-        id: 'm-201',
-        sender: 'other',
-        senderName: 'Hana Yamada',
-        senderAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-        text: 'Hi Maya! Hope you are enjoying Sapiens. Let me know when you are ready to arrange the return handover.',
-        time: '2 days ago'
-      },
-      {
-        id: 'm-202',
-        sender: 'user',
-        senderName: 'You',
-        senderAvatar: '',
-        text: 'Hi Hana! I just finished the final chapter yesterday. Saturday works great!',
-        time: '2 days ago'
-      }
-    ]
-  },
-  {
-    id: 'conv-3',
-    participantName: 'Jonas Meier',
-    participantAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-    participantTrust: '4.7 ★ (Active Lender)',
-    bookTitle: 'The Night Circus',
-    bookAuthor: 'Erin Morgenstern',
-    bookCover: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200',
-    catalogId: 'the-night-circus',
-    role: 'Lender',
-    status: 'pending', // Direct messaging locked until accepted!
-    lastMessage: 'Borrow request sent · Awaiting Jonas Meier acceptance',
-    lastMessageTime: 'Yesterday',
-    unreadCount: 0,
-    initialNote: 'Hi Jonas! I would love to borrow The Night Circus. I take great care of books and will return it on time.',
-    meetupDetails: {
-      date: 'Sat 26 Apr',
-      time: '2:00 PM',
-      spot: 'Elm Park Library entrance'
-    },
-    messages: []
-  }
-];
+const INITIAL_CONVERSATIONS: Conversation[] = [];
 
 interface MessagingContextType {
   conversations: Conversation[];
@@ -180,11 +28,12 @@ interface MessagingContextType {
 
 const MessagingContext = createContext<MessagingContextType | undefined>(undefined);
 
-const STORAGE_KEY_CONVS = 'bookcircle_conversations_v2';
+const STORAGE_KEY_CONVS = 'bookcircle_conversations_v3';
 const STORAGE_KEY_DRAFTS = 'bookcircle_chat_drafts_v1';
 
 export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
+  const { exchanges } = useExchanges();
 
   // Load conversations from localStorage or fallback
   const [conversations, setConversations] = useState<Conversation[]>(() => {
@@ -192,7 +41,15 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const saved = localStorage.getItem(STORAGE_KEY_CONVS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          // Drop legacy mock conversations
+          return parsed.filter(
+            (c) =>
+              !c.id?.startsWith('conv-elena') &&
+              !['conv-1', 'conv-2', 'conv-3'].includes(c.id) &&
+              !['Elena Rostova', 'Diego Ramirez', 'Hana Yamada', 'Jonas Meier'].includes(c.participantName)
+          );
+        }
       }
     } catch {
       // fallback
@@ -230,6 +87,126 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // ignore
     }
   }, [drafts]);
+
+  // Synchronize authentic conversations from active / pending exchanges (borrow_requests)
+  useEffect(() => {
+    if (!exchanges || exchanges.length === 0) return;
+
+    setConversations((prev) => {
+      let updated = [...prev];
+
+      for (const ex of exchanges) {
+        // Check if current user is involved in this exchange
+        const isOwner = currentUser?.id
+          ? ex.ownerId === currentUser.id
+          : ex.ownerName?.toLowerCase() === currentUser?.displayName?.toLowerCase();
+        const isBorrower = currentUser?.id
+          ? ex.borrowerId === currentUser.id
+          : ex.borrowerName?.toLowerCase() === currentUser?.displayName?.toLowerCase();
+
+        // If user is authenticated and not involved, skip
+        if (currentUser && !isOwner && !isBorrower) continue;
+
+        const otherId = isOwner ? ex.borrowerId : ex.ownerId;
+        const otherName = isOwner ? ex.borrowerName : ex.ownerName;
+        const otherAvatar = cleanAvatarUrl(isOwner ? ex.borrowerAvatar : ex.ownerAvatar);
+        const otherTrust = isOwner
+          ? ex.borrowerTrust || 'Community Reader'
+          : ex.ownerTrust || 'Verified Neighbor';
+        const role: 'Lender' | 'Borrower' = isOwner ? 'Lender' : 'Borrower';
+        const isAccepted = [
+          'handover_in_progress',
+          'active_loan',
+          'return_scheduled',
+          'return_in_progress',
+          'completed',
+          'claim_handover_in_progress',
+          'claim_completed'
+        ].includes(ex.status);
+
+        // Check if conversation already exists by exchange ID or participant
+        const existingIdx = updated.findIndex(
+          (c) =>
+            c.id === `conv-ex-${ex.id}` ||
+            (otherId && isRealUuid(otherId) && c.participantId === otherId) ||
+            c.participantName.toLowerCase().trim() === otherName.toLowerCase().trim()
+        );
+
+        const cleanReqNote = (ex.message || '')
+          .replace(/\[BC_META\]:[\s\S]*$/, '')
+          .trim();
+
+        const reqMessage: ChatMessage | null = cleanReqNote
+          ? {
+              id: `req-msg-${ex.id}`,
+              sender: isBorrower ? 'user' : 'other',
+              senderName: ex.borrowerName,
+              senderAvatar: cleanAvatarUrl(ex.borrowerAvatar),
+              text: cleanReqNote,
+              time: ex.meetupDate || ex.requestDate || 'Request note',
+              timestamp: new Date(ex.requestDate || Date.now()).getTime(),
+            }
+          : null;
+
+        if (existingIdx >= 0) {
+          const existing = updated[existingIdx];
+          const msgs = existing.messages || [];
+          const hasReqMsg = reqMessage && msgs.some((m) => m.id === reqMessage.id || m.text === reqMessage.text);
+          const mergedMsgs = reqMessage && !hasReqMsg ? [reqMessage, ...msgs] : msgs;
+
+          updated[existingIdx] = {
+            ...existing,
+            participantId: otherId || existing.participantId,
+            participantName: otherName || existing.participantName,
+            participantAvatar: otherAvatar || existing.participantAvatar,
+            participantTrust: otherTrust || existing.participantTrust,
+            bookTitle: ex.bookTitle || existing.bookTitle,
+            bookAuthor: ex.bookAuthor || existing.bookAuthor,
+            bookCover: ex.bookCover || existing.bookCover,
+            role,
+            status: isAccepted ? 'accepted' : existing.status,
+            meetupDetails: ex.meetupDate
+              ? {
+                  date: ex.meetupDate,
+                  time: ex.meetupTime,
+                  spot: ex.meetupSpot,
+                }
+              : existing.meetupDetails,
+            messages: mergedMsgs,
+          };
+        } else {
+          const newConv: Conversation = {
+            id: `conv-ex-${ex.id}`,
+            participantId: otherId,
+            participantName: otherName,
+            participantAvatar: otherAvatar,
+            participantTrust: otherTrust,
+            bookTitle: ex.bookTitle,
+            bookAuthor: ex.bookAuthor,
+            bookCover: ex.bookCover,
+            catalogId: ex.catalogId,
+            role,
+            status: isAccepted ? 'accepted' : 'pending',
+            lastMessage: cleanReqNote || `Borrow request ${ex.status}`,
+            lastMessageTime: ex.meetupDate || ex.requestDate || 'Recently',
+            unreadCount: 0,
+            initialNote: cleanReqNote,
+            meetupDetails: ex.meetupDate
+              ? {
+                  date: ex.meetupDate,
+                  time: ex.meetupTime,
+                  spot: ex.meetupSpot,
+                }
+              : undefined,
+            messages: reqMessage ? [reqMessage] : [],
+          };
+          updated.push(newConv);
+        }
+      }
+
+      return updated;
+    });
+  }, [exchanges, currentUser]);
 
   // Helper to resolve a participant's UUID in Supabase
   const resolveParticipantId = useCallback(
@@ -381,9 +358,29 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [currentUser]);
 
-  // Sync on mount or when currentUser changes
+  // Sync on mount, on currentUser change, and via Supabase Realtime subscription
   useEffect(() => {
     syncRemoteMessages();
+
+    if (!isSupabaseConfigured()) return;
+
+    const channel = supabase
+      .channel('realtime:messages')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'messages' },
+        () => {
+          syncRemoteMessages();
+        }
+      )
+      .subscribe();
+
+    const interval = setInterval(syncRemoteMessages, 15000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [syncRemoteMessages]);
 
   // Total unread count

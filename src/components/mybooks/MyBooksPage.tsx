@@ -112,7 +112,7 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
     },
   ]);
 
-  const books = propMyBooks && propMyBooks.length > 0 ? propMyBooks : localBooks;
+  const books = propMyBooks !== undefined ? propMyBooks : localBooks;
 
   // Search & Filter State
   const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'lending' | 'donation' | 'personal'>('all');

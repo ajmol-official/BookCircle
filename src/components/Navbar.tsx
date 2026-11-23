@@ -33,6 +33,7 @@ interface NavbarProps {
   onMarkAllNotificationsRead?: () => void;
   unreadCount?: number;
   activityBadgeCount?: number;
+  unreadMessagesCount?: number;
   /** @deprecated handled internally by NotificationDropdown */
   onToggleNotifications?: () => void;
   /** @deprecated use onRequestLogout instead */
@@ -51,6 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onMarkAllNotificationsRead,
   unreadCount = 2,
   activityBadgeCount,
+  unreadMessagesCount,
   onLogout
 }) => {
   const {
@@ -117,7 +119,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           ? '2'
           : undefined,
     },
-    { id: 'messages', label: 'Messages', badge: isAuthenticated ? '1' : undefined },
+    {
+      id: 'messages',
+      label: 'Messages',
+      badge:
+        isAuthenticated && unreadMessagesCount !== undefined && unreadMessagesCount > 0
+          ? String(unreadMessagesCount)
+          : undefined,
+    },
     { id: 'profile', label: 'Profile' },
   ];
 

@@ -1172,6 +1172,7 @@ const BookCircleMain: React.FC = () => {
         onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
         unreadCount={unreadNotificationsCount}
         activityBadgeCount={isAuthenticated ? actionRequiredTotal : 0}
+        unreadMessagesCount={isAuthenticated ? totalUnreadCount : 0}
       />
 
       {/* Global Toast Message */}

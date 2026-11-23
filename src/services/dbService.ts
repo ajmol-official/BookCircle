@@ -210,6 +210,10 @@ export const dbService = {
 
     try {
       const isPersonal = safeBook.availabilityMode === 'personal';
+      const taggedDescription = isPersonal && !safeBook.description?.includes('[PERSONAL_COLLECTION]')
+        ? `[PERSONAL_COLLECTION] ${safeBook.description || ''}`.trim()
+        : (safeBook.description || '');
+
       const fullPayload: any = {
         title: safeBook.title,
         author: safeBook.author,
@@ -218,9 +222,7 @@ export const dbService = {
         condition: safeBook.condition,
         availability_mode: safeBook.availabilityMode,
         status: safeBook.status,
-        description: isPersonal && !safeBook.description?.includes('[PERSONAL_COLLECTION]')
-          ? `[PERSONAL_COLLECTION] ${safeBook.description || ''}`.trim()
-          : safeBook.description,
+        description: taggedDescription,
         owner_name: safeBook.ownerName,
         owner_avatar: safeBook.ownerAvatar,
         owner_id: userId || null,
@@ -236,31 +238,22 @@ export const dbService = {
 
       let result = await supabase.from('books').insert(fullPayload).select().single();
 
-      // Graceful fallback for unmigrated Supabase database schema cache or check constraints
+      // Graceful fallback 1: unmigrated columns in remote Supabase (PGRST204 / schema cache)
       if (
         result.error &&
         (result.error.message.includes('schema cache') ||
           result.error.message.includes('column') ||
-          result.error.message.includes('books_availability_mode_check') ||
-          result.error.code === '23514')
+          result.error.code === 'PGRST204')
       ) {
-        // If the database check constraint does not permit 'personal' yet, fall back to 'lending' with [PERSONAL_COLLECTION] tag
-        const fallbackMode =
-          result.error.message.includes('books_availability_mode_check') || result.error.code === '23514'
-            ? 'lending'
-            : safeBook.availabilityMode;
-
         const basePayload = {
           title: safeBook.title,
           author: safeBook.author,
           cover_image: safeBook.coverImage,
           category: safeBook.category,
           condition: safeBook.condition,
-          availability_mode: fallbackMode,
+          availability_mode: safeBook.availabilityMode,
           status: safeBook.status,
-          description: isPersonal && !safeBook.description?.includes('[PERSONAL_COLLECTION]')
-            ? `[PERSONAL_COLLECTION] ${safeBook.description || ''}`.trim()
-            : safeBook.description,
+          description: taggedDescription,
           owner_name: safeBook.ownerName,
           owner_avatar: safeBook.ownerAvatar,
           owner_id: userId || null,
@@ -268,14 +261,35 @@ export const dbService = {
         result = await supabase.from('books').insert(basePayload).select().single();
       }
 
+      // Graceful fallback 2: database check constraint rejects 'personal' (code 23514 / books_availability_mode_check)
+      if (
+        result.error &&
+        (result.error.message.includes('books_availability_mode_check') ||
+          result.error.code === '23514')
+      ) {
+        const compatPayload = {
+          title: safeBook.title,
+          author: safeBook.author,
+          cover_image: safeBook.coverImage,
+          category: safeBook.category,
+          condition: safeBook.condition,
+          availability_mode: 'lending',
+          status: safeBook.status,
+          description: taggedDescription.includes('[PERSONAL_COLLECTION]')
+            ? taggedDescription
+            : `[PERSONAL_COLLECTION] ${taggedDescription}`.trim(),
+          owner_name: safeBook.ownerName,
+          owner_avatar: safeBook.ownerAvatar,
+          owner_id: userId || null,
+        };
+        result = await supabase.from('books').insert(compatPayload).select().single();
+      }
+
       if (result.error || !result.data) {
         throw new Error(result.error?.message || 'Failed to insert book');
       }
 
-      return {
-        ...safeBook,
-        id: result.data.id,
-      };
+      return mapDbBookToBook(result.data);
     } catch (err) {
       console.error('Error inserting book into Supabase:', err);
       return {
@@ -376,11 +390,28 @@ export const dbService = {
       const effectiveOwnerId = userId || authUser?.id;
       const newStatus = newMode === 'donation' ? 'donation' : 'available';
 
+      // Fetch current description to maintain [PERSONAL_COLLECTION] tag correctly
+      const { data: existingBook } = await supabase
+        .from('books')
+        .select('description')
+        .eq('id', bookId)
+        .single();
+
+      let currentDesc = existingBook?.description || '';
+      if (newMode === 'personal') {
+        if (!currentDesc.includes('[PERSONAL_COLLECTION]')) {
+          currentDesc = `[PERSONAL_COLLECTION] ${currentDesc}`.trim();
+        }
+      } else {
+        currentDesc = cleanDescription(currentDesc);
+      }
+
       let query = supabase
         .from('books')
         .update({
           availability_mode: newMode,
           status: newStatus,
+          description: currentDesc,
         })
         .eq('id', bookId);
 
@@ -389,8 +420,23 @@ export const dbService = {
       }
 
       const { error } = await query;
-      if (error) {
-        console.warn('Could not update book status in Supabase:', error.message);
+      // If DB constraint check rejects 'personal' (23514), fallback to 'lending' + tag
+      if (error && (error.code === '23514' || error.message.includes('books_availability_mode_check'))) {
+        let fallbackQuery = supabase
+          .from('books')
+          .update({
+            availability_mode: 'lending',
+            status: newStatus,
+            description: currentDesc.includes('[PERSONAL_COLLECTION]')
+              ? currentDesc
+              : `[PERSONAL_COLLECTION] ${currentDesc}`.trim(),
+          })
+          .eq('id', bookId);
+
+        if (effectiveOwnerId) {
+          fallbackQuery = fallbackQuery.eq('owner_id', effectiveOwnerId);
+        }
+        await fallbackQuery;
       }
     } catch (err) {
       console.warn('Could not update book status in Supabase:', err);

@@ -20,9 +20,9 @@ interface MobileNavBarProps {
 export const MobileNavBar: React.FC<MobileNavBarProps> = ({
   activeTab,
   setActiveTab,
-  unreadMessages = 1,
+  unreadMessages = 0,
   activityBadgeCount,
-  pendingRequests = 1,
+  pendingRequests = 0,
 }) => {
   const { isAuthenticated, requireAuth } = useAuth();
 
