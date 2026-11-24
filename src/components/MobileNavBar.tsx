@@ -5,7 +5,8 @@ import {
   BookOpen01Icon,
   BubbleChatIcon,
   UserCircle02Icon,
-  Clock01Icon
+  Clock01Icon,
+  HelpCircleIcon
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,8 +28,8 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
   const { isAuthenticated, requireAuth } = useAuth();
 
   const handleTabClick = (tabId: string, label: string) => {
-    if (tabId === 'home') {
-      setActiveTab('home');
+    if (tabId === 'home' || tabId === 'my-books' || tabId === 'activity' || tabId === 'who-we-are') {
+      setActiveTab(tabId);
       return;
     }
 
@@ -45,13 +46,21 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
     setActiveTab(tabId);
   };
 
-  const navItems = [
-    { id: 'home', label: 'Home', icon: Home01Icon },
-    { id: 'my-books', label: 'My Books', icon: BookOpen01Icon },
-    { id: 'activity', label: 'Activity', icon: Clock01Icon },
-    { id: 'messages', label: 'Messages', icon: BubbleChatIcon },
-    { id: 'profile', label: isAuthenticated ? 'Profile' : 'Sign In', icon: UserCircle02Icon },
-  ];
+  const navItems = isAuthenticated
+    ? [
+        { id: 'home', label: 'Home', icon: Home01Icon },
+        { id: 'my-books', label: 'My Books', icon: BookOpen01Icon },
+        { id: 'activity', label: 'Activity', icon: Clock01Icon },
+        { id: 'messages', label: 'Messages', icon: BubbleChatIcon },
+        { id: 'profile', label: 'Profile', icon: UserCircle02Icon },
+      ]
+    : [
+        { id: 'home', label: 'Home', icon: Home01Icon },
+        { id: 'my-books', label: 'My Books', icon: BookOpen01Icon },
+        { id: 'activity', label: 'Activity', icon: Clock01Icon },
+        { id: 'who-we-are', label: 'Guide', icon: HelpCircleIcon },
+        { id: 'profile', label: 'Sign In', icon: UserCircle02Icon },
+      ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-[0_-4px_20px_-4px_rgba(60,52,137,0.08)]">

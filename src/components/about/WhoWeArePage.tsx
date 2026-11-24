@@ -16,7 +16,6 @@ import {
   CheckmarkCircle02Icon,
   ArrowRight01Icon,
   Coffee02Icon,
-  ArrowLeft01Icon,
   SparklesIcon,
   Globe02Icon,
   Compass01Icon,
@@ -31,7 +30,7 @@ interface WhoWeArePageProps {
 export const WhoWeArePage: React.FC<WhoWeArePageProps> = ({
   onExploreBooks,
   onSupportMission,
-  onGoHome,
+  onGoHome: _onGoHome,
 }) => {
   const navigate = useNavigate();
 
@@ -46,14 +45,6 @@ export const WhoWeArePage: React.FC<WhoWeArePageProps> = ({
   const handleSupport = () => {
     if (onSupportMission) {
       onSupportMission();
-    }
-  };
-
-  const handleHome = () => {
-    if (onGoHome) {
-      onGoHome();
-    } else {
-      navigate('/');
     }
   };
 
@@ -118,20 +109,7 @@ export const WhoWeArePage: React.FC<WhoWeArePageProps> = ({
   ];
 
   return (
-    <div className="py-6 sm:py-10 max-w-5xl mx-auto space-y-16 sm:space-y-24">
-      {/* Top Breadcrumb / Back Link */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
-        <button
-          onClick={handleHome}
-          className="inline-flex items-center gap-1.5 font-medium hover:text-slate-900 transition py-1"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={14} />
-          <span>Back to Home</span>
-        </button>
-        <span className="text-slate-300">/</span>
-        <span className="font-semibold text-slate-700">Who We Are</span>
-      </nav>
-
+    <div className="py-6 sm:py-10 w-full space-y-16 sm:space-y-24">
       {/* 01. Hero / Our Story */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         <div className="lg:col-span-7 space-y-5">

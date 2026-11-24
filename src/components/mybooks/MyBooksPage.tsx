@@ -19,6 +19,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { AddBookModal } from './AddBookModal';
 import { EditBookModal } from './EditBookModal';
+import { GuestShelfShowcase } from './GuestShelfShowcase';
 import { useExchanges } from '../../context/ExchangeContext';
 import { useAuth } from '../../context/AuthContext';
 import { cleanAvatarUrl } from '../../utils/avatarUtils';
@@ -51,8 +52,18 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
   onUpdateBookDetails,
 }) => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated, setIsAuthModalOpen } = useAuth();
   const { isBookInActiveExchange, cancelPendingRequestsForBook } = useExchanges();
+
+  // Show rich conversion showcase for unauthenticated visitors
+  if (!isAuthenticated) {
+    return (
+      <GuestShelfShowcase
+        onSignIn={() => setIsAuthModalOpen(true)}
+        onExploreBooks={() => navigate('/books')}
+      />
+    );
+  }
 
   // Local fallback books if not provided
   const [localBooks, setLocalBooks] = useState<Book[]>([

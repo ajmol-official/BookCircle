@@ -22,6 +22,7 @@ import { CurrentlyLentCard } from './CurrentlyLentCard';
 import { RequestSentCard } from './RequestSentCard';
 import { SuggestMeetupTimeModal } from './SuggestMeetupTimeModal';
 import { ExtendLoanModal } from './ExtendLoanModal';
+import { GuestActivityShowcase } from './GuestActivityShowcase';
 import { ReviewModal } from '../bookdetails/ReviewModal';
 import { reviewService } from '../../services/reviewService';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -78,8 +79,19 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
   onNavigateToMessages,
   onOpenAddBook,
 }) => {
-  const { currentUser, requireAuth } = useAuth();
+  const { currentUser, requireAuth, isAuthenticated, setIsAuthModalOpen } = useAuth();
   const navigate = useNavigate();
+
+  // Show rich conversion showcase for unauthenticated visitors
+  if (!isAuthenticated) {
+    return (
+      <GuestActivityShowcase
+        onSignIn={() => setIsAuthModalOpen(true)}
+        onExploreBooks={() => navigate('/books')}
+        onViewGuide={() => navigate('/who-we-are')}
+      />
+    );
+  }
 
   // Clean isolation: only use demo fallbacks when in demo mode or without real user
   const isDemoSession = !currentUser || currentUser.authProvider === 'demo' || currentUser.email === 'maya.reader@bookcircle.org';

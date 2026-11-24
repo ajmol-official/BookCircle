@@ -603,6 +603,7 @@ const BookCircleMain: React.FC = () => {
     if (path === '/profile') return 'profile';
     if (path === '/readers') return 'readers';
     if (path === '/settings') return 'settings';
+    if (path === '/who-we-are' || path === '/how-it-works') return 'who-we-are';
     return '';
   }, [location.pathname]);
 
@@ -839,9 +840,21 @@ const BookCircleMain: React.FC = () => {
         ? '/readers'
         : tab === 'settings'
         ? '/settings'
+        : tab === 'who-we-are' || tab === 'how-it-works'
+        ? '/who-we-are'
         : `/${tab}`;
 
-    if (tab !== 'home' && tab !== 'books' && tab !== 'readers' && tab !== 'settings' && !isAuthenticated) {
+    if (
+      tab !== 'home' &&
+      tab !== 'books' &&
+      tab !== 'readers' &&
+      tab !== 'settings' &&
+      tab !== 'my-books' &&
+      tab !== 'activity' &&
+      tab !== 'who-we-are' &&
+      tab !== 'how-it-works' &&
+      !isAuthenticated
+    ) {
       requireAuth({
         title: 'Sign In Required',
         message: 'Sign in to access your personal shelf, incoming requests, and neighbor conversations.',
@@ -1417,6 +1430,7 @@ const BookCircleMain: React.FC = () => {
               />
             }
           />
+          <Route path="/how-it-works" element={<Navigate to="/who-we-are" replace />} />
 
           <Route
             path="/admin/writers"

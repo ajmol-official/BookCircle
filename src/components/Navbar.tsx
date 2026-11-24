@@ -104,35 +104,40 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   }, []);
 
-  const navItems = [
-    { id: 'home', label: 'Home' },
-    { id: 'my-books', label: 'My Books' },
-    {
-      id: 'activity',
-      label: 'Activity',
-      badge:
-        isAuthenticated && activityBadgeCount !== undefined
-          ? activityBadgeCount > 0
-            ? String(activityBadgeCount)
-            : undefined
-          : isAuthenticated
-          ? '2'
-          : undefined,
-    },
-    {
-      id: 'messages',
-      label: 'Messages',
-      badge:
-        isAuthenticated && unreadMessagesCount !== undefined && unreadMessagesCount > 0
-          ? String(unreadMessagesCount)
-          : undefined,
-    },
-    { id: 'profile', label: 'Profile' },
-  ];
+  const navItems = isAuthenticated
+    ? [
+        { id: 'home', label: 'Home' },
+        { id: 'my-books', label: 'My Books' },
+        {
+          id: 'activity',
+          label: 'Activity',
+          badge:
+            activityBadgeCount !== undefined
+              ? activityBadgeCount > 0
+                ? String(activityBadgeCount)
+                : undefined
+              : '2',
+        },
+        {
+          id: 'messages',
+          label: 'Messages',
+          badge:
+            unreadMessagesCount !== undefined && unreadMessagesCount > 0
+              ? String(unreadMessagesCount)
+              : undefined,
+        },
+        { id: 'profile', label: 'Profile' },
+      ]
+    : [
+        { id: 'home', label: 'Home' },
+        { id: 'my-books', label: 'My Books' },
+        { id: 'activity', label: 'Activity' },
+        { id: 'who-we-are', label: 'How It Works' },
+      ];
 
   const handleNavClick = (tabId: string, label: string) => {
-    if (tabId === 'home') {
-      setActiveTab('home');
+    if (tabId === 'home' || tabId === 'my-books' || tabId === 'activity' || tabId === 'who-we-are') {
+      setActiveTab(tabId);
       return;
     }
     // Protected tabs require authentication
