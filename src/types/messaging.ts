@@ -19,7 +19,8 @@ export interface Conversation {
   bookCover: string;
   catalogId?: string;
   role: 'Lender' | 'Borrower';
-  status: 'accepted' | 'pending';
+  status: 'accepted' | 'pending' | 'declined';
+  hasAcceptedExchange?: boolean;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount?: number;

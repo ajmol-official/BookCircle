@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { useExchanges } from './ExchangeContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { cleanAvatarUrl } from '../utils/avatarUtils';
+import { getChatPermission } from '../utils/messagingPermissions';
 
 const isRealUuid = (id?: string): boolean =>
   Boolean(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
@@ -23,6 +24,8 @@ interface MessagingContextType {
   setDraft: (convId: string, draft: string) => void;
   sendMessage: (convId: string, text: string) => Promise<void>;
   markAsRead: (convId: string) => void;
+  acceptMessageRequest: (convId: string) => void;
+  declineMessageRequest: (convId: string) => void;
   simulateAcceptance: (convId: string) => void;
 }
 
@@ -71,6 +74,57 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Floating Chat State: null (closed) | { convId, state: 'expanded' | 'minimized' }
   const [activeFloatingChat, setActiveFloatingChat] = useState<ActiveFloatingChat | null>(null);
 
+  // Explicit message request decisions ('accepted' | 'declined') keyed by participant ID or lowercase name
+  const decisionsStorageKey = `bookcircle_msg_decisions_v1_${currentUser?.id || 'guest'}`;
+  const [requestDecisions, setRequestDecisions] = useState<Record<string, 'accepted' | 'declined'>>(() => {
+    try {
+      const saved = localStorage.getItem(`bookcircle_msg_decisions_v1_${currentUser?.id || 'guest'}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(decisionsStorageKey);
+      setRequestDecisions(saved ? JSON.parse(saved) : {});
+    } catch {
+      setRequestDecisions({});
+    }
+  }, [decisionsStorageKey]);
+
+  const saveDecision = useCallback(
+    (participantId?: string, participantName?: string, decision?: 'accepted' | 'declined') => {
+      if (!decision) return;
+      setRequestDecisions((prev) => {
+        const next = { ...prev };
+        if (participantId) next[participantId.toLowerCase()] = decision;
+        if (participantName) next[`name:${participantName.toLowerCase().trim()}`] = decision;
+        try {
+          localStorage.setItem(decisionsStorageKey, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    },
+    [decisionsStorageKey]
+  );
+
+  const getDecision = useCallback(
+    (participantId?: string, participantName?: string): 'accepted' | 'declined' | undefined => {
+      if (participantId && requestDecisions[participantId.toLowerCase()]) {
+        return requestDecisions[participantId.toLowerCase()];
+      }
+      if (participantName && requestDecisions[`name:${participantName.toLowerCase().trim()}`]) {
+        return requestDecisions[`name:${participantName.toLowerCase().trim()}`];
+      }
+      return undefined;
+    },
+    [requestDecisions]
+  );
+
   // Sync to localStorage
   useEffect(() => {
     try {
@@ -115,14 +169,20 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           : ex.ownerTrust || 'Verified Neighbor';
         const role: 'Lender' | 'Borrower' = isOwner ? 'Lender' : 'Borrower';
         const isAccepted = [
+          'accepted',
           'handover_in_progress',
           'active_loan',
           'return_scheduled',
           'return_in_progress',
           'completed',
+          'handed_over',
+          'claim_accepted',
+          'claim_handover',
           'claim_handover_in_progress',
           'claim_completed'
         ].includes(ex.status);
+
+        const decision = getDecision(otherId, otherName);
 
         // Check if conversation already exists by exchange ID or participant
         const existingIdx = updated.findIndex(
@@ -153,6 +213,16 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const msgs = existing.messages || [];
           const hasReqMsg = reqMessage && msgs.some((m) => m.id === reqMessage.id || m.text === reqMessage.text);
           const mergedMsgs = reqMessage && !hasReqMsg ? [reqMessage, ...msgs] : msgs;
+          const realChatMsgs = mergedMsgs.filter((m) => !m.id.startsWith('req-msg-'));
+          const hasTwoWayReplies =
+            realChatMsgs.some((m) => m.sender === 'user') &&
+            realChatMsgs.some((m) => m.sender === 'other');
+          const nextStatus: Conversation['status'] =
+            isAccepted || decision === 'accepted' || hasTwoWayReplies || existing.status === 'accepted'
+              ? 'accepted'
+              : decision === 'declined'
+              ? 'declined'
+              : 'pending';
 
           updated[existingIdx] = {
             ...existing,
@@ -164,7 +234,8 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             bookAuthor: ex.bookAuthor || existing.bookAuthor,
             bookCover: ex.bookCover || existing.bookCover,
             role,
-            status: isAccepted ? 'accepted' : existing.status,
+            hasAcceptedExchange: isAccepted || existing.hasAcceptedExchange,
+            status: nextStatus,
             meetupDetails: ex.meetupDate
               ? {
                   date: ex.meetupDate,
@@ -186,7 +257,8 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             bookCover: ex.bookCover,
             catalogId: ex.catalogId,
             role,
-            status: isAccepted ? 'accepted' : 'pending',
+            hasAcceptedExchange: isAccepted,
+            status: isAccepted || decision === 'accepted' ? 'accepted' : decision === 'declined' ? 'declined' : 'pending',
             lastMessage: cleanReqNote || `Borrow request ${ex.status}`,
             lastMessageTime: ex.meetupDate || ex.requestDate || 'Recently',
             unreadCount: 0,
@@ -206,7 +278,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       return updated;
     });
-  }, [exchanges, currentUser]);
+  }, [exchanges, currentUser, getDecision]);
 
   // Helper to resolve a participant's UUID in Supabase
   const resolveParticipantId = useCallback(
@@ -301,8 +373,11 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               c.participantName.toLowerCase().trim() === otherName.toLowerCase().trim()
           );
 
+          const decision = getDecision(otherId, otherName);
+
           if (existingIdx >= 0) {
-            const existingMsgs = updated[existingIdx].messages || [];
+            const existingConv = updated[existingIdx];
+            const existingMsgs = existingConv.messages || [];
             const merged = [...existingMsgs];
             for (const fm of formattedMessages) {
               if (
@@ -318,30 +393,55 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             }
             merged.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
             const lastM = merged[merged.length - 1];
+            const realChatMsgs = merged.filter((m) => !m.id.startsWith('req-msg-'));
+            const hasTwoWayReplies =
+              realChatMsgs.some((m) => m.sender === 'user') &&
+              realChatMsgs.some((m) => m.sender === 'other');
+
+            const nextStatus: Conversation['status'] =
+              existingConv.hasAcceptedExchange ||
+              decision === 'accepted' ||
+              hasTwoWayReplies ||
+              existingConv.status === 'accepted'
+                ? 'accepted'
+                : decision === 'declined'
+                ? 'declined'
+                : 'pending';
 
             updated[existingIdx] = {
-              ...updated[existingIdx],
+              ...existingConv,
               participantId: otherId,
-              participantName: updated[existingIdx].participantName || otherName,
-              participantAvatar: updated[existingIdx].participantAvatar || otherAvatar,
-              lastMessage: lastM?.text || updated[existingIdx].lastMessage,
-              lastMessageTime: lastM?.time || updated[existingIdx].lastMessageTime,
+              participantName: existingConv.participantName || otherName,
+              participantAvatar: existingConv.participantAvatar || otherAvatar,
+              status: nextStatus,
+              lastMessage: lastM?.text || existingConv.lastMessage,
+              lastMessageTime: lastM?.time || existingConv.lastMessageTime,
               messages: merged,
             };
           } else {
             const lastM = formattedMessages[formattedMessages.length - 1];
+            const hasTwoWayReplies =
+              formattedMessages.some((m) => m.sender === 'user') &&
+              formattedMessages.some((m) => m.sender === 'other');
+            const initialStatus: Conversation['status'] =
+              decision === 'accepted' || hasTwoWayReplies
+                ? 'accepted'
+                : decision === 'declined'
+                ? 'declined'
+                : 'pending';
+
             const newConv: Conversation = {
               id: `conv-${otherId}`,
               participantId: otherId,
               participantName: otherName,
               participantAvatar: otherAvatar,
               participantTrust: '4.9 ★ (Verified Reader)',
-              bookTitle: 'Community Exchange',
-              bookAuthor: 'Neighbor',
+              bookTitle: 'Direct Message',
+              bookAuthor: 'Neighbor Inquiry',
               bookCover:
                 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200',
               role: 'Lender',
-              status: 'accepted',
+              status: initialStatus,
               lastMessage: lastM?.text || 'Conversation opened',
               lastMessageTime: lastM?.time || 'Just now',
               unreadCount: 0,
@@ -356,7 +456,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch (e) {
       console.warn('Could not sync remote messages from Supabase:', e);
     }
-  }, [currentUser]);
+  }, [currentUser, getDecision]);
 
   // Sync on mount, on currentUser change, and via Supabase Realtime subscription
   useEffect(() => {
@@ -434,22 +534,22 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           return prev;
         }
 
-        // Create new conversation
+        // Create new message request conversation (defaults to 'pending' — 1 intro message allowed until accepted/replied)
         const newConv: Conversation = {
           id: targetId,
           participantId: fallbackData?.participantId,
           participantName,
           participantAvatar: cleanAvatarUrl(fallbackData?.participantAvatar),
           participantTrust: fallbackData?.participantTrust || '4.9 ★ (Verified Reader)',
-          bookTitle: bookTitle || fallbackData?.bookTitle || 'Community Book',
-          bookAuthor: fallbackData?.bookAuthor || 'Neighbor',
+          bookTitle: bookTitle || fallbackData?.bookTitle || 'Direct Message',
+          bookAuthor: fallbackData?.bookAuthor || 'Neighbor Inquiry',
           bookCover:
             fallbackData?.bookCover ||
             'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200',
           catalogId: fallbackData?.catalogId,
           role: fallbackData?.role || 'Lender',
-          status: fallbackData?.status || 'accepted',
-          lastMessage: 'Conversation opened',
+          status: fallbackData?.status || 'pending',
+          lastMessage: 'Send up to 1 message to start chatting',
           lastMessageTime: 'Just now',
           unreadCount: 0,
           messages: fallbackData?.messages || [],
@@ -492,10 +592,14 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const target = conversations.find((c) => c.id === convId);
       if (!target) throw new Error('Conversation not found');
 
-      // CRITICAL PERMISSION CHECK:
-      // Direct messaging is locked if the borrow request has not been accepted!
-      if (target.status === 'pending') {
-        throw new Error('403 Forbidden: Direct messaging is locked until the borrowing request has been accepted.');
+      // CRITICAL PERMISSION CHECK (Instagram-style 1-message request limit):
+      const permission = getChatPermission(target);
+      if (!permission.canSend) {
+        throw new Error(
+          permission.isDeclined
+            ? 'This message request was declined.'
+            : 'Message request sent. You can send more messages once the recipient accepts or replies.'
+        );
       }
 
       // Resolve recipient UUID for real authenticated session
@@ -548,15 +652,31 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         timestamp: messageTimestamp,
       };
 
+      // If the recipient replies to an incoming message request, automatically accept & unlock two-way chat
+      if (permission.isIncomingRequest) {
+        saveDecision(resolvedId || target.participantId, target.participantName, 'accepted');
+      }
+
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id === convId) {
+            const updatedMessages = [...c.messages, newMsg];
+            const realChatMsgs = updatedMessages.filter((m) => !m.id.startsWith('req-msg-'));
+            const hasTwoWayReplies =
+              realChatMsgs.some((m) => m.sender === 'user') &&
+              realChatMsgs.some((m) => m.sender === 'other');
+            const nextStatus: Conversation['status'] =
+              c.status === 'accepted' || hasTwoWayReplies || permission.isIncomingRequest
+                ? 'accepted'
+                : 'pending';
+
             return {
               ...c,
               participantId: resolvedId || c.participantId,
+              status: nextStatus,
               lastMessage: clean,
               lastMessageTime: timeStr,
-              messages: [...c.messages, newMsg],
+              messages: updatedMessages,
             };
           }
           return c;
@@ -570,7 +690,36 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return next;
       });
     },
-    [conversations, currentUser, resolveParticipantId]
+    [conversations, currentUser, resolveParticipantId, saveDecision]
+  );
+
+  // Recipient explicitly accepts an incoming message request
+  const acceptMessageRequest = useCallback(
+    (convId: string) => {
+      const target = conversations.find((c) => c.id === convId);
+      if (target) {
+        saveDecision(target.participantId, target.participantName, 'accepted');
+      }
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, status: 'accepted' } : c))
+      );
+    },
+    [conversations, saveDecision]
+  );
+
+  // Recipient explicitly declines an incoming message request
+  const declineMessageRequest = useCallback(
+    (convId: string) => {
+      const target = conversations.find((c) => c.id === convId);
+      if (target) {
+        saveDecision(target.participantId, target.participantName, 'declined');
+      }
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, status: 'declined', unreadCount: 0 } : c))
+      );
+      setActiveFloatingChat((prev) => (prev?.convId === convId ? null : prev));
+    },
+    [conversations, saveDecision]
   );
 
   // Demo helper: simulate acceptance of request
@@ -617,6 +766,8 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setDraft,
         sendMessage,
         markAsRead,
+        acceptMessageRequest,
+        declineMessageRequest,
         simulateAcceptance,
       }}
     >

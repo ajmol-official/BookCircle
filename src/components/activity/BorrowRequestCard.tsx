@@ -8,7 +8,8 @@ import {
   BookOpen01Icon,
   GiftIcon,
   StarIcon,
-  AlertCircleIcon
+  AlertCircleIcon,
+  Comment01Icon
 } from '@hugeicons/core-free-icons';
 import type { ExchangeTransaction } from '../../types';
 
@@ -17,6 +18,7 @@ export interface BorrowRequestCardProps {
   onAcceptMeetup: (request: ExchangeTransaction) => void;
   onDecline: (request: ExchangeTransaction) => void;
   onSuggestDifferentTime: (request: ExchangeTransaction) => void;
+  onMessage?: (borrowerName: string, bookTitle: string) => void;
   onSelectRequester?: (borrowerName: string, borrowerId?: string) => void;
   onSelectBook?: (bookTitle: string, bookId?: string) => void;
   isAlreadyOnLoan?: boolean;
@@ -98,6 +100,7 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
   onAcceptMeetup,
   onDecline,
   onSuggestDifferentTime,
+  onMessage,
   onSelectRequester,
   onSelectBook,
   isAlreadyOnLoan = false
@@ -196,6 +199,19 @@ export const BorrowRequestCard: React.FC<BorrowRequestCardProps> = ({
               >
                 <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} />
                 <span>Accept Meetup</span>
+              </button>
+            )}
+
+            {/* Quick Message Button (Talk before accepting or declining) */}
+            {onMessage && (
+              <button
+                type="button"
+                onClick={() => onMessage(request.borrowerName, request.bookTitle)}
+                className="w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-brand transition flex items-center justify-center flex-shrink-0 active:scale-95 cursor-pointer order-4"
+                title={`Message ${request.borrowerName} before deciding`}
+                aria-label={`Message ${request.borrowerName}`}
+              >
+                <HugeiconsIcon icon={Comment01Icon} size={18} />
               </button>
             )}
           </div>

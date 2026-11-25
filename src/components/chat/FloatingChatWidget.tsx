@@ -12,6 +12,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useMessaging } from '../../context/MessagingContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { getChatPermission } from '../../utils/messagingPermissions';
 
 interface SafeAvatarProps {
   src?: string;
@@ -63,7 +64,8 @@ export const FloatingChatWidget: React.FC = () => {
     minimizeFloatingChat,
     expandFloatingChat,
     closeFloatingChat,
-    simulateAcceptance,
+    acceptMessageRequest,
+    declineMessageRequest,
   } = useMessaging();
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
@@ -105,7 +107,8 @@ export const FloatingChatWidget: React.FC = () => {
 
   const convId = activeConversation.id;
   const currentDraft = drafts[convId] || '';
-  const isLocked = activeConversation.status === 'pending';
+  const permission = getChatPermission(activeConversation);
+  const isLocked = !permission.canSend;
 
   // Handle scroll detection
   const handleScroll = () => {
@@ -225,54 +228,73 @@ export const FloatingChatWidget: React.FC = () => {
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#FCFBF8]"
             >
-              {isLocked ? (
-                <div className="py-8 text-center px-4">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-2.5 shadow-xs">
-                    <HugeiconsIcon icon={LockIcon} size={20} />
-                  </div>
-                  <h4 className="font-serif text-base font-semibold text-slate-800">
-                    Direct Chat Locked
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
-                    Messaging unlocks once {activeConversation.participantName} accepts your borrowing request.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => simulateAcceptance(convId)}
-                    className="mt-3.5 px-3 py-1.5 rounded-xl bg-brand/10 hover:bg-brand/20 text-brand text-xs font-semibold inline-flex items-center gap-1.5 transition"
-                  >
-                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
-                    <span>Simulate Acceptance</span>
-                  </button>
-                </div>
-              ) : activeConversation.messages.length === 0 ? (
-                <div className="py-12 text-center text-xs text-slate-400">
-                  No messages yet. Send a greeting to start coordinating!
+              {activeConversation.messages.length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-500 px-4">
+                  {permission.isFirstMessagePrompt
+                    ? `Send 1 intro message to ${activeConversation.participantName}. Two-way chat unlocks once they accept or reply.`
+                    : 'No messages yet. Send a greeting to start coordinating!'}
                 </div>
               ) : (
-                activeConversation.messages.map((m) => {
-                  const isUser = m.sender === 'user';
-                  return (
-                    <div
-                      key={m.id}
-                      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
-                    >
+                <>
+                  {activeConversation.messages.map((m) => {
+                    const isUser = m.sender === 'user';
+                    return (
                       <div
-                        className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed shadow-2xs ${
-                          isUser
-                            ? 'bg-brand text-white rounded-br-xs'
-                            : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-xs'
-                        }`}
+                        key={m.id}
+                        className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                       >
-                        {m.text}
+                        <div
+                          className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed shadow-2xs ${
+                            isUser
+                              ? 'bg-brand text-white rounded-br-xs'
+                              : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-xs'
+                          }`}
+                        >
+                          {m.text}
+                        </div>
+                        <span className="text-[10px] text-slate-400 mt-0.5 px-1">{m.time}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 mt-0.5 px-1">{m.time}</span>
+                    );
+                  })}
+                  {isLocked && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 flex items-center gap-2">
+                      <HugeiconsIcon icon={LockIcon} size={13} className="text-amber-700 flex-shrink-0" />
+                      <span>
+                        {permission.isDeclined
+                          ? 'This message request was declined.'
+                          : `1 of 1 message sent · Locked until ${activeConversation.participantName} accepts or replies.`}
+                      </span>
                     </div>
-                  );
-                })
+                  )}
+                </>
               )}
               <div ref={messagesEndRef} />
             </div>
+
+            {permission.isIncomingRequest && (
+              <div className="px-3.5 py-2 border-t border-amber-200/80 bg-amber-50 flex items-center justify-between gap-2 text-[11px]">
+                <span className="font-medium text-amber-950 truncate">
+                  Message request · Reply or accept
+                </span>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => declineMessageRequest(convId)}
+                    className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold"
+                  >
+                    Decline
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => acceptMessageRequest(convId)}
+                    className="px-2.5 py-1 rounded-lg bg-brand text-white font-semibold inline-flex items-center gap-1"
+                  >
+                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} />
+                    <span>Accept</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Mobile Composer */}
             <form
@@ -285,7 +307,13 @@ export const FloatingChatWidget: React.FC = () => {
                 value={currentDraft}
                 onChange={(e) => setDraft(convId, e.target.value)}
                 placeholder={
-                  isLocked ? 'Messaging locked until request accepted' : 'Type a message...'
+                  permission.isDeclined
+                    ? 'Message request declined'
+                    : isLocked
+                    ? `1 of 1 sent · Waiting for ${activeConversation.participantName}`
+                    : permission.isFirstMessagePrompt
+                    ? 'Send 1 intro message...'
+                    : 'Type a message...'
                 }
                 className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand disabled:bg-slate-100 disabled:cursor-not-allowed transition"
               />
@@ -428,54 +456,73 @@ export const FloatingChatWidget: React.FC = () => {
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-3.5 space-y-2.5 bg-[#FCFBF8]"
       >
-        {isLocked ? (
-          <div className="py-10 text-center px-4">
-            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-2.5 shadow-xs">
-              <HugeiconsIcon icon={LockIcon} size={20} />
-            </div>
-            <h4 className="font-serif text-base font-semibold text-slate-800">
-              Direct Chat Locked
-            </h4>
-            <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
-              Messaging unlocks once {activeConversation.participantName} accepts your borrowing request.
-            </p>
-            <button
-              type="button"
-              onClick={() => simulateAcceptance(convId)}
-              className="mt-3.5 px-3 py-1.5 rounded-xl bg-brand/10 hover:bg-brand/20 text-brand text-xs font-semibold inline-flex items-center gap-1.5 transition"
-            >
-              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
-              <span>Simulate Acceptance</span>
-            </button>
-          </div>
-        ) : activeConversation.messages.length === 0 ? (
-          <div className="py-16 text-center text-xs text-slate-400">
-            No messages yet. Send a greeting to start coordinating!
+        {activeConversation.messages.length === 0 ? (
+          <div className="py-16 text-center text-xs text-slate-500 px-4">
+            {permission.isFirstMessagePrompt
+              ? `Send 1 intro message to ${activeConversation.participantName}. Two-way chat unlocks once they accept or reply.`
+              : 'No messages yet. Send a greeting to start coordinating!'}
           </div>
         ) : (
-          activeConversation.messages.map((m) => {
-            const isUser = m.sender === 'user';
-            return (
-              <div
-                key={m.id}
-                className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
-              >
+          <>
+            {activeConversation.messages.map((m) => {
+              const isUser = m.sender === 'user';
+              return (
                 <div
-                  className={`max-w-[82%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed shadow-2xs ${
-                    isUser
-                      ? 'bg-brand text-white rounded-br-xs'
-                      : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-xs'
-                  }`}
+                  key={m.id}
+                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                 >
-                  {m.text}
+                  <div
+                    className={`max-w-[82%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed shadow-2xs ${
+                      isUser
+                        ? 'bg-brand text-white rounded-br-xs'
+                        : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-xs'
+                    }`}
+                  >
+                    {m.text}
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-0.5 px-1">{m.time}</span>
                 </div>
-                <span className="text-[10px] text-slate-400 mt-0.5 px-1">{m.time}</span>
+              );
+            })}
+            {isLocked && (
+              <div className="mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 flex items-center gap-2">
+                <HugeiconsIcon icon={LockIcon} size={13} className="text-amber-700 flex-shrink-0" />
+                <span>
+                  {permission.isDeclined
+                    ? 'This message request was declined.'
+                    : `1 of 1 message sent · Locked until ${activeConversation.participantName} accepts or replies.`}
+                </span>
               </div>
-            );
-          })
+            )}
+          </>
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {permission.isIncomingRequest && (
+        <div className="px-3 py-2 border-t border-amber-200/80 bg-amber-50 flex items-center justify-between gap-2 text-[11px] flex-shrink-0">
+          <span className="font-medium text-amber-950 truncate">
+            Message request · Reply or accept
+          </span>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => declineMessageRequest(convId)}
+              className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition"
+            >
+              Decline
+            </button>
+            <button
+              type="button"
+              onClick={() => acceptMessageRequest(convId)}
+              className="px-2.5 py-1 rounded-lg bg-brand text-white font-semibold inline-flex items-center gap-1 hover:bg-brand-dark transition"
+            >
+              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} />
+              <span>Accept</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Fixed Composer at Bottom */}
       <form
@@ -488,7 +535,13 @@ export const FloatingChatWidget: React.FC = () => {
           value={currentDraft}
           onChange={(e) => setDraft(convId, e.target.value)}
           placeholder={
-            isLocked ? 'Messaging locked until request accepted' : 'Type a message...'
+            permission.isDeclined
+              ? 'Message request declined'
+              : isLocked
+              ? `1 of 1 sent · Waiting for ${activeConversation.participantName}`
+              : permission.isFirstMessagePrompt
+              ? 'Send 1 intro message...'
+              : 'Type a message...'
           }
           className="flex-1 px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand disabled:bg-slate-100 disabled:cursor-not-allowed transition"
         />

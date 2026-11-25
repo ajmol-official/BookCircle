@@ -914,6 +914,9 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
                       onSuggestDifferentTime={(r) => {
                         setSuggestTimeTarget(r);
                       }}
+                      onMessage={(borrowerName, bookTitle) => {
+                        onNavigateToMessages?.(borrowerName, bookTitle);
+                      }}
                       onSelectBook={(_title, id) => {
                         const target = id || _title?.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                         if (target) {

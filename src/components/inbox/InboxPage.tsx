@@ -5,17 +5,54 @@ import {
   SentIcon,
   LockIcon,
   ShieldCheckIcon,
-  Clock01Icon,
   Calendar01Icon,
   Location01Icon,
   Tick01Icon,
   ArrowLeft01Icon,
-  BubbleChatIcon
+  BubbleChatIcon,
+  Cancel01Icon,
+  CheckmarkCircle02Icon
 } from '@hugeicons/core-free-icons';
 import { useMessaging } from '../../context/MessagingContext';
 import type { ChatMessage, Conversation } from '../../types/messaging';
+import { getChatPermission } from '../../utils/messagingPermissions';
+import { cleanAvatarUrl, getUserInitials } from '../../utils/avatarUtils';
 
 export type { ChatMessage, Conversation };
+
+const SafeInboxAvatar: React.FC<{ src?: string; name: string; className?: string; textClass?: string }> = ({
+  src,
+  name,
+  className = 'w-11 h-11',
+  textClass = 'text-xs',
+}) => {
+  const [hasError, setHasError] = useState(false);
+  const cleaned = cleanAvatarUrl(src);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  if (!cleaned || hasError) {
+    return (
+      <div
+        className={`${className} rounded-full bg-brand/10 border border-brand/20 text-brand font-serif font-bold ${textClass} flex items-center justify-center flex-shrink-0 select-none`}
+        aria-label={name}
+      >
+        {getUserInitials(name)}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={cleaned}
+      alt={name}
+      onError={() => setHasError(true)}
+      className={`${className} rounded-full object-cover ring-2 ring-slate-100 flex-shrink-0`}
+    />
+  );
+};
 
 interface InboxPageProps {
   initialOwnerName?: string | null;
@@ -29,16 +66,21 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
     drafts,
     setDraft,
     markAsRead,
+    acceptMessageRequest,
+    declineMessageRequest,
   } = useMessaging();
+
+  const visibleConversations = conversations.filter((c) => c.status !== 'declined');
+
   // Active selected conversation
   const [selectedConvId, setSelectedConvId] = useState<string>(() => {
-    if (initialOwnerName && conversations.length > 0) {
-      const match = conversations.find(
+    if (initialOwnerName && visibleConversations.length > 0) {
+      const match = visibleConversations.find(
         (c) => c.participantName.toLowerCase() === initialOwnerName.toLowerCase()
       );
       if (match) return match.id;
     }
-    return conversations[0]?.id || '';
+    return visibleConversations[0]?.id || '';
   });
 
   const [mobileView, setMobileView] = useState<'list' | 'chat'>(initialOwnerName ? 'chat' : 'list');
@@ -47,21 +89,27 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
 
   // Keep selectedConvId valid as conversations load or update
   useEffect(() => {
-    if (!selectedConvId && conversations.length > 0) {
-      setSelectedConvId(conversations[0].id);
-    } else if (selectedConvId && !conversations.some((c) => c.id === selectedConvId) && conversations.length > 0) {
-      setSelectedConvId(conversations[0].id);
+    if (!selectedConvId && visibleConversations.length > 0) {
+      setSelectedConvId(visibleConversations[0].id);
+    } else if (
+      selectedConvId &&
+      !visibleConversations.some((c) => c.id === selectedConvId) &&
+      visibleConversations.length > 0
+    ) {
+      setSelectedConvId(visibleConversations[0].id);
     }
-  }, [conversations, selectedConvId]);
+  }, [visibleConversations, selectedConvId]);
 
-  const currentConv = conversations.find((c) => c.id === selectedConvId) || conversations[0];
+  const currentConv =
+    visibleConversations.find((c) => c.id === selectedConvId) || visibleConversations[0];
+  const permission = currentConv ? getChatPermission(currentConv) : null;
   const inputMessage = drafts[currentConv?.id || ''] || '';
   const setInputMessage = (val: string) => {
     if (currentConv) setDraft(currentConv.id, val);
   };
 
-  const acceptedCount = conversations.filter((c) => c.status === 'accepted').length;
-  const pendingCount = conversations.filter((c) => c.status === 'pending').length;
+  const acceptedCount = visibleConversations.filter((c) => c.status === 'accepted').length;
+  const pendingCount = visibleConversations.filter((c) => c.status === 'pending').length;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Mark as read when selected
@@ -71,7 +119,7 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
     }
   }, [selectedConvId, markAsRead]);
 
-  const filteredConversations = conversations.filter((c) => {
+  const filteredConversations = visibleConversations.filter((c) => {
     if (filter === 'accepted' && c.status !== 'accepted') return false;
     if (filter === 'pending' && c.status !== 'pending') return false;
     if (searchQuery.trim()) {
@@ -91,7 +139,7 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim() || !currentConv || currentConv.status !== 'accepted') return;
+    if (!inputMessage.trim() || !currentConv || !permission?.canSend) return;
     await sendMessage(currentConv.id, inputMessage);
   };
 
@@ -153,7 +201,7 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
                   filter === 'all' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                All ({conversations.length})
+                All ({visibleConversations.length})
               </button>
               <button
                 type="button"
@@ -198,15 +246,15 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
                   >
                     {/* Participant Avatar */}
                     <div className="relative flex-shrink-0">
-                      <img
+                      <SafeInboxAvatar
                         src={conv.participantAvatar}
-                        alt={conv.participantName}
-                        className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100"
+                        name={conv.participantName}
+                        className="w-11 h-11"
                       />
                       {isLocked ? (
                         <div
                           className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-xs"
-                          title="Messaging locked pending acceptance"
+                          title="Message request pending"
                         >
                           <HugeiconsIcon icon={LockIcon} size={10} />
                         </div>
@@ -320,10 +368,10 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
                   >
                     <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
                   </button>
-                  <img
+                  <SafeInboxAvatar
                     src={currentConv.participantAvatar}
-                    alt={currentConv.participantName}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100"
+                    name={currentConv.participantName}
+                    className="w-10 h-10"
                   />
                   <div>
                     <div className="flex items-center gap-2">
@@ -356,159 +404,138 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
                 </div>
               </div>
 
-              {/* CHAT BODY */}
-              {currentConv.status === 'pending' ? (
-                /* LOCKED STATE (Fixed scrollable container + docked bar) */
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-cream/40">
-                  <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 flex flex-col items-center justify-center text-center">
-                    <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mb-3.5 ring-8 ring-amber-50 shadow-xs">
-                      <HugeiconsIcon icon={LockIcon} size={24} />
+              {/* CHAT BODY (Always displays messages, enforcing 1-message request rules) */}
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                {/* Meetup Handover / Pending Request Banner (Fixed) */}
+                {currentConv.meetupDetails && permission?.isUnlocked ? (
+                  <div className="p-2.5 px-5 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between text-xs text-emerald-900 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold flex items-center gap-1.5">
+                        <HugeiconsIcon icon={Tick01Icon} size={14} className="text-emerald-700" />
+                        <span>Request Accepted</span>
+                      </span>
+                      <span className="hidden sm:inline text-emerald-400">•</span>
+                      <span className="hidden sm:flex items-center gap-1 text-[11px]">
+                        <HugeiconsIcon icon={Calendar01Icon} size={13} />
+                        {currentConv.meetupDetails.date} @ {currentConv.meetupDetails.time}
+                      </span>
+                      <span className="hidden sm:inline text-emerald-400">•</span>
+                      <span className="hidden md:flex items-center gap-1 text-[11px]">
+                        <HugeiconsIcon icon={Location01Icon} size={13} />
+                        {currentConv.meetupDetails.spot}
+                      </span>
                     </div>
 
-                    <h3 className="font-serif text-xl sm:text-2xl font-semibold text-slate-800">
-                      Messaging is Locked
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-md leading-relaxed">
-                      You cannot message <strong className="text-slate-700 font-semibold">{currentConv.participantName}</strong> until they accept your borrowing request for <span className="font-medium text-slate-800">“{currentConv.bookTitle}”</span>.
+                    <span className="text-[10px] font-mono bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded font-bold">
+                      Active Handover
+                    </span>
+                  </div>
+                ) : currentConv.status === 'pending' ? (
+                  <div className="p-2.5 px-5 bg-amber-50/80 border-b border-amber-100 flex items-center justify-between gap-3 text-xs text-amber-900 flex-shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <HugeiconsIcon icon={LockIcon} size={14} className="text-amber-700 flex-shrink-0" />
+                      <span className="truncate font-medium">
+                        {permission?.isIncomingRequest
+                          ? `Incoming message request from ${currentConv.participantName}`
+                          : permission?.isAwaitingAcceptance
+                          ? `1 of 1 message sent · Waiting for ${currentConv.participantName} to accept or reply`
+                          : `Message request · You can send 1 intro message to ${currentConv.participantName}`}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold bg-amber-200/70 text-amber-900 px-2 py-0.5 rounded flex-shrink-0">
+                      Pending
+                    </span>
+                  </div>
+                ) : null}
+
+                {/* Messages Scroll Area (Independently scrollable) */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3.5">
+                  {/* Conversation Beginning Card */}
+                  <div className="my-2 p-3 sm:p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 text-center space-y-1.5 max-w-sm mx-auto">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                      {currentConv.meetupDetails ? 'Handover Conversation' : 'Neighborhood Chat'}
+                    </span>
+                    <p className="font-serif text-sm font-semibold text-slate-800">
+                      “{currentConv.bookTitle}”
+                      {currentConv.bookAuthor && currentConv.bookAuthor !== 'Neighbor Inquiry'
+                        ? ` by ${currentConv.bookAuthor}`
+                        : ''}
                     </p>
-
-                    {/* Request Status Card */}
-                    <div className="mt-5 w-full max-w-md p-4 bg-white rounded-2xl border border-slate-200 shadow-xs text-left text-xs space-y-2.5">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                        <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                          <HugeiconsIcon icon={Clock01Icon} size={15} className="text-amber-600" />
-                          <span>Request Status</span>
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                          Awaiting Lender Approval
-                        </span>
-                      </div>
-
-                      <div className="space-y-1.5 text-slate-600">
-                        <p>
-                          <span className="text-slate-400">Book:</span> <strong className="text-slate-800">{currentConv.bookTitle}</strong>
-                        </p>
-                        {currentConv.meetupDetails && (
-                          <p>
-                            <span className="text-slate-400">Proposed Meetup:</span> {currentConv.meetupDetails.date} @ {currentConv.meetupDetails.time} at {currentConv.meetupDetails.spot}
-                          </p>
-                        )}
-                        {currentConv.initialNote && (
-                          <div className="mt-2 pt-2 border-t border-slate-100">
-                            <span className="text-slate-400 text-[11px]">Your request note:</span>
-                            <p className="italic text-slate-600 mt-0.5">“{currentConv.initialNote}”</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Policy explanation */}
-                    <div className="mt-4 max-w-md flex items-center gap-2 text-[11px] text-slate-400">
-                      <HugeiconsIcon icon={ShieldCheckIcon} size={15} className="text-brand flex-shrink-0" />
-                      <span>BookCircle safeguards member privacy by unlocking direct chat only upon mutual agreement.</span>
-                    </div>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                      {permission?.isUnlocked
+                        ? `You and ${currentConv.participantName} are connected. Coordinate respectfully.`
+                        : `Send 1 initial message to ${currentConv.participantName}. Two-way chat unlocks once they accept or reply.`}
+                    </p>
                   </div>
 
-                  {/* Docked Disabled Composer Bar at Bottom for locked conversation */}
-                  <div className="p-3 sm:p-3.5 border-t border-slate-200 bg-slate-50 flex items-center gap-3 flex-shrink-0">
-                    <div className="flex-1 px-4 py-2.5 bg-slate-100 rounded-xl border border-dashed border-slate-300 text-xs text-slate-500 flex items-center gap-2 select-none">
-                      <HugeiconsIcon icon={LockIcon} size={15} className="text-amber-600 flex-shrink-0" />
-                      <span className="truncate">
-                        Direct messaging is locked until {currentConv.participantName} accepts your borrowing request.
-                      </span>
-                    </div>
-                    <button
-                      disabled
-                      className="p-2.5 px-3.5 rounded-xl bg-slate-200 text-slate-400 cursor-not-allowed text-xs font-semibold flex items-center gap-1.5 flex-shrink-0 opacity-60"
-                      title="Direct messaging locked"
-                    >
-                      <HugeiconsIcon icon={SentIcon} size={16} />
-                      <span className="hidden sm:inline">Send</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* UNLOCKED ACTIVE CHAT AREA (Fixed structure, independently scrollable messages) */
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                  {/* Meetup Handover Info Banner (Fixed) */}
-                  {currentConv.meetupDetails && (
-                    <div className="p-2.5 px-5 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between text-xs text-emerald-900 flex-shrink-0">
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold flex items-center gap-1.5">
-                          <HugeiconsIcon icon={Tick01Icon} size={14} className="text-emerald-700" />
-                          <span>Request Accepted</span>
-                        </span>
-                        <span className="hidden sm:inline text-emerald-400">•</span>
-                        <span className="hidden sm:flex items-center gap-1 text-[11px]">
-                          <HugeiconsIcon icon={Calendar01Icon} size={13} />
-                          {currentConv.meetupDetails.date} @ {currentConv.meetupDetails.time}
-                        </span>
-                        <span className="hidden sm:inline text-emerald-400">•</span>
-                        <span className="hidden md:flex items-center gap-1 text-[11px]">
-                          <HugeiconsIcon icon={Location01Icon} size={13} />
-                          {currentConv.meetupDetails.spot}
-                        </span>
-                      </div>
+                  {currentConv.messages.map((msg) => {
+                    const isUser = msg.sender === 'user';
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex items-end gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {!isUser && (
+                          <SafeInboxAvatar
+                            src={msg.senderAvatar || currentConv.participantAvatar}
+                            name={msg.senderName}
+                            className="w-7 h-7 mb-1"
+                            textClass="text-[10px]"
+                          />
+                        )}
 
-                      <span className="text-[10px] font-mono bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded font-bold">
-                        Active Handover
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Messages Scroll Area (Independently scrollable) */}
-                  <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3.5">
-                    {/* Conversation Beginning Card */}
-                    <div className="my-2 p-3 sm:p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 text-center space-y-1.5 max-w-sm mx-auto">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                        Handover Conversation
-                      </span>
-                      <p className="font-serif text-sm font-semibold text-slate-800">
-                        “{currentConv.bookTitle}” by {currentConv.bookAuthor}
-                      </p>
-                      <p className="text-[11px] text-slate-500 leading-relaxed">
-                        You and {currentConv.participantName} are connected. Coordinate meeting time and location safely.
-                      </p>
-                    </div>
-
-                    {currentConv.messages.map((msg) => {
-                      const isUser = msg.sender === 'user';
-                      return (
                         <div
-                          key={msg.id}
-                          className={`flex items-end gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}
+                          className={`max-w-[80%] sm:max-w-[72%] rounded-2xl px-4 py-2.5 shadow-xs text-xs sm:text-sm leading-relaxed ${
+                            isUser
+                              ? 'bg-brand text-white rounded-br-none'
+                              : 'bg-slate-100 text-slate-800 rounded-bl-none'
+                          }`}
                         >
-                          {!isUser && (
-                            <img
-                              src={msg.senderAvatar}
-                              alt={msg.senderName}
-                              className="w-7 h-7 rounded-full object-cover flex-shrink-0 mb-1"
-                            />
-                          )}
-
-                          <div
-                            className={`max-w-[80%] sm:max-w-[72%] rounded-2xl px-4 py-2.5 shadow-xs text-xs sm:text-sm leading-relaxed ${
-                              isUser
-                                ? 'bg-brand text-white rounded-br-none'
-                                : 'bg-slate-100 text-slate-800 rounded-bl-none'
+                          <p>{msg.text}</p>
+                          <p
+                            className={`text-[10px] mt-1 text-right ${
+                              isUser ? 'text-white/70' : 'text-slate-400'
                             }`}
                           >
-                            <p>{msg.text}</p>
-                            <p
-                              className={`text-[10px] mt-1 text-right ${
-                                isUser ? 'text-white/70' : 'text-slate-400'
-                              }`}
-                            >
-                              {msg.time}
-                            </p>
-                          </div>
+                            {msg.time}
+                          </p>
                         </div>
-                      );
-                    })}
-                    <div ref={messagesEndRef} />
-                  </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
 
-                  {/* Quick Reply Suggestions (Fixed) */}
+                {/* Incoming Message Request Action Bar (Recipient can Accept, Decline, or Reply directly) */}
+                {permission?.isIncomingRequest && (
+                  <div className="px-4 py-2.5 border-t border-amber-200/80 bg-amber-50/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 flex-shrink-0">
+                    <div className="text-xs text-amber-950">
+                      <span className="font-semibold">{currentConv.participantName}</span> sent you a message request.{' '}
+                      <span className="text-amber-800">Accept or reply below to unlock full chat.</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => declineMessageRequest(currentConv.id)}
+                        className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold inline-flex items-center gap-1 transition"
+                      >
+                        <HugeiconsIcon icon={Cancel01Icon} size={13} />
+                        <span>Decline</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => acceptMessageRequest(currentConv.id)}
+                        className="px-3.5 py-1.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-semibold inline-flex items-center gap-1 shadow-xs transition"
+                      >
+                        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} />
+                        <span>Accept Chat</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Reply Suggestions (Only when unlocked) */}
+                {permission?.isUnlocked && (
                   <div className="px-4 py-1.5 border-t border-slate-100 flex items-center gap-2 overflow-x-auto flex-shrink-0 bg-white">
                     <span className="text-[10px] uppercase font-semibold text-slate-400 whitespace-nowrap">
                       Quick reply:
@@ -524,15 +551,40 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
                       </button>
                     ))}
                   </div>
+                )}
 
-                  {/* Message Input Form (Fixed at bottom) */}
+                {/* Bottom Composer / Locked Status Bar */}
+                {!permission?.canSend ? (
+                  <div className="p-3 sm:p-3.5 border-t border-slate-200 bg-slate-50 flex items-center gap-3 flex-shrink-0">
+                    <div className="flex-1 px-4 py-2.5 bg-slate-100 rounded-xl border border-dashed border-slate-300 text-xs text-slate-500 flex items-center gap-2 select-none">
+                      <HugeiconsIcon icon={LockIcon} size={15} className="text-amber-600 flex-shrink-0" />
+                      <span className="truncate">
+                        {permission?.isDeclined
+                          ? 'This message request was declined.'
+                          : `1 of 1 message sent · Locked until ${currentConv.participantName} accepts or replies.`}
+                      </span>
+                    </div>
+                    <button
+                      disabled
+                      className="p-2.5 px-3.5 rounded-xl bg-slate-200 text-slate-400 cursor-not-allowed text-xs font-semibold flex items-center gap-1.5 flex-shrink-0 opacity-60"
+                      title="Awaiting acceptance"
+                    >
+                      <HugeiconsIcon icon={SentIcon} size={16} />
+                      <span className="hidden sm:inline">Send</span>
+                    </button>
+                  </div>
+                ) : (
                   <form onSubmit={handleSendMessage} className="p-3 sm:p-3.5 border-t border-slate-200 flex flex-col gap-1.5 bg-white flex-shrink-0">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <input
                         type="text"
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
-                        placeholder={`Message ${currentConv.participantName}... (Press Enter to send)`}
+                        placeholder={
+                          permission.isFirstMessagePrompt
+                            ? `Send 1 intro message to ${currentConv.participantName}...`
+                            : `Message ${currentConv.participantName}... (Press Enter to send)`
+                        }
                         className="flex-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand focus:bg-white transition"
                       />
                       <button
@@ -546,12 +598,16 @@ export const InboxPage: React.FC<InboxPageProps> = ({ initialOwnerName }) => {
                       </button>
                     </div>
                     <div className="flex items-center justify-between px-1 text-[10px] text-slate-400">
-                      <span>Always meet in safe public locations · Coordinate book care respectfully</span>
+                      <span>
+                        {permission.isFirstMessagePrompt
+                          ? `1-message limit applies until ${currentConv.participantName} accepts or replies`
+                          : 'Always meet in safe public locations · Coordinate book care respectfully'}
+                      </span>
                       <span className="hidden sm:inline">Press Enter ↵ to send</span>
                     </div>
                   </form>
-                </div>
-              )}
+                )}
+              </div>
             </>
           )}
         </div>
