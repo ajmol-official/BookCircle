@@ -56,6 +56,10 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
 }) => {
   const [avatarError, setAvatarError] = React.useState(false);
 
+  React.useEffect(() => {
+    setAvatarError(false);
+  }, [avatar]);
+
   return (
     <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 border border-slate-200/90 shadow-card transition-all">
       {/* Top Identity Block */}

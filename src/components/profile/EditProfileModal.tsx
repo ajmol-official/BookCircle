@@ -16,8 +16,47 @@ export const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=250',
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=250',
   'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=250',
-  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=250',
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=250',
 ];
+
+/**
+ * Resize and compress an uploaded image file to a lightweight JPEG Data URL (~20-50KB)
+ * so avatars persist reliably across browser storage and Supabase profiles without quota errors.
+ */
+function compressAvatarImage(file: File, maxDimension = 256, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result;
+      if (!dataUrl || typeof dataUrl !== 'string') {
+        reject(new Error('Failed to read image file.'));
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(maxDimension / img.width, maxDimension / img.height, 1);
+        const targetW = Math.max(1, Math.round(img.width * scale));
+        const targetH = Math.max(1, Math.round(img.height * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('Invalid or unsupported image file.'));
+      img.src = dataUrl;
+    };
+    reader.onerror = () => reject(new Error('Failed to read image file.'));
+    reader.readAsDataURL(file);
+  });
+}
 
 export const AVAILABLE_GENRES = [
   'Fiction',
@@ -48,7 +87,7 @@ export interface EditProfileModalProps {
     bio: string;
     avatar: string;
     favoriteGenres: string[];
-  }) => void;
+  }) => void | Promise<void>;
 }
 
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
@@ -68,8 +107,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   );
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [customUrl, setCustomUrl] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,7 +120,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setName(userProfile.name);
       setLocation(userProfile.location);
       setBio(userProfile.bio);
-      setAvatar(userProfile.avatar || PRESET_AVATARS[0]);
+      setAvatar(cleanAvatarUrl(userProfile.avatar));
       setSelectedGenres(
         userProfile.favoriteGenres && userProfile.favoriteGenres.length > 0
           ? userProfile.favoriteGenres.filter((g) => g.toLowerCase() !== 'all')
@@ -87,8 +128,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       );
       setShowUrlInput(false);
       setCustomUrl('');
+      setIsSaving(false);
       setIsSaved(false);
       setUploadError(null);
+      setSaveError(null);
     }
   }, [isOpen, userProfile]);
 
@@ -123,26 +166,28 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     });
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
-    if (file.size > 4 * 1024 * 1024) {
-      setUploadError('Image size should be less than 4MB.');
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select a valid image file (PNG, JPG, or WebP).');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('Image size should be less than 10MB.');
       return;
     }
 
     setUploadError(null);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result && typeof event.target.result === 'string') {
-        setAvatar(event.target.result);
-      }
-    };
-    reader.onerror = () => {
-      setUploadError('Failed to read image file.');
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressAvatarImage(file);
+      setAvatar(compressed);
+    } catch (err: any) {
+      setUploadError(err?.message || 'Failed to process image file.');
+    }
   };
 
   const handleApplyCustomUrl = () => {
@@ -153,23 +198,32 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaved(true);
+    if (isSaving) return;
 
     const fullGenresList = selectedGenres.length > 0 ? selectedGenres : ['Fiction', 'Non-fiction'];
 
-    setTimeout(() => {
-      onSave({
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await onSave({
         name: name.trim() || userProfile.name,
         location: location.trim() || 'Local Neighborhood',
         bio: bio.trim(),
         avatar,
         favoriteGenres: ['All', ...fullGenresList],
       });
-      setIsSaved(false);
-      onClose();
-    }, 900);
+      setIsSaved(true);
+      setTimeout(() => {
+        setIsSaved(false);
+        onClose();
+      }, 800);
+    } catch (err: any) {
+      setSaveError(err?.message || 'Could not save profile changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -309,11 +363,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setAvatar('')}
-                      className={`relative w-9 h-9 rounded-full font-serif font-bold text-xs flex items-center justify-center transition transform active:scale-90 flex-shrink-0 border-2 ${
-                        !avatar
-                          ? 'border-brand bg-brand/15 text-brand ring-2 ring-brand ring-offset-2 scale-105'
-                          : 'border-slate-200 bg-slate-100 text-slate-600 opacity-70 hover:opacity-100'
-                      }`}
+                      className={`relative w-9 h-9 rounded-full font-serif font-bold text-xs flex items-center justify-center transition transform active:scale-90 flex-shrink-0 border-2 ${!avatar
+                        ? 'border-brand bg-brand/15 text-brand ring-2 ring-brand ring-offset-2 scale-105'
+                        : 'border-slate-200 bg-slate-100 text-slate-600 opacity-70 hover:opacity-100'
+                        }`}
                       title="Initials badge (No photo)"
                     >
                       {name ? name.charAt(0).toUpperCase() : 'BC'}
@@ -330,11 +383,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                           key={idx}
                           type="button"
                           onClick={() => setAvatar(url)}
-                          className={`relative rounded-full transition transform active:scale-90 flex-shrink-0 ${
-                            isSelected
-                              ? 'ring-2 ring-brand ring-offset-2 scale-105'
-                              : 'opacity-70 hover:opacity-100 hover:scale-105'
-                          }`}
+                          className={`relative rounded-full transition transform active:scale-90 flex-shrink-0 ${isSelected
+                            ? 'ring-2 ring-brand ring-offset-2 scale-105'
+                            : 'opacity-70 hover:opacity-100 hover:scale-105'
+                            }`}
                         >
                           <img
                             src={url}
@@ -372,11 +424,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                  Neighborhood Location <span className="text-red-500">*</span>
+                  Neighborhood Location
                 </label>
                 <input
                   type="text"
-                  required
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="e.g. Bloomsbury, North London"
@@ -420,11 +471,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                       key={genre}
                       type="button"
                       onClick={() => handleToggleGenre(genre)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition active:scale-95 ${
-                        isSelected
-                          ? 'bg-brand text-white shadow-xs border border-brand'
-                          : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition active:scale-95 ${isSelected
+                        ? 'bg-brand text-white shadow-xs border border-brand'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
                     >
                       {isSelected && <HugeiconsIcon icon={Tick01Icon} size={12} />}
                       <span>{genre}</span>
@@ -434,20 +484,28 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </div>
             </div>
 
+            {saveError && (
+              <p className="text-xs text-red-600 bg-red-50 p-3 rounded-xl border border-red-200">
+                {saveError}
+              </p>
+            )}
+
             {/* Actions */}
             <div className="pt-3 border-t border-slate-100 flex items-center gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs sm:text-sm hover:bg-slate-50 transition"
+                disabled={isSaving}
+                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs sm:text-sm hover:bg-slate-50 transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 py-3 rounded-xl bg-brand hover:bg-brand-dark active:scale-[0.98] text-white font-semibold text-xs sm:text-sm shadow-md transition"
+                disabled={isSaving}
+                className="flex-1 py-3 rounded-xl bg-brand hover:bg-brand-dark active:scale-[0.98] text-white font-semibold text-xs sm:text-sm shadow-md transition disabled:opacity-60"
               >
-                Save Changes
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </form>

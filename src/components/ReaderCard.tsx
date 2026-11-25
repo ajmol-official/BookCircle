@@ -23,6 +23,10 @@ interface LocationDetails {
 export const ReaderCard: React.FC<ReaderCardProps> = ({ reader, onBrowseShelf }) => {
   const [avatarError, setAvatarError] = useState(false);
 
+  React.useEffect(() => {
+    setAvatarError(false);
+  }, [reader.avatar]);
+
   // Fallback initials if avatar is missing or fails to load
   const initials = useMemo(() => {
     if (!reader.name) return 'BC';

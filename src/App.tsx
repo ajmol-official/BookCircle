@@ -715,15 +715,44 @@ const BookCircleMain: React.FC = () => {
       const lentOutCount = ownedBooks.filter((b) => b.status === 'lent_out').length;
       const booksAvailable = booksForLending + booksForDonation;
 
+      const isCurrentUser = Boolean(
+        currentUser?.id && reader.id.toLowerCase() === currentUser.id.toLowerCase()
+      );
+
       return {
         ...reader,
+        name: isCurrentUser && currentUser?.displayName ? currentUser.displayName : reader.name,
+        avatar: isCurrentUser ? currentUser!.avatar : reader.avatar,
+        location: isCurrentUser && currentUser?.location ? currentUser.location : reader.location,
+        bio: isCurrentUser && currentUser?.bio !== undefined ? currentUser.bio : reader.bio,
         booksAvailable,
         booksForLending,
         booksForDonation,
         lentOutCount,
       };
     });
-  }, [readersList, booksList]);
+  }, [readersList, booksList, currentUser]);
+
+  // Enrich book ownerAvatar and ownerName from syncedReadersList so profile photo updates reflect everywhere
+  const syncedBooksList = useMemo(() => {
+    return booksList.map((book) => {
+      const ownerIdNorm = (book.ownerId || '').toLowerCase().trim();
+      const ownerNameNorm = (book.ownerName || '').toLowerCase().trim();
+      const matchedReader = syncedReadersList.find(
+        (r) =>
+          (ownerIdNorm && r.id.toLowerCase() === ownerIdNorm) ||
+          (ownerNameNorm && r.name.toLowerCase().trim() === ownerNameNorm)
+      );
+
+      if (!matchedReader) return book;
+
+      return {
+        ...book,
+        ownerName: matchedReader.name || book.ownerName,
+        ownerAvatar: matchedReader.avatar,
+      };
+    });
+  }, [booksList, syncedReadersList]);
 
   // Read notification IDs stored in localStorage per user
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() => {
@@ -839,7 +868,7 @@ const BookCircleMain: React.FC = () => {
 
   // Filter books based on category and search query for homepage
   const filteredBooks = useMemo(() => {
-    return booksList.filter((book) => {
+    return syncedBooksList.filter((book) => {
       const matchesCategory =
         selectedCategory === 'All' || book.category.toLowerCase() === selectedCategory.toLowerCase();
 
@@ -852,7 +881,7 @@ const BookCircleMain: React.FC = () => {
 
       return matchesCategory && matchesSearch;
     });
-  }, [booksList, selectedCategory, searchQuery]);
+  }, [syncedBooksList, selectedCategory, searchQuery]);
 
   const handleSelectBook = (book: Book) => {
     navigate(`/book/${book.id}`);
@@ -1197,7 +1226,7 @@ const BookCircleMain: React.FC = () => {
   // Derive current user's personal shelf books
   const currentUserShelfBooks = useMemo(() => {
     if (!currentUser) return [];
-    return booksList.filter((b) => {
+    return syncedBooksList.filter((b) => {
       if (b.ownerId && currentUser.id && b.ownerId === currentUser.id) {
         return true;
       }
@@ -1208,7 +1237,7 @@ const BookCircleMain: React.FC = () => {
       }
       return b.ownerName === 'You';
     });
-  }, [booksList, currentUser]);
+  }, [syncedBooksList, currentUser]);
 
   const unreadNotificationsCount = isAuthenticated ? notifications.filter((n) => n.unread).length : 0;
   const isMessagesActive = location.pathname === '/messages';
@@ -1279,7 +1308,7 @@ const BookCircleMain: React.FC = () => {
                   selectedRadius={selectedRadius}
                 />
                 <WritersSection
-                  books={booksList}
+                  books={syncedBooksList}
                   onSelectAuthor={handleSelectAuthor}
                   onSeeAll={() => navigate('/authors')}
                 />
@@ -1297,7 +1326,7 @@ const BookCircleMain: React.FC = () => {
             path="/books"
             element={
               <BooksBrowsePage
-                books={booksList}
+                books={syncedBooksList}
                 onSelectBook={handleSelectBook}
                 onSelectAuthor={handleSelectAuthor}
                 onQuickBorrow={handleQuickBorrow}
@@ -1310,7 +1339,7 @@ const BookCircleMain: React.FC = () => {
             path="/book/:bookId"
             element={
               <BookDetailsRoute
-                booksList={booksList}
+                booksList={syncedBooksList}
                 isInitialLoading={isInitialLoading}
                 onRequestBorrow={handleDetailsRequestBorrow}
                 onSelectOwner={handleSelectOwner}
@@ -1325,7 +1354,7 @@ const BookCircleMain: React.FC = () => {
             path="/book/:bookId/reviews"
             element={
               <BookReviewsRoute
-                booksList={booksList}
+                booksList={syncedBooksList}
                 isInitialLoading={isInitialLoading}
                 onSelectAuthor={handleSelectAuthor}
               />
@@ -1336,7 +1365,7 @@ const BookCircleMain: React.FC = () => {
             path="/author/:authorId"
             element={
               <AuthorProfileRoute
-                booksList={booksList}
+                booksList={syncedBooksList}
                 onSelectBook={handleSelectBook}
                 onSelectAuthor={handleSelectAuthor}
                 onSelectOwner={handleSelectOwner}
@@ -1394,7 +1423,7 @@ const BookCircleMain: React.FC = () => {
             path="/messages"
             element={
               <MessagesRoute
-                booksList={booksList}
+                booksList={syncedBooksList}
                 selectedChatParticipant={selectedChatParticipant}
                 onSelectBook={handleSelectBook}
               />
@@ -1405,7 +1434,7 @@ const BookCircleMain: React.FC = () => {
             path="/profile"
             element={
               <UserProfileRoute
-                booksList={booksList}
+                booksList={syncedBooksList}
                 currentUserShelfBooks={currentUserShelfBooks}
                 onSelectBook={handleSelectBook}
                 onSelectAuthor={handleSelectAuthor}
@@ -1441,7 +1470,7 @@ const BookCircleMain: React.FC = () => {
             element={
               <WritersBrowsePage
                 authors={authorsList}
-                books={booksList}
+                books={syncedBooksList}
                 onSelectAuthor={handleSelectAuthor}
                 onBack={() => navigate('/')}
               />
@@ -1458,7 +1487,7 @@ const BookCircleMain: React.FC = () => {
             element={
               <ReaderProfileRoute
                 readersList={syncedReadersList}
-                booksList={booksList}
+                booksList={syncedBooksList}
                 onSelectBook={handleSelectBook}
                 onSelectAuthor={handleSelectAuthor}
                 onRequestBorrow={handleDetailsRequestBorrow}
@@ -1611,7 +1640,7 @@ const BookCircleMain: React.FC = () => {
 
       {/* Writer Dashboard Modal */}
       <WriterDashboardModal
-        booksList={booksList}
+        booksList={syncedBooksList}
         onNavigateToAuthorProfile={(authorSlug) => navigate(`/author/${authorSlug}`)}
       />
 
@@ -1626,7 +1655,7 @@ const BookCircleMain: React.FC = () => {
         isOpen={isWishlistModalOpen}
         onClose={() => setIsWishlistModalOpen(false)}
         wishlistBookIds={wishlist}
-        allBooks={booksList}
+        allBooks={syncedBooksList}
         onSelectBook={(book) => {
           setIsWishlistModalOpen(false);
           handleSelectBook(book);

@@ -10,6 +10,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { cleanAvatarUrl, getUserInitials } from '../utils/avatarUtils';
 
 interface BookCardProps {
   book: Book;
@@ -29,6 +30,11 @@ export const BookCard: React.FC<BookCardProps> = ({
   const { toggleWishlist, isWishlisted } = useAuth();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [ownerAvatarError, setOwnerAvatarError] = useState(false);
+
+  React.useEffect(() => {
+    setOwnerAvatarError(false);
+  }, [book.ownerAvatar]);
 
   const isSaved = isWishlisted(book.id);
   const isClaimed = book.status === 'claimed';
@@ -210,11 +216,21 @@ export const BookCard: React.FC<BookCardProps> = ({
               className="flex items-center gap-2 text-left group/owner hover:opacity-90 transition max-w-[70%] py-0.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand/30 cursor-pointer"
               title={`View ${book.ownerName}'s shelf`}
             >
-              <img
-                src={book.ownerAvatar}
-                alt={book.ownerName}
-                className="w-6 h-6 rounded-full object-cover ring-1 ring-slate-200 flex-shrink-0"
-              />
+              {cleanAvatarUrl(book.ownerAvatar) && !ownerAvatarError ? (
+                <img
+                  src={cleanAvatarUrl(book.ownerAvatar)}
+                  alt={book.ownerName}
+                  onError={() => setOwnerAvatarError(true)}
+                  className="w-6 h-6 rounded-full object-cover ring-1 ring-slate-200 flex-shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-6 h-6 rounded-full bg-brand/10 border border-brand/20 text-brand font-serif font-bold text-[10px] flex items-center justify-center flex-shrink-0 select-none"
+                  aria-label={book.ownerName}
+                >
+                  {getUserInitials(book.ownerName)}
+                </div>
+              )}
               <span className="text-sm text-slate-500 group-hover/owner:text-brand font-normal truncate">
                 {book.ownerName}
               </span>

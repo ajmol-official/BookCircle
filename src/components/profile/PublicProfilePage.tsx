@@ -721,18 +721,14 @@ export const PublicProfilePage: React.FC<PublicProfilePageProps> = ({
               favoriteGenres: reader.favoriteGenres,
             }}
             onSave={async (updated) => {
-              try {
-                await updateProfile({
-                  displayName: updated.name,
-                  avatar: updated.avatar,
-                  location: updated.location,
-                  bio: updated.bio,
-                  favoriteGenres: updated.favoriteGenres,
-                  isProfileComplete: true,
-                });
-              } catch (e) {
-                console.error('Failed to update persistent profile:', e);
-              }
+              await updateProfile({
+                displayName: updated.name,
+                avatar: updated.avatar,
+                location: updated.location,
+                bio: updated.bio,
+                favoriteGenres: updated.favoriteGenres,
+                isProfileComplete: true,
+              });
             }}
           />
         )}

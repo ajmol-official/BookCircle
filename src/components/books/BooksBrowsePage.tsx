@@ -22,6 +22,53 @@ import type { Book } from '../../types';
 import { BookCard } from '../BookCard';
 import { useAuth } from '../../context/AuthContext';
 import { getAuthorCountry, getCountryFlag } from '../../utils/countryData';
+import { cleanAvatarUrl, getUserInitials } from '../../utils/avatarUtils';
+
+const SafeListBookThumb: React.FC<{ src?: string; title: string }> = ({ src, title }) => {
+  const [hasError, setHasError] = useState(false);
+  if (!src || hasError) {
+    return (
+      <div className="w-16 h-22 rounded-xl bg-gradient-to-br from-brand/10 via-[#FDF8F2] to-amber-500/10 border border-slate-200 flex flex-col items-center justify-center p-1 text-center flex-shrink-0">
+        <HugeiconsIcon icon={BookOpen01Icon} size={18} className="text-brand/70 mb-0.5" />
+        <span className="text-[9px] font-semibold text-slate-600 line-clamp-2 leading-tight">
+          {title}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={title}
+      onError={() => setHasError(true)}
+      className="w-16 h-22 object-cover rounded-xl shadow-xs border border-slate-200 flex-shrink-0 group-hover:scale-102 transition-transform"
+    />
+  );
+};
+
+const SafeListOwnerAvatar: React.FC<{ src?: string; name: string }> = ({ src, name }) => {
+  const [hasError, setHasError] = useState(false);
+  const cleaned = cleanAvatarUrl(src);
+  React.useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  if (!cleaned || hasError) {
+    return (
+      <div className="w-4 h-4 rounded-full bg-brand/10 border border-brand/20 text-brand font-serif font-bold text-[8px] flex items-center justify-center flex-shrink-0">
+        {getUserInitials(name)}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={cleaned}
+      alt={name}
+      onError={() => setHasError(true)}
+      className="w-4 h-4 rounded-full object-cover flex-shrink-0"
+    />
+  );
+};
 
 interface BooksBrowsePageProps {
   books: Book[];
@@ -568,11 +615,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                 >
                   {/* Left: Thumbnail & Main Book Info */}
                   <div className="flex items-center gap-4 min-w-0">
-                    <img
-                      src={book.coverImage}
-                      alt={book.title}
-                      className="w-16 h-22 object-cover rounded-xl shadow-xs border border-slate-200 flex-shrink-0 group-hover:scale-102 transition-transform"
-                    />
+                    <SafeListBookThumb src={book.coverImage} title={book.title} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-serif text-base sm:text-lg font-semibold text-slate-900 group-hover:text-brand transition-colors truncate">
@@ -633,11 +676,7 @@ export const BooksBrowsePage: React.FC<BooksBrowsePageProps> = ({
                           }}
                           className="flex items-center gap-1 hover:text-brand transition text-slate-600"
                         >
-                          <img
-                            src={book.ownerAvatar}
-                            alt={book.ownerName}
-                            className="w-4 h-4 rounded-full object-cover"
-                          />
+                          <SafeListOwnerAvatar src={book.ownerAvatar} name={book.ownerName} />
                           <span className="underline decoration-slate-300">{book.ownerName}</span>
                         </button>
                       </div>

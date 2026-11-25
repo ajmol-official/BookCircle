@@ -131,7 +131,7 @@ export class AuthService {
     const destination = redirectDestination || window.location.pathname || '/';
     try {
       sessionStorage.setItem('bookcircle_auth_redirect', destination);
-    } catch {}
+    } catch { }
 
     const redirectTo = `${window.location.origin}/`;
 
@@ -227,12 +227,17 @@ export class AuthService {
     const provider = supabaseUser.app_metadata?.provider === 'google' ? 'google' : 'email';
     const localUser = storageService.findUserById(userId);
 
+    const resolvedAvatar =
+      profile && profile.avatar_url !== null && profile.avatar_url !== undefined
+        ? cleanAvatarUrl(profile.avatar_url)
+        : avatar;
+
     // Map to canonical BookCircle User object
     const user: User = {
       id: userId,
       email,
       displayName: profile?.full_name || displayName,
-      avatar: cleanAvatarUrl(profile?.avatar_url) || avatar,
+      avatar: resolvedAvatar,
       location: profile?.location || 'Local Community Reader',
       bio: profile?.bio || '',
       memberSince:
@@ -466,24 +471,24 @@ export class AuthService {
       isProfileComplete: Boolean(updates.displayName?.trim() || existing.displayName),
     };
 
-    const saved = storageService.saveOrUpdateUser(updatedUser);
-
     if (isSupabaseConfigured() && userId && userId.includes('-') && !userId.startsWith('user-')) {
-      try {
-        await supabase
-          .from('profiles')
-          .update({
-            full_name: updatedUser.displayName,
-            avatar_url: updatedUser.avatar,
-            location: updatedUser.location,
-            bio: updatedUser.bio,
-          })
-          .eq('id', userId);
-      } catch (err) {
-        console.warn('Could not sync profile update to Supabase:', err);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: updatedUser.displayName,
+          avatar_url: updatedUser.avatar,
+          location: updatedUser.location,
+          bio: updatedUser.bio,
+        })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Could not sync profile update to Supabase:', error.message);
+        throw new Error(`Could not save profile changes: ${error.message}`);
       }
     }
 
+    const saved = storageService.saveOrUpdateUser(updatedUser);
     return saved;
   }
 
@@ -499,7 +504,7 @@ export class AuthService {
     storageService.clearSession();
     try {
       sessionStorage.removeItem('bookcircle_auth_redirect');
-    } catch {}
+    } catch { }
   }
 }
 
