@@ -676,6 +676,55 @@ const BookCircleMain: React.FC = () => {
     });
   }, []);
 
+  // Derive live borrowable/claimable book counts per reader from booksList (single source of truth)
+  // Strictly excludes 'personal' (unavailable showcase) and 'lent_out'/'claimed' copies
+  const syncedReadersList = useMemo(() => {
+    return readersList.map((reader) => {
+      if (reader.id.startsWith('reader-')) {
+        return reader;
+      }
+
+      const readerNameNormalized = reader.name.toLowerCase().trim();
+      const readerIdNormalized = (reader.id || '').toLowerCase().trim();
+
+      const ownedBooks = booksList.filter((book) => {
+        const ownerNormalized = (book.ownerName || '').toLowerCase().trim();
+        const ownerIdNormalized = (book.ownerId || '').toLowerCase().trim();
+        const isOwner =
+          (readerIdNormalized && ownerIdNormalized && ownerIdNormalized === readerIdNormalized) ||
+          (readerNameNormalized && ownerNormalized === readerNameNormalized);
+
+        if (!isOwner) return false;
+        if (
+          book.status === 'claimed' ||
+          (book.description && book.description.includes('[STRICTLY_PRIVATE]'))
+        ) {
+          return false;
+        }
+        return true;
+      });
+
+      const booksForLending = ownedBooks.filter(
+        (b) => (b.availabilityMode === 'lending' || !b.availabilityMode) && b.status === 'available'
+      ).length;
+
+      const booksForDonation = ownedBooks.filter(
+        (b) => (b.availabilityMode === 'donation' || b.status === 'donation') && b.status !== 'claimed'
+      ).length;
+
+      const lentOutCount = ownedBooks.filter((b) => b.status === 'lent_out').length;
+      const booksAvailable = booksForLending + booksForDonation;
+
+      return {
+        ...reader,
+        booksAvailable,
+        booksForLending,
+        booksForDonation,
+        lentOutCount,
+      };
+    });
+  }, [readersList, booksList]);
+
   // Read notification IDs stored in localStorage per user
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() => {
     try {
@@ -1235,7 +1284,7 @@ const BookCircleMain: React.FC = () => {
                   onSeeAll={() => navigate('/authors')}
                 />
                 <ReadersSection
-                  readers={readersList}
+                  readers={syncedReadersList}
                   onBrowseShelf={handleBrowseReader}
                   onSeeAll={() => navigate('/readers')}
                   maxDisplay={5}
@@ -1381,7 +1430,7 @@ const BookCircleMain: React.FC = () => {
             path="/readers"
             element={
               <ReadersBrowsePage
-                readers={readersList}
+                readers={syncedReadersList}
                 onBrowseShelf={handleBrowseReader}
               />
             }
@@ -1408,7 +1457,7 @@ const BookCircleMain: React.FC = () => {
             path="/reader/:readerId"
             element={
               <ReaderProfileRoute
-                readersList={readersList}
+                readersList={syncedReadersList}
                 booksList={booksList}
                 onSelectBook={handleSelectBook}
                 onSelectAuthor={handleSelectAuthor}
