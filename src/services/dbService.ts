@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { mockBooks, mockReaders } from '../data/mockData';
 import type { Book, Reader, UserReadingStatusValue } from '../types';
 import { cleanAvatarUrl } from '../utils/avatarUtils';
+import { isPublicDiscoveryBook } from '../utils/bookVisibility';
 
 function cleanDescription(desc?: string): string {
   if (!desc) return '';
@@ -348,8 +349,9 @@ export const dbService = {
     if (!isSupabaseConfigured()) {
       return mockBooks.filter(
         (b) =>
-          b.title.toLowerCase().includes(clean) ||
-          b.author.toLowerCase().includes(clean)
+          isPublicDiscoveryBook(b) &&
+          (b.title.toLowerCase().includes(clean) ||
+            b.author.toLowerCase().includes(clean))
       );
     }
 
@@ -358,10 +360,10 @@ export const dbService = {
         .from('books')
         .select('*')
         .or(`title.ilike.%${clean}%,author.ilike.%${clean}%`)
-        .limit(10);
+        .limit(20);
 
       if (error || !data) return [];
-      return data.map(mapDbBookToBook);
+      return data.map(mapDbBookToBook).filter(isPublicDiscoveryBook).slice(0, 10);
     } catch (err) {
       console.warn('Error querying community books:', err);
       return [];

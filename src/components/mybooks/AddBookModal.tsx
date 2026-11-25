@@ -80,7 +80,7 @@ const AVAILABILITY_OPTIONS = [
   {
     id: 'personal' as const,
     label: 'Personal Bookshelf',
-    desc: 'Showcase on your shelf (not for borrowing)',
+    desc: 'Visible on your profile · hidden from search & nearby',
     icon: Bookmark02Icon
   }
 ] as const;

@@ -1,5 +1,6 @@
 import type { Author } from '../types/author';
 import type { Book } from '../types';
+import { isPublicDiscoveryBook } from '../utils/bookVisibility';
 
 /**
  * Pre-populated Directory of Canonical Authors in BookCircle.
@@ -438,6 +439,7 @@ export function getBooksByAuthor(
   const canonicalName = targetAuthor ? targetAuthor.name.toLowerCase().trim() : authorIdentifier.toLowerCase().trim();
 
   return books.filter((book) => {
+    if (!isPublicDiscoveryBook(book)) return false;
     if (book.authorId && (book.authorId === authorIdentifier || book.authorId === normalizedSlug)) {
       return true;
     }

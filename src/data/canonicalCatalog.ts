@@ -1,5 +1,6 @@
 import type { CatalogBook, CatalogWork, Book } from '../types';
 import { generateAuthorSlug } from './authors';
+import { isPublicDiscoveryBook } from '../utils/bookVisibility';
 
 /**
  * Canonical Bibliography of Published Works.
@@ -773,8 +774,9 @@ export function getCatalogWorksForAuthor(
     });
   }
 
-  // 2. Scan community copies for any titles by this author
+  // 2. Scan community copies for any titles by this author (strictly excluding Personal Bookshelf items)
   const authorCopies = communityCopies.filter((copy) => {
+    if (!isPublicDiscoveryBook(copy)) return false;
     if (copy.authorId && (copy.authorId === authorIdentifier || copy.authorId === normalizedSlug)) {
       return true;
     }

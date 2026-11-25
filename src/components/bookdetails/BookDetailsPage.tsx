@@ -8,6 +8,9 @@ import type { Review } from '../../types/review';
 import { reviewService, normalizeCatalogKey } from '../../services/reviewService';
 import { ReviewModal } from './ReviewModal';
 import { useAuth } from '../../context/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { cleanAvatarUrl } from '../../utils/avatarUtils';
+import { isPublicDiscoveryBook } from '../../utils/bookVisibility';
 import { BookHeroCard } from './BookHeroCard';
 import { NearbyReadersSection } from './NearbyReadersSection';
 import { CommunityReviewsSection } from './CommunityReviewsSection';
@@ -140,15 +143,16 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
     }
   };
 
-  // Map community physical copies matching Figma states
+  // Map community physical copies matching Figma states (strictly excluding Personal Bookshelf items)
   const resolvedCopies: FormattedCopy[] = useMemo(() => {
-    // If incoming copies are available
-    if (communityCopies && communityCopies.length > 0) {
-      return communityCopies.slice(0, 7).map((copy, idx) => {
-        const demo = DEMO_OWNER_PROFILES[idx % DEMO_OWNER_PROFILES.length];
-        const isDonation = copy.status === 'donation' || copy.availabilityMode === 'donation' || demo.status === 'donation';
-        const isLentOut = copy.status === 'lent_out' || demo.status === 'lent_out';
-        const isClaimed = copy.status === 'claimed' || demo.status === 'claimed';
+    const publicCopies = (communityCopies || []).filter(isPublicDiscoveryBook);
+
+    // If real community copies are available, map them with their authentic availability status
+    if (publicCopies.length > 0) {
+      return publicCopies.slice(0, 7).map((copy, idx) => {
+        const isDonation = copy.status === 'donation' || copy.availabilityMode === 'donation';
+        const isLentOut = copy.status === 'lent_out';
+        const isClaimed = copy.status === 'claimed';
 
         const status = isClaimed
           ? 'claimed'
@@ -161,23 +165,29 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
         return {
           id: copy.id || `copy-${idx}`,
           copyId: copy.id || `copy-${idx}`,
-          name: copy.ownerName && copy.ownerName !== 'Maya Lin' ? copy.ownerName : demo.name,
-          avatar: copy.ownerAvatar || demo.avatar,
-          distance: copy.distance || demo.distance,
+          name: copy.ownerName || 'Neighbor',
+          avatar: cleanAvatarUrl(copy.ownerAvatar),
+          distance: copy.distance || 'Nearby',
           memberSince: '2025',
-          condition: (copy.condition || demo.condition) as NonNullable<Book['condition']>,
+          condition: (copy.condition || 'Like New') as NonNullable<Book['condition']>,
           status,
           availabilityMode: isDonation ? 'donation' : 'borrow',
           bookCopy: {
             ...copy,
-            condition: (copy.condition || demo.condition) as NonNullable<Book['condition']>,
+            condition: (copy.condition || 'Like New') as NonNullable<Book['condition']>,
             status: isDonation ? 'donation' : copy.status
           }
         };
       });
     }
 
-    // Default demonstration copies matching Figma node 371:70
+    // When backed by live Supabase or inspecting a Personal Bookshelf work with 0 borrowable copies,
+    // show the honest empty state ("No community copies available yet.") instead of fake demo profiles.
+    if (isSupabaseConfigured() || book.availabilityMode === 'personal') {
+      return [];
+    }
+
+    // Default demonstration copies for offline/demo catalog previews
     return DEMO_OWNER_PROFILES.map((demo, idx) => ({
       id: `${book.id}-demo-${idx}`,
       copyId: `${book.id}-demo-${idx}`,

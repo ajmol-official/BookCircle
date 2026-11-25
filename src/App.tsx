@@ -69,6 +69,7 @@ import {
 import type { Book, BookCategory, Reader } from './types';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { BookOpen01Icon, FavouriteIcon } from '@hugeicons/core-free-icons';
+import { isPublicDiscoveryBook } from './utils/bookVisibility';
 
 // ─── BOOK DETAILS ROUTE WRAPPER ───────────────────────────────────────
 const BookDetailsRoute: React.FC<{
@@ -132,15 +133,16 @@ const BookDetailsRoute: React.FC<{
     return null;
   }, [matchedCopy, canonicalWork]);
 
-  // 4. Calculate all community copies belonging to this title
+  // 4. Calculate all borrowable/claimable community copies belonging to this title (strictly excludes Personal Bookshelf items)
   const communityCopies = useMemo(() => {
     if (!book) return [];
     const targetTitle = book.title.toLowerCase().trim();
     const targetCatalogId = (book.catalogId || book.id).toLowerCase().trim();
     return booksList.filter(
       (b) =>
-        (b.catalogId && b.catalogId.toLowerCase().trim() === targetCatalogId) ||
-        b.title.toLowerCase().trim() === targetTitle
+        isPublicDiscoveryBook(b) &&
+        ((b.catalogId && b.catalogId.toLowerCase().trim() === targetCatalogId) ||
+          b.title.toLowerCase().trim() === targetTitle)
     );
   }, [book, booksList]);
 
@@ -754,6 +756,11 @@ const BookCircleMain: React.FC = () => {
     });
   }, [booksList, syncedReadersList]);
 
+  // Public discovery books: strictly For Lending & For Donation (excludes Personal Bookshelf & claimed gifts)
+  const discoveryBooksList = useMemo(() => {
+    return syncedBooksList.filter(isPublicDiscoveryBook);
+  }, [syncedBooksList]);
+
   // Read notification IDs stored in localStorage per user
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() => {
     try {
@@ -866,9 +873,9 @@ const BookCircleMain: React.FC = () => {
 
   const categories = ['All', 'Fiction', 'Non-fiction', 'Science', 'History', 'Poetry'];
 
-  // Filter books based on category and search query for homepage
+  // Filter books based on category and search query for homepage (public discovery only)
   const filteredBooks = useMemo(() => {
-    return syncedBooksList.filter((book) => {
+    return discoveryBooksList.filter((book) => {
       const matchesCategory =
         selectedCategory === 'All' || book.category.toLowerCase() === selectedCategory.toLowerCase();
 
@@ -881,7 +888,7 @@ const BookCircleMain: React.FC = () => {
 
       return matchesCategory && matchesSearch;
     });
-  }, [syncedBooksList, selectedCategory, searchQuery]);
+  }, [discoveryBooksList, selectedCategory, searchQuery]);
 
   const handleSelectBook = (book: Book) => {
     navigate(`/book/${book.id}`);
@@ -1308,7 +1315,7 @@ const BookCircleMain: React.FC = () => {
                   selectedRadius={selectedRadius}
                 />
                 <WritersSection
-                  books={syncedBooksList}
+                  books={discoveryBooksList}
                   onSelectAuthor={handleSelectAuthor}
                   onSeeAll={() => navigate('/authors')}
                 />
@@ -1326,7 +1333,7 @@ const BookCircleMain: React.FC = () => {
             path="/books"
             element={
               <BooksBrowsePage
-                books={syncedBooksList}
+                books={discoveryBooksList}
                 onSelectBook={handleSelectBook}
                 onSelectAuthor={handleSelectAuthor}
                 onQuickBorrow={handleQuickBorrow}
@@ -1365,7 +1372,7 @@ const BookCircleMain: React.FC = () => {
             path="/author/:authorId"
             element={
               <AuthorProfileRoute
-                booksList={syncedBooksList}
+                booksList={discoveryBooksList}
                 onSelectBook={handleSelectBook}
                 onSelectAuthor={handleSelectAuthor}
                 onSelectOwner={handleSelectOwner}
@@ -1434,7 +1441,7 @@ const BookCircleMain: React.FC = () => {
             path="/profile"
             element={
               <UserProfileRoute
-                booksList={syncedBooksList}
+                booksList={discoveryBooksList}
                 currentUserShelfBooks={currentUserShelfBooks}
                 onSelectBook={handleSelectBook}
                 onSelectAuthor={handleSelectAuthor}
@@ -1470,7 +1477,7 @@ const BookCircleMain: React.FC = () => {
             element={
               <WritersBrowsePage
                 authors={authorsList}
-                books={syncedBooksList}
+                books={discoveryBooksList}
                 onSelectAuthor={handleSelectAuthor}
                 onBack={() => navigate('/')}
               />
@@ -1640,7 +1647,7 @@ const BookCircleMain: React.FC = () => {
 
       {/* Writer Dashboard Modal */}
       <WriterDashboardModal
-        booksList={syncedBooksList}
+        booksList={discoveryBooksList}
         onNavigateToAuthorProfile={(authorSlug) => navigate(`/author/${authorSlug}`)}
       />
 

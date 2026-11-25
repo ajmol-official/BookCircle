@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Location01Icon,
@@ -6,6 +6,7 @@ import {
   GiftIcon
 } from '@hugeicons/core-free-icons';
 import type { Book } from '../../types';
+import { cleanAvatarUrl, getUserInitials } from '../../utils/avatarUtils';
 
 export interface FormattedCopy {
   id: string;
@@ -31,6 +32,13 @@ export const ReaderCopyCard: React.FC<ReaderCopyCardProps> = ({
   onRequestBorrow,
   onSelectOwner
 }) => {
+  const [avatarError, setAvatarError] = useState(false);
+  const avatarUrl = cleanAvatarUrl(copy.avatar);
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [copy.avatar]);
+
   const isDonation = copy.status === 'donation' || copy.availabilityMode === 'donation';
   const isLentOut = copy.status === 'lent_out';
   const isAvailable = copy.status === 'available' || isDonation;
@@ -53,12 +61,19 @@ export const ReaderCopyCard: React.FC<ReaderCopyCardProps> = ({
           className="flex items-center gap-3 mb-3 cursor-pointer group/owner"
           title={`View ${copy.name}'s profile & shelf`}
         >
-          <img
-            src={copy.avatar}
-            alt={copy.name}
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 group-hover/owner:ring-brand/40 group-hover/owner:scale-105 transition-all flex-shrink-0"
-            loading="lazy"
-          />
+          {avatarUrl && !avatarError ? (
+            <img
+              src={avatarUrl}
+              alt={copy.name}
+              onError={() => setAvatarError(true)}
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 group-hover/owner:ring-brand/40 group-hover/owner:scale-105 transition-all flex-shrink-0"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-brand/10 border border-brand/20 text-brand font-serif font-bold text-xs flex items-center justify-center ring-2 ring-slate-100 flex-shrink-0 select-none">
+              {getUserInitials(copy.name)}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <h4 className="font-serif text-sm font-semibold text-slate-800 group-hover/owner:text-brand transition-colors truncate">
               {copy.name}
