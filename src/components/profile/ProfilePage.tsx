@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,13 +9,16 @@ import {
   ArrowRight01Icon,
   CheckmarkCircle02Icon,
 } from '@hugeicons/core-free-icons';
-import type { Book, HandoverLocation } from '../../types';
+import type { Book, HandoverLocation, UserReadingStatusValue } from '../../types';
 import { ProfileHeaderCard } from './ProfileHeaderCard';
 import { ProfileBookCard } from './ProfileBookCard';
 import { ProfileMeetupSpotsTab } from './ProfileMeetupSpotsTab';
 import { EditProfileModal } from './EditProfileModal';
 import { ReturnReliabilityModal } from './ReturnReliabilityModal';
 import { useAuth } from '../../context/AuthContext';
+import { useExchanges } from '../../context/ExchangeContext';
+import { dbService, resolveBookCatalogId } from '../../services/dbService';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 interface ProfilePageProps {
   onSelectBook: (book: Book) => void;
@@ -30,6 +33,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 }) => {
   const navigate = useNavigate();
   const { currentUser, updateProfile } = useAuth();
+  const { exchanges } = useExchanges();
+
+  const [readingStatusMap, setReadingStatusMap] = useState<Record<string, UserReadingStatusValue>>({});
+  const [extraClaimedBooks, setExtraClaimedBooks] = useState<Book[]>([]);
 
   const [profile, setProfile] = useState({
     name: currentUser?.displayName || 'Reader',
@@ -68,15 +75,84 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     return profile.name.slice(0, 2).toUpperCase();
   }, [profile.name]);
 
+  // Fetch user's saved reading statuses and any claimed donations excluded from public discovery
+  useEffect(() => {
+    let isMounted = true;
+    const effectiveUserId = currentUser?.id || 'demo-user';
+
+    dbService.getUserReadingStatuses(effectiveUserId).then((statuses) => {
+      if (isMounted) {
+        setReadingStatusMap(statuses);
+      }
+    });
+
+    if (currentUser?.id && isSupabaseConfigured()) {
+      dbService.getUserBooks(currentUser.id).then((userBooks) => {
+        if (isMounted) {
+          setExtraClaimedBooks(userBooks.filter((b) => b.status === 'claimed'));
+        }
+      });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, myBooks]);
+
+  // Merge myBooks with any claimed donation books fetched from user's own DB records
+  const ownProfileBooks = useMemo(() => {
+    if (!currentUser?.id || !isSupabaseConfigured() || extraClaimedBooks.length === 0) {
+      return myBooks;
+    }
+    const existingIds = new Set(myBooks.map((b) => b.id));
+    const missingClaimed = extraClaimedBooks.filter((b) => !existingIds.has(b.id));
+    return missingClaimed.length > 0 ? [...myBooks, ...missingClaimed] : myBooks;
+  }, [currentUser?.id, myBooks, extraClaimedBooks]);
+
+  // Derive active lending and completed donation book IDs from ExchangeContext
+  const activeLentBookIds = useMemo(() => {
+    const ids = new Set<string>();
+    exchanges.forEach((ex) => {
+      if (
+        ex.exchangeType === 'borrow' &&
+        (ex.status === 'active_loan' ||
+          ex.status === 'return_scheduled' ||
+          ex.status === 'return_in_progress')
+      ) {
+        ids.add(ex.bookId);
+      }
+    });
+    return ids;
+  }, [exchanges]);
+
+  const donatedBookIds = useMemo(() => {
+    const ids = new Set<string>();
+    exchanges.forEach((ex) => {
+      if (ex.exchangeType === 'gift' && ex.status === 'claim_completed') {
+        ids.add(ex.bookId);
+      }
+    });
+    return ids;
+  }, [exchanges]);
+
   // Derived Book Counts for Hero Stats Strip
-  const totalBooksCount = myBooks.length;
-  const availableLendingCount = myBooks.filter(
-    (b) => b.availabilityMode === 'lending' && b.status !== 'lent_out'
+  const totalBooksCount = ownProfileBooks.length;
+  const availableLendingCount = ownProfileBooks.filter(
+    (b) =>
+      (b.availabilityMode === 'lending' || !b.availabilityMode) &&
+      b.status !== 'lent_out' &&
+      b.status !== 'claimed' &&
+      !activeLentBookIds.has(b.id)
   ).length;
-  const availableDonationCount = myBooks.filter(
-    (b) => b.availabilityMode === 'donation' || b.status === 'donation'
+  const availableDonationCount = ownProfileBooks.filter(
+    (b) =>
+      (b.availabilityMode === 'donation' || b.status === 'donation') &&
+      b.status !== 'claimed' &&
+      !donatedBookIds.has(b.id)
   ).length;
-  const lentOutCount = myBooks.filter((b) => b.status === 'lent_out').length;
+  const lentOutCount = ownProfileBooks.filter(
+    (b) => b.status === 'lent_out' || activeLentBookIds.has(b.id)
+  ).length;
 
   // Derive Preferred Handover Locations
   const handoverSpots = useMemo<HandoverLocation[]>(() => {
@@ -178,7 +254,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     },
   ];
 
-  const filteredShelf = myBooks.filter(
+  const filteredShelf = ownProfileBooks.filter(
     (b) => selectedGenre === 'All' || b.category.toLowerCase() === selectedGenre.toLowerCase()
   );
 
@@ -310,15 +386,29 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             {/* 4-Column Book Grid */}
             {filteredShelf.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
-                {filteredShelf.map((book) => (
-                  <ProfileBookCard
-                    key={book.id}
-                    book={book}
-                    isPublic={false}
-                    onSelectBook={onSelectBook}
-                    onSelectAuthor={onSelectAuthor}
-                  />
-                ))}
+                {filteredShelf.map((book) => {
+                  const catalogKey = resolveBookCatalogId(book);
+                  const readingStatus =
+                    book.readingStatus || readingStatusMap[catalogKey];
+                  const isLentOut =
+                    book.status === 'lent_out' || activeLentBookIds.has(book.id);
+                  const isDonated =
+                    book.status === 'claimed' || donatedBookIds.has(book.id);
+
+                  return (
+                    <ProfileBookCard
+                      key={book.id}
+                      book={book}
+                      isPublic={false}
+                      variant="own-profile"
+                      readingStatus={readingStatus}
+                      isLentOutOverride={isLentOut}
+                      isDonatedOverride={isDonated}
+                      onSelectBook={onSelectBook}
+                      onSelectAuthor={onSelectAuthor}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-12 text-center space-y-3">

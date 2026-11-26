@@ -9,6 +9,15 @@ function cleanDescription(desc?: string): string {
   return desc.replace(/\[PERSONAL_COLLECTION\]\s*/g, '').replace(/\[PRIVATE_COLLECTION\]\s*/g, '').trim();
 }
 
+export function resolveBookCatalogId(book: Pick<Book, 'id' | 'catalogId' | 'title'>): string {
+  if (book.catalogId) return book.catalogId;
+  const slug = (book.title || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  return slug || book.id;
+}
+
 function mapDbBookToBook(item: any): Book {
   const isPersonal =
     (item.description && (item.description.includes('[PRIVATE_COLLECTION]') || item.description.includes('[PERSONAL_COLLECTION]'))) ||
@@ -336,6 +345,71 @@ export const dbService = {
     } catch (err) {
       console.warn('Network error updating reading status:', err);
       this.readingStatusMemory.set(`${userId}:${catalogId}`, status);
+    }
+  },
+
+  /**
+   * Fetch all saved reading statuses for a user keyed by catalogId.
+   */
+  async getUserReadingStatuses(userId: string): Promise<Record<string, UserReadingStatusValue>> {
+    const result: Record<string, UserReadingStatusValue> = {};
+    if (!userId) return result;
+
+    const prefix = `${userId}:`;
+    this.readingStatusMemory.forEach((status, key) => {
+      if (key.startsWith(prefix)) {
+        result[key.slice(prefix.length)] = status;
+      }
+    });
+
+    if (!isSupabaseConfigured()) {
+      return result;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_reading_status')
+        .select('catalog_id, status')
+        .eq('user_id', userId);
+
+      if (!error && data) {
+        for (const row of data) {
+          if (row.catalog_id && row.status) {
+            result[row.catalog_id] = row.status as UserReadingStatusValue;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error fetching user reading statuses from Supabase:', err);
+    }
+
+    return result;
+  },
+
+  /**
+   * Remove a saved reading status so the book returns to the unset state.
+   */
+  async clearReadingStatus(userId: string, catalogId: string): Promise<void> {
+    if (!userId || !catalogId) return;
+
+    this.readingStatusMemory.delete(`${userId}:${catalogId}`);
+
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_reading_status')
+        .delete()
+        .eq('user_id', userId)
+        .eq('catalog_id', catalogId);
+
+      if (error) {
+        console.warn('Could not delete from user_reading_status table:', error.message);
+      }
+    } catch (err) {
+      console.warn('Network error clearing reading status:', err);
     }
   },
 

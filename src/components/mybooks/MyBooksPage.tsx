@@ -5,6 +5,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Add01Icon,
   BookOpen01Icon,
+  BookOpen02Icon,
   GiftIcon,
   Bookmark02Icon,
   Search01Icon,
@@ -13,8 +14,10 @@ import {
   MoreVerticalIcon,
   Clock01Icon,
   Tick01Icon,
+  TickDouble02Icon,
   Alert01Icon,
   ArrowRight01Icon,
+  ArrowDown01Icon,
   CheckmarkCircle02Icon,
 } from '@hugeicons/core-free-icons';
 import { AddBookModal } from './AddBookModal';
@@ -23,7 +26,8 @@ import { GuestShelfShowcase } from './GuestShelfShowcase';
 import { useExchanges } from '../../context/ExchangeContext';
 import { useAuth } from '../../context/AuthContext';
 import { cleanAvatarUrl } from '../../utils/avatarUtils';
-import type { Book, BookCategory } from '../../types';
+import { dbService, resolveBookCatalogId } from '../../services/dbService';
+import type { Book, BookCategory, UserReadingStatusValue } from '../../types';
 
 interface MyBooksPageProps {
   myBooks?: Book[];
@@ -142,6 +146,8 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [deletingBook, setDeletingBook] = useState<Book | null>(null);
   const [activeMenuBookId, setActiveMenuBookId] = useState<string | null>(null);
+  const [activeReadingMenuBookId, setActiveReadingMenuBookId] = useState<string | null>(null);
+  const [readingStatusMap, setReadingStatusMap] = useState<Record<string, UserReadingStatusValue>>({});
 
   // Safety Notice Modals State
   const [lockedModalNotice, setLockedModalNotice] = useState<{ bookTitle: string; reason: string } | null>(null);
@@ -158,19 +164,71 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
     setTimeout(() => setToastMessage(null), 3200);
   };
 
-  // Close dropdown on click outside
+  const effectiveUserId = currentUser?.id || 'demo-user';
+
+  // Fetch saved reading statuses on mount and whenever AddBookModal closes
+  useEffect(() => {
+    let isMounted = true;
+    dbService.getUserReadingStatuses(effectiveUserId).then((statuses) => {
+      if (isMounted) {
+        setReadingStatusMap(statuses);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [effectiveUserId, isAddModalOpen]);
+
+  // Close dropdowns on click outside
   const menuRef = useRef<HTMLDivElement>(null);
+  const readingMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setActiveMenuBookId(null);
       }
+      if (readingMenuRef.current && !readingMenuRef.current.contains(e.target as Node)) {
+        setActiveReadingMenuBookId(null);
+      }
     };
-    if (activeMenuBookId) {
+    if (activeMenuBookId || activeReadingMenuBookId) {
       document.addEventListener('mousedown', handleOutsideClick);
     }
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [activeMenuBookId]);
+  }, [activeMenuBookId, activeReadingMenuBookId]);
+
+  const handleReadingStatusChange = async (
+    book: Book,
+    nextStatus: UserReadingStatusValue | null
+  ) => {
+    setActiveReadingMenuBookId(null);
+    const catalogKey = resolveBookCatalogId(book);
+
+    if (nextStatus === null) {
+      setReadingStatusMap((prev) => {
+        const updated = { ...prev };
+        delete updated[catalogKey];
+        return updated;
+      });
+      await dbService.clearReadingStatus(effectiveUserId, catalogKey);
+      showToast(`Reading status cleared for “${book.title}”.`);
+      return;
+    }
+
+    setReadingStatusMap((prev) => ({
+      ...prev,
+      [catalogKey]: nextStatus,
+    }));
+    await dbService.upsertReadingStatus(effectiveUserId, catalogKey, nextStatus);
+
+    const statusLabel =
+      nextStatus === 'read'
+        ? 'Read'
+        : nextStatus === 'reading'
+        ? 'Reading'
+        : 'Not Read';
+    showToast(`Reading status updated to “${statusLabel}”.`);
+  };
 
   // Dynamic Numerical Shelf Stats
   const lendingCount = books.filter((b) => b.availabilityMode === 'lending').length;
@@ -473,11 +531,17 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
           {filteredBooks.map((book) => {
             const guard = isBookInActiveExchange(book.id);
             const isMenuOpen = activeMenuBookId === book.id;
+            const isReadingMenuOpen = activeReadingMenuBookId === book.id;
+            const catalogKey = resolveBookCatalogId(book);
+            const currentReadingStatus =
+              readingStatusMap[catalogKey] ?? book.readingStatus;
 
             return (
               <div
                 key={book.id}
-                className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative"
+                className={`bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-card hover:shadow-card-hover transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative ${
+                  isMenuOpen || isReadingMenuOpen ? 'z-20' : ''
+                }`}
               >
                 {/* Left: Cover & Info */}
                 <div className="flex items-center gap-4">
@@ -525,6 +589,123 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
                           {book.condition}
                         </span>
                       )}
+
+                      {/* Inline Reading Status Selector (available even during active loans) */}
+                      <div className="relative" ref={isReadingMenuOpen ? readingMenuRef : undefined}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveMenuBookId(null);
+                            setActiveReadingMenuBookId(isReadingMenuOpen ? null : book.id);
+                          }}
+                          aria-expanded={isReadingMenuOpen}
+                          aria-label={`Reading status for ${book.title}`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium transition cursor-pointer ${
+                            currentReadingStatus === 'read'
+                              ? 'bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200'
+                              : currentReadingStatus === 'reading'
+                              ? 'bg-brand/5 hover:bg-brand/10 text-brand border border-brand/20'
+                              : currentReadingStatus === 'want_to_read'
+                              ? 'bg-slate-100 hover:bg-slate-200/80 text-slate-600 border border-slate-200'
+                              : 'bg-white hover:bg-slate-50 text-slate-500 border border-dashed border-slate-300'
+                          }`}
+                        >
+                          {currentReadingStatus === 'read' ? (
+                            <>
+                              <HugeiconsIcon icon={TickDouble02Icon} size={12} className="text-slate-600" />
+                              <span>Read</span>
+                            </>
+                          ) : currentReadingStatus === 'reading' ? (
+                            <>
+                              <HugeiconsIcon icon={BookOpen02Icon} size={12} className="text-brand" />
+                              <span>Reading</span>
+                            </>
+                          ) : currentReadingStatus === 'want_to_read' ? (
+                            <>
+                              <HugeiconsIcon icon={Bookmark02Icon} size={12} className="text-slate-500" />
+                              <span>Not Read</span>
+                            </>
+                          ) : (
+                            <span>+ Reading status</span>
+                          )}
+                          <HugeiconsIcon icon={ArrowDown01Icon} size={11} className="opacity-70 ml-0.5" />
+                        </button>
+
+                        {isReadingMenuOpen && (
+                          <div className="absolute left-0 top-full mt-1.5 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                              Reading Status
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleReadingStatusChange(book, 'read')}
+                              className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition cursor-pointer ${
+                                currentReadingStatus === 'read'
+                                  ? 'bg-slate-100 text-slate-900 font-semibold'
+                                  : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <HugeiconsIcon icon={TickDouble02Icon} size={14} className="text-slate-600" />
+                                <span>Read</span>
+                              </span>
+                              {currentReadingStatus === 'read' && (
+                                <HugeiconsIcon icon={Tick01Icon} size={14} className="text-slate-700" />
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleReadingStatusChange(book, 'reading')}
+                              className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition cursor-pointer ${
+                                currentReadingStatus === 'reading'
+                                  ? 'bg-brand/5 text-brand font-semibold'
+                                  : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <HugeiconsIcon icon={BookOpen02Icon} size={14} className="text-brand" />
+                                <span>Reading</span>
+                              </span>
+                              {currentReadingStatus === 'reading' && (
+                                <HugeiconsIcon icon={Tick01Icon} size={14} className="text-brand" />
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleReadingStatusChange(book, 'want_to_read')}
+                              className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition cursor-pointer ${
+                                currentReadingStatus === 'want_to_read'
+                                  ? 'bg-slate-100 text-slate-900 font-semibold'
+                                  : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <HugeiconsIcon icon={Bookmark02Icon} size={14} className="text-slate-500" />
+                                <span>Not Read</span>
+                              </span>
+                              {currentReadingStatus === 'want_to_read' && (
+                                <HugeiconsIcon icon={Tick01Icon} size={14} className="text-slate-700" />
+                              )}
+                            </button>
+
+                            {currentReadingStatus && (
+                              <>
+                                <div className="border-t border-slate-100 my-1" />
+                                <button
+                                  type="button"
+                                  onClick={() => handleReadingStatusChange(book, null)}
+                                  className="w-full px-3 py-1.5 text-left text-xs text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition cursor-pointer"
+                                >
+                                  Clear (Not Set)
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Active Exchange / Lock indicator */}
                       {guard.isLocked && (
