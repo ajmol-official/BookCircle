@@ -158,10 +158,10 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
     pendingCount: number;
   } | null>(null);
 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3200);
+  const [toastState, setToastState] = useState<{ message: string; isError?: boolean } | null>(null);
+  const showToast = (message: string, isError: boolean = false) => {
+    setToastState({ message, isError });
+    setTimeout(() => setToastState(null), isError ? 4500 : 3200);
   };
 
   const effectiveUserId = currentUser?.id || 'demo-user';
@@ -204,30 +204,37 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
     setActiveReadingMenuBookId(null);
     const catalogKey = resolveBookCatalogId(book);
 
-    if (nextStatus === null) {
-      setReadingStatusMap((prev) => {
-        const updated = { ...prev };
-        delete updated[catalogKey];
-        return updated;
-      });
-      await dbService.clearReadingStatus(effectiveUserId, catalogKey);
-      showToast(`Reading status cleared for “${book.title}”.`);
-      return;
+    try {
+      if (nextStatus === null) {
+        await dbService.clearReadingStatus(effectiveUserId, catalogKey);
+        setReadingStatusMap((prev) => {
+          const updated = { ...prev };
+          delete updated[catalogKey];
+          return updated;
+        });
+        showToast(`Reading status cleared for “${book.title}”.`);
+        return;
+      }
+
+      await dbService.upsertReadingStatus(effectiveUserId, catalogKey, nextStatus);
+      setReadingStatusMap((prev) => ({
+        ...prev,
+        [catalogKey]: nextStatus,
+      }));
+
+      const statusLabel =
+        nextStatus === 'read'
+          ? 'Read'
+          : nextStatus === 'reading'
+          ? 'Reading'
+          : 'Not Read';
+      showToast(`Reading status updated to “${statusLabel}”.`);
+    } catch (err: any) {
+      showToast(
+        err?.message || 'Failed to save reading status. Please try again.',
+        true
+      );
     }
-
-    setReadingStatusMap((prev) => ({
-      ...prev,
-      [catalogKey]: nextStatus,
-    }));
-    await dbService.upsertReadingStatus(effectiveUserId, catalogKey, nextStatus);
-
-    const statusLabel =
-      nextStatus === 'read'
-        ? 'Read'
-        : nextStatus === 'reading'
-        ? 'Reading'
-        : 'Not Read';
-    showToast(`Reading status updated to “${statusLabel}”.`);
   };
 
   // Dynamic Numerical Shelf Stats
@@ -348,16 +355,24 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
       {/* Floating Centered Toast Notification */}
       <div className="fixed top-20 sm:top-24 inset-x-0 z-50 flex justify-center pointer-events-none px-4">
         <AnimatePresence>
-          {toastMessage && (
+          {toastState && (
             <motion.div
               initial={{ opacity: 0, y: -16, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -12, scale: 0.96 }}
               transition={{ duration: 0.2 }}
-              className="pointer-events-auto px-5 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-md text-white text-xs sm:text-sm font-medium shadow-2xl border border-slate-700/80 flex items-center gap-2.5 max-w-md text-center"
+              className={`pointer-events-auto px-5 py-3 rounded-2xl backdrop-blur-md text-white text-xs sm:text-sm font-medium shadow-2xl border flex items-center gap-2.5 max-w-md text-center ${
+                toastState.isError
+                  ? 'bg-red-950/95 border-red-700/80'
+                  : 'bg-slate-900/95 border-slate-700/80'
+              }`}
             >
-              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-emerald-400 flex-shrink-0" />
-              <span>{toastMessage}</span>
+              <HugeiconsIcon
+                icon={toastState.isError ? Alert01Icon : CheckmarkCircle02Icon}
+                size={18}
+                className={toastState.isError ? 'text-red-400 flex-shrink-0' : 'text-emerald-400 flex-shrink-0'}
+              />
+              <span>{toastState.message}</span>
             </motion.div>
           )}
         </AnimatePresence>

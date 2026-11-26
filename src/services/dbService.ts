@@ -317,34 +317,35 @@ export const dbService = {
     catalogId: string,
     status: UserReadingStatusValue
   ): Promise<void> {
-    if (!userId || !catalogId || !status) return;
+    if (!userId || !catalogId || !status) {
+      throw new Error('Missing user ID, book catalog ID, or reading status.');
+    }
 
     if (!isSupabaseConfigured()) {
       this.readingStatusMemory.set(`${userId}:${catalogId}`, status);
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('user_reading_status')
-        .upsert(
-          {
-            user_id: userId,
-            catalog_id: catalogId,
-            status,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id,catalog_id' }
-        );
+    const { error } = await supabase
+      .from('user_reading_status')
+      .upsert(
+        {
+          user_id: userId,
+          catalog_id: catalogId,
+          status,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,catalog_id' }
+      );
 
-      if (error) {
-        // Fallback to memory store if table is not yet migrated in remote Supabase
-        console.warn('Could not upsert to user_reading_status table, using fallback store:', error.message);
-        this.readingStatusMemory.set(`${userId}:${catalogId}`, status);
+    if (error) {
+      console.error('Failed to save reading status in Supabase:', error);
+      if (error.code === 'PGRST205') {
+        throw new Error(
+          'Reading status table is not set up in Supabase yet (missing public.user_reading_status).'
+        );
       }
-    } catch (err) {
-      console.warn('Network error updating reading status:', err);
-      this.readingStatusMemory.set(`${userId}:${catalogId}`, status);
+      throw new Error(error.message || 'Could not save reading status to the database.');
     }
   },
 
@@ -355,32 +356,32 @@ export const dbService = {
     const result: Record<string, UserReadingStatusValue> = {};
     if (!userId) return result;
 
-    const prefix = `${userId}:`;
-    this.readingStatusMemory.forEach((status, key) => {
-      if (key.startsWith(prefix)) {
-        result[key.slice(prefix.length)] = status;
-      }
-    });
-
     if (!isSupabaseConfigured()) {
+      const prefix = `${userId}:`;
+      this.readingStatusMemory.forEach((status, key) => {
+        if (key.startsWith(prefix)) {
+          result[key.slice(prefix.length)] = status;
+        }
+      });
       return result;
     }
 
-    try {
-      const { data, error } = await supabase
-        .from('user_reading_status')
-        .select('catalog_id, status')
-        .eq('user_id', userId);
+    const { data, error } = await supabase
+      .from('user_reading_status')
+      .select('catalog_id, status')
+      .eq('user_id', userId);
 
-      if (!error && data) {
-        for (const row of data) {
-          if (row.catalog_id && row.status) {
-            result[row.catalog_id] = row.status as UserReadingStatusValue;
-          }
+    if (error) {
+      console.warn('Could not load reading statuses from Supabase:', error.message);
+      return result;
+    }
+
+    if (data) {
+      for (const row of data) {
+        if (row.catalog_id && row.status) {
+          result[row.catalog_id] = row.status as UserReadingStatusValue;
         }
       }
-    } catch (err) {
-      console.warn('Error fetching user reading statuses from Supabase:', err);
     }
 
     return result;
@@ -390,26 +391,29 @@ export const dbService = {
    * Remove a saved reading status so the book returns to the unset state.
    */
   async clearReadingStatus(userId: string, catalogId: string): Promise<void> {
-    if (!userId || !catalogId) return;
-
-    this.readingStatusMemory.delete(`${userId}:${catalogId}`);
+    if (!userId || !catalogId) {
+      throw new Error('Missing user ID or book catalog ID.');
+    }
 
     if (!isSupabaseConfigured()) {
+      this.readingStatusMemory.delete(`${userId}:${catalogId}`);
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('user_reading_status')
-        .delete()
-        .eq('user_id', userId)
-        .eq('catalog_id', catalogId);
+    const { error } = await supabase
+      .from('user_reading_status')
+      .delete()
+      .eq('user_id', userId)
+      .eq('catalog_id', catalogId);
 
-      if (error) {
-        console.warn('Could not delete from user_reading_status table:', error.message);
+    if (error) {
+      console.error('Failed to clear reading status in Supabase:', error);
+      if (error.code === 'PGRST205') {
+        throw new Error(
+          'Reading status table is not set up in Supabase yet (missing public.user_reading_status).'
+        );
       }
-    } catch (err) {
-      console.warn('Network error clearing reading status:', err);
+      throw new Error(error.message || 'Could not clear reading status in the database.');
     }
   },
 

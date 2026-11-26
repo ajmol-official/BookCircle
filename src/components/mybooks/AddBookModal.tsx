@@ -15,7 +15,7 @@ import {
   Delete02Icon
 } from '@hugeicons/core-free-icons';
 import { canonicalCatalogBooks } from '../../data/canonicalCatalog';
-import { dbService } from '../../services/dbService';
+import { dbService, resolveBookCatalogId } from '../../services/dbService';
 import { useAuth } from '../../context/AuthContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
@@ -190,6 +190,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
   // Post-submission modals
   const [showReadingStatusPrompt, setShowReadingStatusPrompt] = useState(false);
   const [submittedBookInfo, setSubmittedBookInfo] = useState<{ title: string; catalogId: string } | null>(null);
+  const [readingStatusError, setReadingStatusError] = useState<string | null>(null);
   const [showAcademicThankYou, setShowAcademicThankYou] = useState(false);
 
   // Feedback & Validation Errors
@@ -263,6 +264,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
     setFormError(null);
     setShowReadingStatusPrompt(false);
     setSubmittedBookInfo(null);
+    setReadingStatusError(null);
     setShowAcademicThankYou(false);
   };
 
@@ -282,7 +284,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
       try {
         const results = await dbService.searchCommunityBooks(title.trim());
         const mapped: CatalogMatchItem[] = results.map((b) => ({
-          id: b.catalogId || b.id,
+          id: resolveBookCatalogId(b),
           title: b.title,
           author: b.author,
           category: b.category,
@@ -577,8 +579,20 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
 
   // Reading status choice handler (General Books Only)
   const handleReadingStatusSelect = async (status: UserReadingStatusValue) => {
+    setReadingStatusError(null);
     if (submittedBookInfo) {
-      await dbService.upsertReadingStatus(currentUser?.id || 'demo-user', submittedBookInfo.catalogId, status);
+      try {
+        await dbService.upsertReadingStatus(
+          currentUser?.id || 'demo-user',
+          submittedBookInfo.catalogId,
+          status
+        );
+      } catch (err: any) {
+        setReadingStatusError(
+          err?.message || 'Could not save reading status to the database.'
+        );
+        return;
+      }
     }
     handleModalClose();
   };
@@ -656,6 +670,12 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
             <p className="text-xs sm:text-sm text-ink-muted mt-1 leading-relaxed max-w-md mx-auto">
               Help organize your reading library and showcase your literary taste.
             </p>
+
+            {readingStatusError && (
+              <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium text-left">
+                {readingStatusError}
+              </div>
+            )}
 
             <div className="mt-6 space-y-3 text-left">
               {[
