@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   ArrowRight01Icon,
-  LockIcon,
   SparklesIcon,
   UserGroupIcon,
   ShieldCheckIcon,
+  Layers01Icon,
 } from '@hugeicons/core-free-icons';
 
 interface GuestShelfShowcaseProps {
@@ -29,7 +29,7 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
       modeLabel: 'Lending to Neighbors',
       badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
       dotColor: 'bg-emerald-500',
-      description: 'Available for neighbors in your local radius to borrow for 14 or 30 days.',
+      description: 'Available for neighbors to borrow for 14 or 30 days with an in-person handover.',
       genre: 'Fiction / Philosophical',
     },
     {
@@ -41,7 +41,7 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
       modeLabel: 'On Shelf · Unavailable',
       badgeColor: 'bg-slate-100 text-slate-700 border-slate-200/90',
       dotColor: 'bg-slate-400',
-      description: 'Showcased on your personal shelf. Neighbors can see you love it, but borrowing is disabled.',
+      description: 'Showcased on your reader profile. Others can see you love it, but borrowing is disabled.',
       genre: 'Literary Sci-Fi',
     },
     {
@@ -69,16 +69,16 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
       <div className="text-center max-w-2xl mx-auto space-y-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-semibold tracking-wide">
           <HugeiconsIcon icon={SparklesIcon} size={14} />
-          <span>Your Personal Library</span>
+          <span>Your Personal Bookshelf</span>
         </div>
 
         <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.15]">
-          Your Personal Bookshelf on BookCircle
+          Build Your Reading Identity on BookCircle
         </h1>
 
         <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
-          A quiet place to catalog your books, showcase what you love, and choose whether to lend,
-          donate, or keep them for your private eyes only.
+          Catalog every book you own, showcase your reading taste on a public reader profile, and
+          decide book-by-book whether to lend, donate, or simply display.
         </p>
 
         {/* CTAs */}
@@ -104,20 +104,20 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
         </div>
       </div>
 
-      {/* ─── Interactive Mock Shelf Preview ────────────────────── */}
+      {/* ─── Interactive Shelf Preview ─────────────────────────── */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-serif text-xl sm:text-2xl font-semibold text-slate-900">
-                Interactive Shelf Preview
+                Three Modes, One Shelf
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
-                Live Sample
+                You choose per book
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Test how books look on your bookshelf with different availability modes:
+              Every book gets its own mode. Switch anytime — no limits, no fees.
             </p>
           </div>
 
@@ -212,13 +212,19 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
 
               {/* Sample Action Simulation */}
               <div className="pt-4 mt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-mono text-[11px]">Ready on shelf</span>
+                <span className="text-slate-400 font-mono text-[11px]">
+                  {book.mode === 'lending'
+                    ? 'Borrowable'
+                    : book.mode === 'donation'
+                      ? 'Free to collect'
+                      : 'Showcase only'}
+                </span>
                 <button
                   type="button"
                   onClick={onSignIn}
                   className="text-brand hover:text-brand-dark font-semibold text-xs flex items-center gap-1 hover:underline"
                 >
-                  <span>Add like this</span>
+                  <span>Add yours</span>
                   <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
                 </button>
               </div>
@@ -231,14 +237,14 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-card space-y-3">
           <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
-            <HugeiconsIcon icon={LockIcon} size={20} />
+            <HugeiconsIcon icon={Layers01Icon} size={20} />
           </div>
           <h3 className="font-serif text-lg font-semibold text-slate-900">
             Complete Shelf Control
           </h3>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-            Keep cherished books private or switch them to community lending with one click. You
-            always decide who can borrow what.
+            Showcase books on your profile or make them available for lending — you choose the mode
+            for every book and can switch it anytime.
           </p>
         </div>
 
@@ -247,11 +253,11 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
             <HugeiconsIcon icon={UserGroupIcon} size={20} />
           </div>
           <h3 className="font-serif text-lg font-semibold text-slate-900">
-            Local Neighborhood Radius
+            Meet Readers Nearby
           </h3>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-            Your books are only visible to readers within your chosen neighborhood boundary. Zero
-            postage, zero packaging.
+            Connect with readers in your neighborhood for in-person book exchanges. No shipping, no
+            packaging — just walk over and swap.
           </p>
         </div>
 
@@ -272,11 +278,11 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
       {/* ─── Bottom CTA Banner ─────────────────────────────────── */}
       <div className="bg-brand text-white rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-xl">
         <h2 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight">
-          Ready to catalog your reading corner?
+          Your books tell your story
         </h2>
         <p className="text-sm sm:text-base text-cream/90 max-w-lg mx-auto font-normal">
-          Join local readers sharing physical books in your area. Set up your shelf in less than a
-          minute.
+          Start cataloging what you own, discover readers who share your taste, and decide later
+          whether to lend or gift. It takes under a minute.
         </p>
         <div className="pt-2">
           <button
@@ -284,7 +290,7 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
             onClick={onSignIn}
             className="px-6 py-3.5 rounded-full bg-white text-brand hover:bg-cream font-semibold text-sm sm:text-base transition-all duration-200 shadow-md active:scale-95 inline-flex items-center gap-2"
           >
-            <span>Create Your Free Shelf</span>
+            <span>Create Your Free Bookshelf</span>
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
           </button>
         </div>
