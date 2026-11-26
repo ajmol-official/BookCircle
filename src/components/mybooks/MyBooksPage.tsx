@@ -243,7 +243,7 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
 
     const label =
       newMode === 'personal'
-        ? 'Private Collection'
+        ? 'Personal Bookshelf'
         : newMode === 'donation'
         ? 'For Donation'
         : 'For Lending';
@@ -361,7 +361,7 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
             {personalCount}
           </span>
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mt-1 block">
-            Private Collection
+            Personal Bookshelf
           </span>
         </div>
       </div>
@@ -414,7 +414,7 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
             }`}
           >
             <HugeiconsIcon icon={Bookmark02Icon} size={13} />
-            <span>Private Collection ({personalCount})</span>
+            <span>Personal Bookshelf ({personalCount})</span>
           </button>
         </div>
 
@@ -511,7 +511,7 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
                       ) : book.availabilityMode === 'personal' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                           <HugeiconsIcon icon={Bookmark02Icon} size={12} />
-                          <span>Private Collection</span>
+                          <span>Personal Bookshelf</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-brand/10 text-brand border border-brand/20">
@@ -621,7 +621,7 @@ const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
                           >
                             <span className="flex items-center gap-2">
                               <HugeiconsIcon icon={Bookmark02Icon} size={14} className="text-slate-500" />
-                              <span>Private Collection</span>
+                              <span>Personal Bookshelf</span>
                             </span>
                             {book.availabilityMode === 'personal' && (
                               <HugeiconsIcon icon={Tick01Icon} size={14} className="text-slate-900" />

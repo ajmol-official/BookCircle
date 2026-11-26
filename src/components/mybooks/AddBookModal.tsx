@@ -1527,7 +1527,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
                         <span>Availability: Fixed to For Donation</span>
                       </div>
                       <p className="text-ink-secondary mt-1 text-[11px] leading-relaxed">
-                        Academic coursebooks and textbooks on BookCircle are donation-only to support student education and equitable community learning. Lending and Private Collection are not offered for academic books.
+                        Academic coursebooks and textbooks on BookCircle are donation-only to support student education and equitable community learning. Lending and Personal Bookshelf are not offered for academic books.
                       </p>
                     </div>
 

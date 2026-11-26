@@ -396,7 +396,7 @@ const ActivityPageContent: React.FC<ActivityPageProps> = ({
       case 'add_to_collection':
         await addDonationToPrivateCollection(exchange);
         setAddedDonationIds((prev) => new Set([...prev, exchange.id]));
-        showToast(`“${exchange.bookTitle}” added to your Private Collection! Visible only to you.`);
+        showToast(`“${exchange.bookTitle}” added to your Personal Bookshelf!`);
         break;
     }
   };
@@ -1524,11 +1524,11 @@ const ActivityPageContent: React.FC<ActivityPageProps> = ({
                       <span>Verified Complete</span>
                     </div>
 
-                    {/* Donation Recipient Action: Add to My Private Collection */}
+                    {/* Donation Recipient Action: Add to Personal Bookshelf */}
                     {item.exchangeType === 'gift' && !userIsLender && (
                       addedDonationIds.has(item.id) ? (
                         <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-                          ✓ In Private Collection
+                          ✓ On Personal Bookshelf
                         </span>
                       ) : (
                         <button
@@ -1537,15 +1537,15 @@ const ActivityPageContent: React.FC<ActivityPageProps> = ({
                             setActionConfirmTarget({
                               type: 'add_to_collection',
                               exchange: item,
-                              title: 'Add to Private Collection',
-                              description: `Add this received gift “${item.bookTitle}” to your personal private bookshelf?`,
-                              confirmLabel: 'Add to Collection',
+                              title: 'Add to Personal Bookshelf',
+                              description: `Add this received gift “${item.bookTitle}” to your Personal Bookshelf?`,
+                              confirmLabel: 'Add to Bookshelf',
                               cancelLabel: 'Cancel',
                             });
                           }}
                           className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand border border-purple-200/80 text-xs font-semibold shadow-2xs transition active:scale-95"
                         >
-                          + Add to My Private Collection
+                          + Add to Personal Bookshelf
                         </button>
                       )
                     )}

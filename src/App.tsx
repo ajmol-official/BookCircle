@@ -1182,7 +1182,7 @@ const BookCircleMain: React.FC = () => {
 
     const statusLabel =
       newBook.availability === 'personal'
-        ? 'Private Collection'
+        ? 'Personal Bookshelf'
         : newBook.availability === 'donation'
         ? 'For Donation'
         : 'For Lending';

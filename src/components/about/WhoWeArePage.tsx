@@ -52,7 +52,7 @@ export const WhoWeArePage: React.FC<WhoWeArePageProps> = ({
     {
       number: '01',
       title: 'List Your Books',
-      description: 'Add books and choose whether to lend, donate, or keep them private.',
+      description: 'Add books and choose whether to lend, donate, or display them on your personal bookshelf.',
       icon: BookOpen02Icon,
     },
     {
