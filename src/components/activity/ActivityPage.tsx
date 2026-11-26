@@ -7,7 +7,6 @@ import {
   StarIcon,
   AlertCircleIcon,
   Cancel01Icon,
-  LockIcon,
 } from '@hugeicons/core-free-icons';
 import { useExchanges } from '../../context/ExchangeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -74,16 +73,12 @@ const SafeBookThumbnail: React.FC<SafeBookThumbnailProps> = ({
   );
 };
 
-export const ActivityPage: React.FC<ActivityPageProps> = ({
-  initialTab = 'lending',
-  onNavigateToMessages,
-  onOpenAddBook,
-}) => {
-  const { currentUser, requireAuth, isAuthenticated, setIsAuthModalOpen } = useAuth();
+export const ActivityPage: React.FC<ActivityPageProps> = (props) => {
+  const { currentUser, isAuthenticated, setIsAuthModalOpen } = useAuth();
   const navigate = useNavigate();
 
-  // Show rich conversion showcase for unauthenticated visitors
-  if (!isAuthenticated) {
+  // Show rich conversion showcase for unauthenticated visitors before mounting authenticated hooks
+  if (!isAuthenticated || !currentUser) {
     return (
       <GuestActivityShowcase
         onSignIn={() => setIsAuthModalOpen(true)}
@@ -92,6 +87,17 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
       />
     );
   }
+
+  return <ActivityPageContent key={currentUser.id} {...props} />;
+};
+
+const ActivityPageContent: React.FC<ActivityPageProps> = ({
+  initialTab = 'lending',
+  onNavigateToMessages,
+  onOpenAddBook,
+}) => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
 
   // Clean isolation: only use demo fallbacks when in demo mode or without real user
   const isDemoSession = !currentUser || currentUser.authProvider === 'demo' || currentUser.email === 'maya.reader@bookcircle.org';
@@ -654,38 +660,6 @@ export const ActivityPage: React.FC<ActivityPageProps> = ({
       status: 'active',
     };
   }, [returnModalTarget]);
-
-  // Visitor Gating: Require Google Sign-In to view activity
-  if (!currentUser) {
-    return (
-      <div className="pt-16 pb-24 max-w-lg mx-auto text-center px-4 animate-in fade-in duration-300">
-        <div className="w-16 h-16 rounded-3xl bg-brand/10 text-brand flex items-center justify-center mx-auto mb-5 shadow-2xs">
-          <HugeiconsIcon icon={LockIcon} size={28} />
-        </div>
-        <h1 className="font-serif text-3xl font-semibold text-slate-800 tracking-tight">
-          Sign In to View Activity
-        </h1>
-        <p className="mt-2 text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
-          Sign in with your Google account to track your borrowed books, incoming lending requests, and meetup handovers with neighbors.
-        </p>
-        <div className="mt-8">
-          <button
-            type="button"
-            onClick={() => {
-              requireAuth({
-                title: 'Sign In to View Activity',
-                message: 'Sign in with your Google account to access your personal book loans and requests.',
-                onAuthorized: () => {},
-              });
-            }}
-            className="w-full py-3.5 px-6 rounded-2xl bg-brand hover:bg-brand-dark text-white font-semibold text-sm shadow-md transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span>Sign In with Google</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="pt-8 pb-20 animate-in fade-in duration-200">

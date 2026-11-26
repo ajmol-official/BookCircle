@@ -67,39 +67,12 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
               activeWriterProfile.name.toLowerCase().trim() === author.name.toLowerCase().trim()))))
   );
 
-  // If author is missing or invalid slug
-  if (!author) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-card">
-          <div className="w-16 h-16 bg-purple-50 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <HugeiconsIcon icon={Book02Icon} size={32} />
-          </div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-            Author Profile Not Found
-          </h1>
-          <p className="text-slate-600 text-sm max-w-md mx-auto mb-6">
-            We couldn't find an author profile matching this URL. The author may not have been catalogued yet.
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={onBack}
-              className="px-5 py-2.5 rounded-full bg-brand text-white font-medium hover:bg-brand/90 transition shadow-sm text-sm cursor-pointer"
-            >
-              Back to Catalogue
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Canonical works list
+  // Canonical works list (hooks must stay unconditional before any early return)
   const catalogWorks = useMemo(() => {
+    if (!author) return [];
     if (works && works.length > 0) return works;
     return getCatalogWorksForAuthor(author.name, books);
-  }, [works, author.name, books]);
+  }, [author, works, books]);
 
   // Total community copies circulating across all works
   const totalCommunityCopies = useMemo(() => {
@@ -129,6 +102,34 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
       return matchCat && matchQuery;
     });
   }, [catalogWorks, selectedCategory, searchQuery]);
+
+  // If author is missing or invalid slug
+  if (!author) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-card">
+          <div className="w-16 h-16 bg-purple-50 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <HugeiconsIcon icon={Book02Icon} size={32} />
+          </div>
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+            Author Profile Not Found
+          </h1>
+          <p className="text-slate-600 text-sm max-w-md mx-auto mb-6">
+            We couldn't find an author profile matching this URL. The author may not have been catalogued yet.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="px-5 py-2.5 rounded-full bg-brand text-white font-medium hover:bg-brand/90 transition shadow-sm text-sm cursor-pointer"
+            >
+              Back to Catalogue
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Primary action when clicking a catalogue card
   const handleSelectWork = (work: CatalogWork) => {

@@ -43,7 +43,24 @@ interface MyBooksPageProps {
   onNavigateToMessages?: (ownerName: string, bookTitle: string) => void;
 }
 
-export const MyBooksPage: React.FC<MyBooksPageProps> = ({
+export const MyBooksPage: React.FC<MyBooksPageProps> = (props) => {
+  const navigate = useNavigate();
+  const { currentUser, isAuthenticated, setIsAuthModalOpen } = useAuth();
+
+  // Show rich conversion showcase for unauthenticated visitors before mounting shelf hooks
+  if (!isAuthenticated || !currentUser) {
+    return (
+      <GuestShelfShowcase
+        onSignIn={() => setIsAuthModalOpen(true)}
+        onExploreBooks={() => navigate('/books')}
+      />
+    );
+  }
+
+  return <MyBooksPageContent key={currentUser.id} {...props} />;
+};
+
+const MyBooksPageContent: React.FC<MyBooksPageProps> = ({
   myBooks: propMyBooks,
   onSelectAuthor,
   onUpdateBookStatus,
@@ -52,18 +69,8 @@ export const MyBooksPage: React.FC<MyBooksPageProps> = ({
   onUpdateBookDetails,
 }) => {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, setIsAuthModalOpen } = useAuth();
+  const { currentUser } = useAuth();
   const { isBookInActiveExchange, cancelPendingRequestsForBook } = useExchanges();
-
-  // Show rich conversion showcase for unauthenticated visitors
-  if (!isAuthenticated) {
-    return (
-      <GuestShelfShowcase
-        onSignIn={() => setIsAuthModalOpen(true)}
-        onExploreBooks={() => navigate('/books')}
-      />
-    );
-  }
 
   // Local fallback books if not provided
   const [localBooks, setLocalBooks] = useState<Book[]>([
