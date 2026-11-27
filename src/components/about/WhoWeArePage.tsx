@@ -17,8 +17,6 @@ import {
   ArrowRight01Icon,
   Coffee02Icon,
   SparklesIcon,
-  Globe02Icon,
-  Compass01Icon,
 } from '@hugeicons/core-free-icons';
 
 interface WhoWeArePageProps {
@@ -162,59 +160,6 @@ export const WhoWeArePage: React.FC<WhoWeArePageProps> = ({
                 Connecting local readers, one book at a time.
               </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 02. Our Mission & Vision */}
-      <section className="space-y-6">
-        <div className="text-center max-w-xl mx-auto space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
-            <HugeiconsIcon icon={Compass01Icon} size={13} />
-            <span>Guiding Principles</span>
-          </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
-            Our Purpose & Path Forward
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Mission Card */}
-          <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-200/90 shadow-card flex flex-col justify-between">
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-5">
-                <HugeiconsIcon icon={BookOpen01Icon} size={24} />
-              </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-brand">
-                Our Mission
-              </span>
-              <p className="font-serif text-xl sm:text-2xl text-slate-900 font-medium leading-snug mt-3">
-                &ldquo;Make reading more accessible by connecting people through the simple act of
-                sharing books.&rdquo;
-              </p>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-6 pt-5 border-t border-slate-100">
-              Removing cost and convenience barriers so every reader has access to the titles they love.
-            </p>
-          </div>
-
-          {/* Vision Card */}
-          <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-200/90 shadow-card flex flex-col justify-between">
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center mb-5">
-                <HugeiconsIcon icon={Globe02Icon} size={24} />
-              </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
-                Our Vision
-              </span>
-              <p className="font-serif text-xl sm:text-2xl text-slate-900 font-medium leading-snug mt-3">
-                &ldquo;A world where books continue their journey from one reader to another, building
-                stronger reading communities along the way.&rdquo;
-              </p>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-6 pt-5 border-t border-slate-100">
-              Transforming private shelves into active local lending circles across neighborhoods worldwide.
-            </p>
           </div>
         </div>
       </section>

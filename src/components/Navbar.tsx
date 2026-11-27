@@ -132,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         { id: 'home', label: 'Home' },
         { id: 'my-books', label: 'My Books' },
         { id: 'activity', label: 'Activity' },
-        { id: 'who-we-are', label: 'How It Works' },
+        { id: 'who-we-are', label: 'How We Work' },
       ];
 
   const handleNavClick = (tabId: string, label: string) => {
