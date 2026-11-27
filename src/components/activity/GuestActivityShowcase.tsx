@@ -7,7 +7,6 @@ import {
   ShieldCheckIcon,
   BubbleChatIcon,
   Location01Icon,
-  StarIcon,
 } from '@hugeicons/core-free-icons';
 
 interface GuestActivityShowcaseProps {
@@ -193,100 +192,6 @@ export const GuestActivityShowcase: React.FC<GuestActivityShowcaseProps> = ({
             </div>
           );
         })()}
-      </div>
-
-      {/* ─── Mock Active Loan Card (What Activity actually looks like) ── */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card space-y-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="font-serif text-xl sm:text-2xl font-semibold text-slate-900">
-              What Your Activity Dashboard Looks Like
-            </h2>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">
-              Sample Active Loan
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            When you borrow or lend books, real-time cards track handoffs, return dates, and chat:
-          </p>
-        </div>
-
-        {/* Card Mockup */}
-        <div className="bg-cream/40 rounded-2xl p-5 sm:p-6 border border-slate-200/80 max-w-2xl mx-auto space-y-5 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-16 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0 shadow-sm border border-slate-300/60">
-                <img
-                  src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200"
-                  alt="A Farewell to Arms"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100/80 text-emerald-800 text-[11px] font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Active Loan · 18 days left</span>
-                </span>
-                <h4 className="font-serif text-base sm:text-lg font-semibold text-slate-900 mt-1">
-                  A Farewell to Arms
-                </h4>
-                <p className="text-xs text-slate-500">by Ernest Hemingway</p>
-              </div>
-            </div>
-
-            <div className="text-right hidden sm:block">
-              <span className="text-[11px] text-slate-400 font-mono">Return by</span>
-              <p className="text-xs font-semibold text-slate-800">Dec 12, 2026</p>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] text-slate-500">
-              <span>Reading period progress</span>
-              <span className="font-medium text-slate-700">12 of 30 days</span>
-            </div>
-            <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-              <div className="h-full bg-brand rounded-full w-[40%]" />
-            </div>
-          </div>
-
-          {/* Partner & Logistics Strip */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-200/60 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
-                N
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-slate-800">Nawshin Archie</span>
-                  <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 font-semibold">
-                    <HugeiconsIcon icon={StarIcon} size={10} className="fill-amber-400 text-amber-400" />
-                    <span>5.0</span>
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400">Lender · 12 successful loans</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={onSignIn}
-                className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs transition"
-              >
-                Message Lender
-              </button>
-              <button
-                type="button"
-                onClick={onSignIn}
-                className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-brand hover:bg-brand-dark text-white font-medium text-xs transition"
-              >
-                Mark Returned
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ─── 3 Trust Highlights ────────────────────────────────── */}
