@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Conversation, ChatMessage, ActiveFloatingChat } from '../types/messaging';
 import { useAuth } from './AuthContext';
 import { useExchanges } from './ExchangeContext';
@@ -304,34 +304,44 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     []
   );
 
+  const profileCacheRef = useRef<Map<string, { id: string; full_name: string; avatar_url: string }>>(new Map());
+  const lastMsgSyncRef = useRef<number>(0);
+
   // Synchronize remote messages from Supabase for authenticated users
   const syncRemoteMessages = useCallback(async () => {
     if (!isSupabaseConfigured() || !isRealUuid(currentUser?.id)) return;
 
     try {
+      lastMsgSyncRef.current = Date.now();
       const currentUserId = currentUser!.id;
       const { data: remoteMsgs, error } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, sender_id, receiver_id, content, is_read, created_at')
         .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
         .order('created_at', { ascending: true });
 
       if (error || !remoteMsgs || remoteMsgs.length === 0) return;
 
-      // Collect unique other user IDs
+      // Collect unique other user IDs not already cached to avoid re-fetching avatars on every sync
       const otherUserIds = Array.from(
         new Set(
           remoteMsgs.map((m) => (m.sender_id === currentUserId ? m.receiver_id : m.sender_id))
         )
       );
+      const uncachedIds = otherUserIds.filter((id) => !profileCacheRef.current.has(id));
 
-      // Fetch profiles for other users
-      const { data: remoteProfiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url')
-        .in('id', otherUserIds);
+      if (uncachedIds.length > 0) {
+        const { data: remoteProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', uncachedIds);
 
-      const profileMap = new Map((remoteProfiles || []).map((p) => [p.id, p]));
+        for (const p of remoteProfiles || []) {
+          profileCacheRef.current.set(p.id, p);
+        }
+      }
+
+      const profileMap = profileCacheRef.current;
 
       // Group messages by other user ID
       const msgsByOther = new Map<string, typeof remoteMsgs>();
@@ -460,12 +470,12 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Sync on mount, on currentUser change, and via Supabase Realtime subscription
   useEffect(() => {
+    if (!isSupabaseConfigured() || !isRealUuid(currentUser?.id)) return;
+
     syncRemoteMessages();
 
-    if (!isSupabaseConfigured()) return;
-
     const channel = supabase
-      .channel('realtime:messages')
+      .channel(`realtime:messages:${currentUser!.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'messages' },
@@ -475,13 +485,25 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       )
       .subscribe();
 
-    const interval = setInterval(syncRemoteMessages, 15000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastMsgSyncRef.current > 30_000) {
+        syncRemoteMessages();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncRemoteMessages();
+      }
+    }, 5 * 60 * 1000);
 
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(interval);
     };
-  }, [syncRemoteMessages]);
+  }, [syncRemoteMessages, currentUser?.id]);
 
   // Total unread count
   const totalUnreadCount = useMemo(() => {

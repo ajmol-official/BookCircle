@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { sanitizeEmbeddedImageUrl } from '../utils/imageUtils';
 import type {
   ExchangeTransaction,
   ExchangeType,
@@ -404,14 +405,14 @@ export const exchangeService = {
       }
     }
 
-    // 2. Prepare structured metadata
+    // 2. Prepare structured metadata (avoid duplicating multi-MB base64 images into borrow_requests)
     const meta = {
       substatus: 'pending_approval',
       bookAuthor: params.book.author,
-      bookCover: params.book.coverImage,
-      borrowerAvatar: params.borrower.avatar,
+      bookCover: sanitizeEmbeddedImageUrl(params.book.coverImage, 60000),
+      borrowerAvatar: sanitizeEmbeddedImageUrl(params.borrower.avatar, 16000),
       borrowerTrust: params.borrower.trust || 'Community Reader',
-      ownerAvatar: params.owner.avatar,
+      ownerAvatar: sanitizeEmbeddedImageUrl(params.owner.avatar, 16000),
       ownerTrust: params.owner.trust || 'Verified Lender',
       requestDate: 'Just now',
       pickupConfirmation: { lenderConfirmed: false, borrowerConfirmed: false },
@@ -492,10 +493,10 @@ export const exchangeService = {
     const meta = {
       substatus: 'pending_claim',
       bookAuthor: params.book.author,
-      bookCover: params.book.coverImage,
-      borrowerAvatar: params.borrower.avatar,
+      bookCover: sanitizeEmbeddedImageUrl(params.book.coverImage, 60000),
+      borrowerAvatar: sanitizeEmbeddedImageUrl(params.borrower.avatar, 16000),
       borrowerTrust: params.borrower.trust || 'Community Reader',
-      ownerAvatar: params.owner.avatar,
+      ownerAvatar: sanitizeEmbeddedImageUrl(params.owner.avatar, 16000),
       ownerTrust: params.owner.trust || 'Community Giver',
       requestDate: 'Just now',
       pickupConfirmation: { lenderConfirmed: false, borrowerConfirmed: false },

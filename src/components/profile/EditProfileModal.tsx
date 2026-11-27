@@ -10,6 +10,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { cleanAvatarUrl } from '../../utils/avatarUtils';
+import { compressImageFile } from '../../utils/imageUtils';
 
 export const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
@@ -18,45 +19,6 @@ export const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=250',
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=250',
 ];
-
-/**
- * Resize and compress an uploaded image file to a lightweight JPEG Data URL (~20-50KB)
- * so avatars persist reliably across browser storage and Supabase profiles without quota errors.
- */
-function compressAvatarImage(file: File, maxDimension = 256, quality = 0.82): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result;
-      if (!dataUrl || typeof dataUrl !== 'string') {
-        reject(new Error('Failed to read image file.'));
-        return;
-      }
-
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(maxDimension / img.width, maxDimension / img.height, 1);
-        const targetW = Math.max(1, Math.round(img.width * scale));
-        const targetH = Math.max(1, Math.round(img.height * scale));
-
-        const canvas = document.createElement('canvas');
-        canvas.width = targetW;
-        canvas.height = targetH;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(dataUrl);
-          return;
-        }
-        ctx.drawImage(img, 0, 0, targetW, targetH);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = () => reject(new Error('Invalid or unsupported image file.'));
-      img.src = dataUrl;
-    };
-    reader.onerror = () => reject(new Error('Failed to read image file.'));
-    reader.readAsDataURL(file);
-  });
-}
 
 export const AVAILABLE_GENRES = [
   'Fiction',
@@ -183,7 +145,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
     setUploadError(null);
     try {
-      const compressed = await compressAvatarImage(file);
+      const compressed = await compressImageFile(file, 256, 0.82);
       setAvatar(compressed);
     } catch (err: any) {
       setUploadError(err?.message || 'Failed to process image file.');

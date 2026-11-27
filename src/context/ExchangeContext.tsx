@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { ExchangeTransaction } from '../types';
 import { exchangeService } from '../services/exchangeService';
 import { useAuth } from './AuthContext';
@@ -74,10 +74,18 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setError(null);
   }, []);
 
+  const lastSyncRef = useRef<number>(0);
+
   const loadData = useCallback(async () => {
+    if (!currentUser) {
+      setExchanges([]);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
+      lastSyncRef.current = Date.now();
       const data = await exchangeService.getExchanges(currentUserId, currentUserDisplayName, isDemoSession);
       setExchanges(data);
     } catch (err: any) {
@@ -86,16 +94,16 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [currentUserId, currentUserDisplayName, isDemoSession]);
+  }, [currentUser, currentUserId, currentUserDisplayName, isDemoSession]);
 
   useEffect(() => {
     loadData();
 
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured() || !currentUser) return;
 
     // Real-time subscription to borrow_requests table for instant notifications & activity updates
     const channel = supabase
-      .channel('realtime:borrow_requests')
+      .channel(`realtime:borrow_requests:${currentUserId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'borrow_requests' },
@@ -105,16 +113,26 @@ export const ExchangeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       )
       .subscribe();
 
-    // Fallback polling every 20 seconds to guarantee fresh state
+    // Refresh when returning to tab (throttled >= 30s) and use low-frequency visible-only fallback
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastSyncRef.current > 30_000) {
+        loadData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     const pollTimer = setInterval(() => {
-      loadData();
-    }, 20000);
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    }, 5 * 60 * 1000);
 
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(pollTimer);
     };
-  }, [loadData]);
+  }, [loadData, currentUser, currentUserId]);
 
   // Helper to update a single transaction in state immutably
   const updateExchangeInState = useCallback((updated: ExchangeTransaction) => {

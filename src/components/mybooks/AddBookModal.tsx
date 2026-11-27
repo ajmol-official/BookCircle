@@ -16,6 +16,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { canonicalCatalogBooks } from '../../data/canonicalCatalog';
 import { dbService, resolveBookCatalogId } from '../../services/dbService';
+import { compressImageFile } from '../../utils/imageUtils';
 import { useAuth } from '../../context/AuthContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
@@ -390,23 +391,23 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({ isOpen, onClose, ini
   };
 
   // Image Upload Handling
-  const processImageFile = (file: File) => {
+  const processImageFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('Please upload a valid image file (PNG, JPG, or WEBP).');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image file size must be under 5MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image file size must be under 10MB.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      setCoverUrl(result);
+    try {
+      const compressed = await compressImageFile(file, 520, 0.78);
+      setCoverUrl(compressed);
       setIsCustomUploaded(true);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      alert('Could not process this image file. Please try another PNG, JPG, or WEBP.');
+    }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

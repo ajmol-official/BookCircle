@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { mockBooks, mockReaders } from '../data/mockData';
 import type { Book, Reader, UserReadingStatusValue } from '../types';
 import { cleanAvatarUrl } from '../utils/avatarUtils';
+import { sanitizeEmbeddedImageUrl } from '../utils/imageUtils';
 import { isPublicDiscoveryBook } from '../utils/bookVisibility';
 
 function cleanDescription(desc?: string): string {
@@ -224,6 +225,8 @@ export const dbService = {
         ? `[PERSONAL_COLLECTION] ${safeBook.description || ''}`.trim()
         : (safeBook.description || '');
 
+      const safeOwnerAvatar = sanitizeEmbeddedImageUrl(safeBook.ownerAvatar, 16000);
+
       const fullPayload: any = {
         title: safeBook.title,
         author: safeBook.author,
@@ -234,7 +237,7 @@ export const dbService = {
         status: safeBook.status,
         description: taggedDescription,
         owner_name: safeBook.ownerName,
-        owner_avatar: safeBook.ownerAvatar,
+        owner_avatar: safeOwnerAvatar,
         owner_id: userId || null,
         catalog_id: safeBook.catalogId || null,
         book_classification: safeBook.bookClassification,
@@ -265,7 +268,7 @@ export const dbService = {
           status: safeBook.status,
           description: taggedDescription,
           owner_name: safeBook.ownerName,
-          owner_avatar: safeBook.ownerAvatar,
+          owner_avatar: safeOwnerAvatar,
           owner_id: userId || null,
         };
         result = await supabase.from('books').insert(basePayload).select().single();
@@ -289,7 +292,7 @@ export const dbService = {
             ? taggedDescription
             : `[PERSONAL_COLLECTION] ${taggedDescription}`.trim(),
           owner_name: safeBook.ownerName,
-          owner_avatar: safeBook.ownerAvatar,
+          owner_avatar: safeOwnerAvatar,
           owner_id: userId || null,
         };
         result = await supabase.from('books').insert(compatPayload).select().single();

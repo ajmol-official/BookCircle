@@ -29,6 +29,7 @@ import { ProfilePage } from './components/profile/ProfilePage';
 import { PublicProfilePage } from './components/profile/PublicProfilePage';
 import { WishlistModal } from './components/profile/WishlistModal';
 import { cleanAvatarUrl } from './utils/avatarUtils';
+import { sanitizeEmbeddedImageUrl } from './utils/imageUtils';
 import { InboxPage } from './components/inbox/InboxPage';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { LogoutConfirmDialog } from './components/LogoutConfirmDialog';
@@ -1172,7 +1173,7 @@ const BookCircleMain: React.FC = () => {
           distance: '0.1 km',
           ownersCount: 1,
           ownerName: currentUser?.displayName || 'You',
-          ownerAvatar: cleanAvatarUrl(currentUser?.avatar),
+          ownerAvatar: sanitizeEmbeddedImageUrl(cleanAvatarUrl(currentUser?.avatar), 16000),
           ownerTrust: 'Verified Lender',
         },
         currentUser?.id || 'demo-user'
