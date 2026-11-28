@@ -219,15 +219,15 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
           isUserProfileView ? 'pt-6 sm:pt-8' : 'pt-4 sm:pt-8'
         } pb-20 animate-in fade-in duration-200 space-y-8`}
       >
-        {/* Contextual Back & Breadcrumb Navigation */}
+        {/* Contextual Mobile Back & Breadcrumb Navigation */}
         {!isUserProfileView && (
-          <div className="flex items-center gap-2.5 sm:gap-3 mb-2 min-w-0">
+          <div className="flex items-center gap-2.5 mb-2 min-w-0">
             <button
               type="button"
               onClick={onBack}
               aria-label="Go back"
               title="Go back"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-slate-200/80 shadow-2xs text-slate-600 hover:text-brand hover:border-brand/30 transition-all active:scale-95 flex items-center justify-center flex-shrink-0 cursor-pointer"
+              className="md:hidden w-8 h-8 rounded-full bg-white border border-slate-200/80 shadow-2xs text-slate-600 hover:text-brand hover:border-brand/30 transition-all active:scale-95 flex items-center justify-center flex-shrink-0 cursor-pointer"
             >
               <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
             </button>
