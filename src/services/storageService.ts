@@ -184,21 +184,25 @@ class StorageService {
     this.setItem(STORAGE_KEYS.ONBOARDING_DISMISSED, dismissed ? 'true' : 'false');
   }
 
-  // --- Wishlist Management ---
-  getWishlist(): string[] {
+  // --- Wishlist Management (per-user scoped, empty by default) ---
+  getWishlist(userId?: string): string[] {
     try {
-      const raw = this.getItem(STORAGE_KEYS.WISHLIST);
-      if (!raw) return ['book-1', 'book-4']; // Default saved books for demo
+      const key = `${STORAGE_KEYS.WISHLIST}_${userId || 'guest'}`;
+      const raw = this.getItem(key);
+      if (!raw) return [];
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : ['book-1', 'book-4'];
+      return Array.isArray(parsed)
+        ? Array.from(new Set(parsed.filter((id): id is string => typeof id === 'string')))
+        : [];
     } catch {
-      return ['book-1', 'book-4'];
+      return [];
     }
   }
 
-  saveWishlist(bookIds: string[]): void {
+  saveWishlist(bookIds: string[], userId?: string): void {
     try {
-      this.setItem(STORAGE_KEYS.WISHLIST, JSON.stringify(bookIds));
+      const key = `${STORAGE_KEYS.WISHLIST}_${userId || 'guest'}`;
+      this.setItem(key, JSON.stringify(Array.from(new Set(bookIds))));
     } catch (e) {
       console.error('Failed to save wishlist to storage', e);
     }

@@ -1248,6 +1248,10 @@ const BookCircleMain: React.FC = () => {
   }, [syncedBooksList, currentUser]);
 
   const unreadNotificationsCount = isAuthenticated ? notifications.filter((n) => n.unread).length : 0;
+  const resolvedWishlistCount = useMemo(() => {
+    if (isInitialLoading) return 0;
+    return syncedBooksList.filter((b) => wishlist.includes(b.id)).length;
+  }, [isInitialLoading, syncedBooksList, wishlist]);
   const isMessagesActive = location.pathname === '/messages';
   const isDetailPage =
     location.pathname.startsWith('/book/') || location.pathname.startsWith('/reader/');
@@ -1266,6 +1270,7 @@ const BookCircleMain: React.FC = () => {
         onOpenSettings={() => navigate('/settings')}
         onRequestLogout={() => setIsLogoutDialogOpen(true)}
         onOpenWishlistModal={() => setIsWishlistModalOpen(true)}
+        wishlistCount={resolvedWishlistCount}
         notifications={notifications}
         onNotificationClick={handleNotificationClick}
         onMarkAllNotificationsRead={handleMarkAllNotificationsRead}

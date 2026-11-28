@@ -103,39 +103,35 @@ export const ProfileBookCard: React.FC<ProfileBookCardProps> = ({
     };
 
     const renderReadingStatusIndicator = () => {
-      if (resolvedReadingStatus === 'read') {
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 whitespace-nowrap flex-shrink-0">
-            <HugeiconsIcon icon={TickDouble02Icon} size={14} className="text-slate-500 flex-shrink-0" />
-            <span>Read</span>
-          </span>
-        );
-      }
+      const statusConfig: Record<
+        NonNullable<typeof resolvedReadingStatus>,
+        { label: string; icon: typeof TickDouble02Icon; iconSize: number }
+      > = {
+        read: { label: 'Read', icon: TickDouble02Icon, iconSize: 14 },
+        reading: { label: 'Reading', icon: BookOpen02Icon, iconSize: 14 },
+        want_to_read: { label: 'Not Read', icon: Bookmark02Icon, iconSize: 13 },
+      };
 
-      if (resolvedReadingStatus === 'reading') {
+      const config = resolvedReadingStatus ? statusConfig[resolvedReadingStatus] : null;
+      if (!config) {
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 whitespace-nowrap flex-shrink-0">
-            <HugeiconsIcon icon={BookOpen02Icon} size={14} className="text-slate-500 flex-shrink-0" />
-            <span>Reading</span>
-          </span>
-        );
-      }
-
-      if (resolvedReadingStatus === 'want_to_read') {
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 whitespace-nowrap flex-shrink-0">
-            <HugeiconsIcon icon={Bookmark02Icon} size={13} className="text-slate-500 flex-shrink-0" />
-            <span>Not Read</span>
+          <span
+            className="text-xs font-normal text-slate-400 whitespace-nowrap flex-shrink-0"
+            aria-label="Reading status not set"
+          >
+            Not Set
           </span>
         );
       }
 
       return (
-        <span
-          className="text-xs font-normal text-slate-500 whitespace-nowrap flex-shrink-0"
-          aria-label="Reading status not set"
-        >
-          Not Set
+        <span className="inline-flex items-center gap-1 text-xs font-normal text-slate-400 whitespace-nowrap flex-shrink-0">
+          <HugeiconsIcon
+            icon={config.icon}
+            size={config.iconSize}
+            className="text-slate-400 flex-shrink-0"
+          />
+          <span>{config.label}</span>
         </span>
       );
     };

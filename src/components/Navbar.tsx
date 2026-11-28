@@ -28,6 +28,7 @@ interface NavbarProps {
   onOpenSettings?: () => void;
   onRequestLogout?: () => void;
   onOpenWishlistModal?: () => void;
+  wishlistCount?: number;
   notifications?: NotificationItem[];
   onNotificationClick?: (item: NotificationItem) => void;
   onMarkAllNotificationsRead?: () => void;
@@ -47,6 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
   onRequestLogout,
   onOpenWishlistModal,
+  wishlistCount,
   notifications = [],
   onNotificationClick,
   onMarkAllNotificationsRead,
@@ -450,9 +452,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                             <p className="text-[11px] text-slate-500">Saved books & return notifications</p>
                           </div>
                         </div>
-                        {wishlist && wishlist.length > 0 && (
+                        {(wishlistCount !== undefined ? wishlistCount : wishlist.length) > 0 && (
                           <span className="text-[10px] font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">
-                            {wishlist.length}
+                            {wishlistCount !== undefined ? wishlistCount : wishlist.length}
                           </span>
                         )}
                       </button>

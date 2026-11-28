@@ -48,11 +48,13 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   // Filter books in user's wishlist
   const wishlistedBooks = allBooks.filter((b) => wishlistBookIds.includes(b.id));
 
-  const availableBooks = wishlistedBooks.filter((b) => b.status === 'available');
+  const availableBooks = wishlistedBooks.filter(
+    (b) => b.status === 'available' || b.status === 'donation'
+  );
   const lentOutBooks = wishlistedBooks.filter((b) => b.status === 'lent_out');
 
   const displayedBooks = wishlistedBooks.filter((b) => {
-    if (filter === 'available') return b.status === 'available';
+    if (filter === 'available') return b.status === 'available' || b.status === 'donation';
     if (filter === 'lent_out') return b.status === 'lent_out';
     return true;
   });
@@ -252,11 +254,11 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                               {book.distance}
                             </span>
                             <span>• Owner: {book.ownerName}</span>
-                            {book.wishlistCount && (
+                            {book.wishlistCount && book.wishlistCount > 0 ? (
                               <span className="text-rose-500 font-medium">
                                 • {book.wishlistCount} readers wishlisted
                               </span>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       </div>

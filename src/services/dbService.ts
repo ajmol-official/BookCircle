@@ -604,6 +604,75 @@ export const dbService = {
       throw error;
     }
     return data;
+  },
+
+  /**
+   * Fetch authenticated user's saved wishlist book IDs from Supabase
+   */
+  async getWishlist(userId: string): Promise<string[]> {
+    if (!isSupabaseConfigured() || !userId) return [];
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('wishlists')
+        .select('book_id')
+        .eq('user_id', userId);
+
+      if (error || !data) {
+        if (error) console.warn('Could not load wishlist from Supabase:', error.message);
+        return [];
+      }
+      return data
+        .map((row: { book_id?: string }) => row.book_id)
+        .filter((id): id is string => typeof id === 'string');
+    } catch (err) {
+      console.warn('Error fetching wishlist from Supabase:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Add a book ID to authenticated user's Supabase wishlist
+   */
+  async addToWishlist(userId: string, bookId: string): Promise<void> {
+    if (!isSupabaseConfigured() || !userId || !bookId) return;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId) || !uuidRegex.test(bookId)) return;
+
+    try {
+      const { error } = await supabase
+        .from('wishlists')
+        .upsert({ user_id: userId, book_id: bookId }, { onConflict: 'user_id,book_id' });
+      if (error) {
+        console.warn('Could not save wishlist item to Supabase:', error.message);
+      }
+    } catch (err) {
+      console.warn('Error saving wishlist item to Supabase:', err);
+    }
+  },
+
+  /**
+   * Remove a book ID from authenticated user's Supabase wishlist
+   */
+  async removeFromWishlist(userId: string, bookId: string): Promise<void> {
+    if (!isSupabaseConfigured() || !userId || !bookId) return;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId) || !uuidRegex.test(bookId)) return;
+
+    try {
+      const { error } = await supabase
+        .from('wishlists')
+        .delete()
+        .eq('user_id', userId)
+        .eq('book_id', bookId);
+      if (error) {
+        console.warn('Could not remove wishlist item from Supabase:', error.message);
+      }
+    } catch (err) {
+      console.warn('Error removing wishlist item from Supabase:', err);
+    }
   }
 };
 

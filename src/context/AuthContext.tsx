@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { User, PhoneOtpVerification, AuthPromptContext } from '../types/auth';
 import { authService } from '../services/authService';
 import { storageService } from '../services/storageService';
+import { dbService } from '../services/dbService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthContextType {
@@ -323,34 +324,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // --- Wishlist Management ---
   const [wishlist, setWishlist] = useState<string[]>(() => {
-    return storageService.getWishlist();
+    return storageService.getWishlist(currentUser?.id);
   });
+
+  // Sync wishlist whenever active user changes (fetch real Supabase rows when available)
+  useEffect(() => {
+    let active = true;
+    const userId = currentUser?.id;
+
+    // Immediately switch to per-user cached wishlist (empty array if none)
+    setWishlist(storageService.getWishlist(userId));
+
+    if (userId && isSupabaseConfigured() && currentUser?.authProvider !== 'demo') {
+      dbService.getWishlist(userId).then((dbIds) => {
+        if (!active) return;
+        setWishlist(dbIds);
+        storageService.saveWishlist(dbIds, userId);
+      });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser?.id, currentUser?.authProvider]);
 
   const isWishlisted = useCallback((bookId: string) => {
     return wishlist.includes(bookId);
   }, [wishlist]);
 
   const toggleWishlist = useCallback((bookId: string): boolean => {
-    let added = false;
-    setWishlist((prev) => {
-      let next: string[];
-      if (prev.includes(bookId)) {
-        next = prev.filter((id) => id !== bookId);
-        added = false;
-      } else {
-        next = [...prev, bookId];
-        added = true;
-      }
-      storageService.saveWishlist(next);
+    const currentlySaved = wishlist.includes(bookId);
+    const added = !currentlySaved;
+    const next = currentlySaved
+      ? wishlist.filter((id) => id !== bookId)
+      : Array.from(new Set([...wishlist, bookId]));
 
-      if (currentUser) {
-        const updatedUser: User = { ...currentUser, wishlist: next };
-        storageService.saveOrUpdateUser(updatedUser);
+    setWishlist(next);
+    storageService.saveWishlist(next, currentUser?.id);
+
+    if (currentUser) {
+      const updatedUser: User = { ...currentUser, wishlist: next };
+      storageService.saveOrUpdateUser(updatedUser);
+
+      if (isSupabaseConfigured() && currentUser.authProvider !== 'demo') {
+        if (added) {
+          dbService.addToWishlist(currentUser.id, bookId);
+        } else {
+          dbService.removeFromWishlist(currentUser.id, bookId);
+        }
       }
-      return next;
-    });
+    }
+
     return added;
-  }, [currentUser]);
+  }, [wishlist, currentUser]);
 
   return (
     <AuthContext.Provider
