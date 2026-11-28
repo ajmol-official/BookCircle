@@ -14,7 +14,7 @@ interface GuestActivityShowcaseProps {
 
 export const GuestActivityShowcase: React.FC<GuestActivityShowcaseProps> = ({
   onSignIn,
-  onExploreBooks,
+  onExploreBooks: _onExploreBooks,
   onViewGuide,
 }) => {
   const [activeStep, setActiveStep] = useState<number>(1);
@@ -61,23 +61,24 @@ export const GuestActivityShowcase: React.FC<GuestActivityShowcaseProps> = ({
   return (
     <div className="w-full py-8 sm:py-12 space-y-12 animate-in fade-in duration-300">
       {/* ─── Hero Pitch ────────────────────────────────────────── */}
-      <div className="text-center max-w-2xl mx-auto space-y-4">
+      <div className="text-center max-w-3xl mx-auto space-y-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold tracking-wide">
           <HugeiconsIcon icon={RepeatIcon} size={14} />
           <span>Community Borrowing & Lending</span>
         </div>
 
         <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.15]">
-          How Book Exchanges Work on BookCircle
+          How Book Exchanges Work
+          <br className="hidden sm:inline" /> on BookCircle
         </h1>
 
-        <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
+        <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto">
           A neighbor-to-neighbor book circle powered by local trust. No shipping fees, no late
           fines, and zero commercial hassle.
         </p>
 
-        {/* Action CTAs */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+        {/* Primary CTA */}
+        <div className="pt-2 flex items-center justify-center">
           <button
             type="button"
             onClick={onSignIn}
@@ -86,16 +87,6 @@ export const GuestActivityShowcase: React.FC<GuestActivityShowcaseProps> = ({
             <span>Join BookCircle to Start Borrowing</span>
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
           </button>
-
-          {onExploreBooks && (
-            <button
-              type="button"
-              onClick={onExploreBooks}
-              className="w-full sm:w-auto px-5 py-3 rounded-full border border-slate-300 hover:border-slate-400 bg-white text-slate-700 font-medium text-sm transition-all duration-200"
-            >
-              Browse Nearby Books
-            </button>
-          )}
         </div>
       </div>
 

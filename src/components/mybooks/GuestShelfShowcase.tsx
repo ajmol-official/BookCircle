@@ -15,28 +15,29 @@ interface GuestShelfShowcaseProps {
 
 export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
   onSignIn,
-  onExploreBooks,
+  onExploreBooks: _onExploreBooks,
 }) => {
   return (
     <div className="w-full py-8 sm:py-12 space-y-12 animate-in fade-in duration-300">
       {/* ─── Hero Pitch ────────────────────────────────────────── */}
-      <div className="text-center max-w-2xl mx-auto space-y-4">
+      <div className="text-center max-w-3xl mx-auto space-y-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-semibold tracking-wide">
           <HugeiconsIcon icon={SparklesIcon} size={14} />
           <span>Your Personal Bookshelf</span>
         </div>
 
         <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-[1.15]">
-          Build Your Reading Identity on BookCircle
+          Build Your Reading Identity
+          <br className="hidden sm:inline" /> on BookCircle
         </h1>
 
-        <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
+        <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto">
           Catalog every book you own, showcase your reading taste on a public reader profile, and
           decide book-by-book whether to lend, donate, or simply display.
         </p>
 
-        {/* CTAs */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+        {/* Primary CTA */}
+        <div className="pt-2 flex items-center justify-center">
           <button
             type="button"
             onClick={onSignIn}
@@ -45,16 +46,6 @@ export const GuestShelfShowcase: React.FC<GuestShelfShowcaseProps> = ({
             <span>Start Your Bookshelf — It&apos;s Free (30 secs)</span>
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
           </button>
-
-          {onExploreBooks && (
-            <button
-              type="button"
-              onClick={onExploreBooks}
-              className="w-full sm:w-auto px-5 py-3 rounded-full border border-slate-300 hover:border-slate-400 bg-white text-slate-700 font-medium text-sm transition-all duration-200"
-            >
-              Explore Community Books
-            </button>
-          )}
         </div>
       </div>
 
