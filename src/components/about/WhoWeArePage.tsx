@@ -19,6 +19,8 @@ import {
   SparklesIcon,
 } from '@hugeicons/core-free-icons';
 
+import { BookJourneyGraphic } from './BookJourneyGraphic';
+
 interface WhoWeArePageProps {
   onExploreBooks?: () => void;
   onSupportMission?: () => void;
@@ -148,19 +150,7 @@ export const WhoWeArePage: React.FC<WhoWeArePageProps> = ({
         </div>
 
         <div className="lg:col-span-5">
-          <div className="relative rounded-3xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-card aspect-[4/3] sm:aspect-[16/11]">
-            <img
-              src="https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&q=80&w=1000"
-              alt="Books arranged neatly on a wooden table beside a window"
-              className="w-full h-full object-cover object-center"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent flex items-end p-5 sm:p-6">
-              <p className="text-xs sm:text-sm font-medium text-white/95">
-                Connecting local readers, one book at a time.
-              </p>
-            </div>
-          </div>
+          <BookJourneyGraphic />
         </div>
       </section>
 

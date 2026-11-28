@@ -4,9 +4,6 @@ import {
   RepeatIcon,
   ArrowRight01Icon,
   SparklesIcon,
-  ShieldCheckIcon,
-  BubbleChatIcon,
-  Location01Icon,
 } from '@hugeicons/core-free-icons';
 
 interface GuestActivityShowcaseProps {
@@ -192,48 +189,6 @@ export const GuestActivityShowcase: React.FC<GuestActivityShowcaseProps> = ({
             </div>
           );
         })()}
-      </div>
-
-      {/* ─── 3 Trust Highlights ────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-card space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
-            <HugeiconsIcon icon={Location01Icon} size={20} />
-          </div>
-          <h3 className="font-serif text-lg font-semibold text-slate-900">
-            Safe Local Handover
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-            Choose public meetup spots (cafes, transit hubs, libraries) or porch pickups convenient
-            to both readers.
-          </p>
-        </div>
-
-        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-card space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-            <HugeiconsIcon icon={ShieldCheckIcon} size={20} />
-          </div>
-          <h3 className="font-serif text-lg font-semibold text-slate-900">
-            Reputation & Trust
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-            Every reader builds trust through successful exchanges and punctuality ratings. Stories
-            stay respected.
-          </p>
-        </div>
-
-        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-card space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
-            <HugeiconsIcon icon={BubbleChatIcon} size={20} />
-          </div>
-          <h3 className="font-serif text-lg font-semibold text-slate-900">
-            In-App Messaging
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-            Coordinate times and drop-offs privately in the app without needing to share phone
-            numbers or personal email.
-          </p>
-        </div>
       </div>
 
       {/* ─── Bottom CTA Banner ─────────────────────────────────── */}
