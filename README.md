@@ -11,6 +11,7 @@ For exhaustive product specifications, UX architecture rationales, and technical
 - **[Platform Features & Architecture Specification (`docs/FEATURES.md`)](docs/FEATURES.md)** — In-depth breakdown of title catalog clustering, author directory, floating chat animations, handover wizards, return reliability tiers, and database privacy.
 - **[Comprehensive User Flow Map & Interaction Architecture (`docs/USER_FLOWS.md`)](docs/USER_FLOWS.md)** — Complete user journey flows, decision trees, Mermaid state/sequence diagrams, and safety guard mechanisms across all personas.
 - **[Author Profiles & Future Capabilities Roadmap (`docs/author-profiles-future-architecture.md`)](docs/author-profiles-future-architecture.md)** — Architectural separation of authors vs. members, profile claiming, verification badge workflows, and following systems.
+- **[AI-Powered Book & Author Catalog Backend Plan (`docs/ai-catalog-backend-architecture.md`)](docs/ai-catalog-backend-architecture.md)** — Proposed backend architecture, Supabase schema (`authors`, `catalog_works`, `author_review_requests`), external metadata APIs, modular AI provider, security/RLS, and phased roadmap for future implementation.
 
 ---
 
