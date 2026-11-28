@@ -72,7 +72,7 @@ export const NearbyReadersSection: React.FC<NearbyReadersSectionProps> = ({
   const availableCount = copies.filter(c => c.status === 'available' || c.status === 'donation').length;
 
   return (
-    <section className="mt-12">
+    <section className="mt-9 sm:mt-12">
       {/* Section Header with Sort Dropdown */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
@@ -109,7 +109,7 @@ export const NearbyReadersSection: React.FC<NearbyReadersSectionProps> = ({
                   className="fixed inset-0 z-20"
                   onClick={() => setIsSortOpen(false)}
                 />
-                <div className="absolute right-0 mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-slate-200/90 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 sm:left-auto sm:right-0 mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-slate-200/90 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100">
                   {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
                     <button
                       key={key}
@@ -151,7 +151,7 @@ export const NearbyReadersSection: React.FC<NearbyReadersSectionProps> = ({
         </div>
       ) : (
         /* Zero Copies Empty State */
-        <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-slate-200/90 shadow-card">
+        <div className="bg-white rounded-3xl p-6 sm:p-12 text-center border border-slate-200/90 shadow-card">
           <div className="w-16 h-16 bg-purple-50 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
             <HugeiconsIcon icon={BookOpen01Icon} size={32} />
           </div>

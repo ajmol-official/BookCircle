@@ -215,7 +215,7 @@ export const BookDetailsPage: React.FC<BookDetailsPageProps> = ({
   ).length;
 
   return (
-    <div className="pt-6 pb-20 animate-in fade-in duration-200 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="pt-3 sm:pt-6 pb-6 sm:pb-20 animate-in fade-in duration-200 max-w-7xl mx-auto px-0 sm:px-6 lg:px-8">
       {/* Toast Notification */}
       <div className="fixed top-20 sm:top-24 inset-x-0 z-50 flex justify-center pointer-events-none px-4">
         <AnimatePresence>

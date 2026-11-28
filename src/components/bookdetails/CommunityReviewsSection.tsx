@@ -36,7 +36,7 @@ export const CommunityReviewsSection: React.FC<CommunityReviewsSectionProps> = (
   };
 
   return (
-    <section className="mt-14">
+    <section className="mt-10 sm:mt-14">
       {/* Header matching Figma */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
@@ -72,7 +72,7 @@ export const CommunityReviewsSection: React.FC<CommunityReviewsSectionProps> = (
 
       {/* Reviews List */}
       {reviews.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-white border border-slate-200/90 shadow-2xs text-center">
+        <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-2xs text-center">
           <p className="text-sm text-slate-600">
             No community reviews yet. Be the first to share your thoughts!
           </p>
@@ -86,7 +86,7 @@ export const CommunityReviewsSection: React.FC<CommunityReviewsSectionProps> = (
             return (
               <div
                 key={rev.id}
-                className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-2xs transition-all hover:shadow-card"
+                className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/90 shadow-2xs transition-all hover:shadow-card"
               >
                 {/* 1. Reviewer Header: Avatar, Name, Relative Date */}
                 <div className="flex items-center gap-3 mb-2.5">

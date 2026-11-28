@@ -34,9 +34,9 @@ export const BookHeroCard: React.FC<BookHeroCardProps> = ({
     'A sweeping saga of a Korean family across four generations, exploring identity, displacement, and resilience from colonial Busan to post-war Osaka. Rich in historical texture and emotional depth, it captures the everyday triumphs and burdens of exile and survival.';
 
   return (
-    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-card flex flex-col md:flex-row gap-8 items-start">
+    <div className="bg-white rounded-3xl p-5 sm:p-8 border border-slate-200/90 shadow-card flex flex-col md:flex-row gap-5 md:gap-8 items-start">
       {/* 1. Unobstructed Book Cover matching Figma (no pill overlays) */}
-      <div className="w-full max-w-[200px] mx-auto md:max-w-none md:w-56 md:mx-0 aspect-[2/3] rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 shadow-md border border-slate-100">
+      <div className="w-full max-w-[180px] sm:max-w-[200px] mx-auto md:max-w-none md:w-56 md:mx-0 aspect-[2/3] rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 shadow-md border border-slate-100">
         <img
           src={book.coverImage}
           alt={book.title}
@@ -118,7 +118,7 @@ export const BookHeroCard: React.FC<BookHeroCardProps> = ({
         </div>
 
         {/* 3-Point Community Circulation Stats Row */}
-        <div className="pt-2 border-t border-slate-100 flex items-center gap-4 sm:gap-6 text-xs text-slate-600 flex-wrap">
+        <div className="pt-2.5 sm:pt-2 border-t border-slate-100 flex items-center gap-x-4 gap-y-2 sm:gap-6 text-xs text-slate-600 flex-wrap">
           <div className="flex items-center gap-1.5">
             <HugeiconsIcon icon={Location01Icon} size={15} className="text-slate-400" />
             <span>
