@@ -8,6 +8,7 @@ import {
   BookOpen01Icon,
   ArrowRight01Icon,
   CheckmarkCircle02Icon,
+  Search01Icon,
 } from '@hugeicons/core-free-icons';
 import type { Book, HandoverLocation, UserReadingStatusValue } from '../../types';
 import { ProfileHeaderCard } from './ProfileHeaderCard';
@@ -49,7 +50,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [coverErrors, setCoverErrors] = useState<Record<string, boolean>>({});
   const [fbAvatarErrors, setFbAvatarErrors] = useState<Record<string, boolean>>({});
   const [activeSubTab, setActiveSubTab] = useState<'library' | 'reviews' | 'feedback' | 'meetup'>('library');
-  const [selectedGenre, setSelectedGenre] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isReliabilityModalOpen, setIsReliabilityModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -254,9 +255,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     },
   ];
 
-  const filteredShelf = ownProfileBooks.filter(
-    (b) => selectedGenre === 'All' || b.category.toLowerCase() === selectedGenre.toLowerCase()
-  );
+  const filteredShelf = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return ownProfileBooks;
+    return ownProfileBooks.filter((b) => {
+      const matchesTitle = b.title.toLowerCase().includes(q);
+      const matchesAuthor = b.author.toLowerCase().includes(q);
+      const matchesDesc = b.description?.toLowerCase().includes(q);
+      return matchesTitle || matchesAuthor || matchesDesc;
+    });
+  }, [ownProfileBooks, searchQuery]);
 
   return (
     <>
@@ -343,7 +351,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         {activeSubTab === 'library' && (
           <div className="space-y-6">
             {/* Shelf Header Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="font-serif text-xl sm:text-2xl font-semibold text-slate-800">
                   On the shelf
@@ -353,35 +361,44 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => navigate('/my-books')}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-brand text-xs sm:text-sm font-semibold transition active:scale-95 self-start sm:self-auto cursor-pointer"
-              >
-                <span>Manage Books</span>
-                <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
-              </button>
-            </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto">
+                {/* In-shelf Search Bar matching PublicProfilePage */}
+                <div className="relative w-full sm:w-72 lg:w-80">
+                  <HugeiconsIcon
+                    icon={Search01Icon}
+                    size={16}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search your shelf..."
+                    aria-label="Search your shelf"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-full bg-white border border-slate-300 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition shadow-2xs"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      aria-label="Clear search"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
 
-            {/* Favorite Genres filter chips (if available) */}
-            {profile.favoriteGenres && profile.favoriteGenres.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="text-xs font-semibold text-slate-500 mr-1">Filter genre:</span>
-                {profile.favoriteGenres.map((genre) => (
-                  <button
-                    key={genre}
-                    onClick={() => setSelectedGenre(genre)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                      selectedGenre === genre
-                        ? 'bg-brand text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    {genre}
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  onClick={() => navigate('/my-books')}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-brand text-xs sm:text-sm font-semibold transition active:scale-95 self-start sm:self-auto whitespace-nowrap flex-shrink-0 cursor-pointer"
+                >
+                  <span>Manage Books</span>
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
+                </button>
               </div>
-            )}
+            </div>
 
             {/* 4-Column Book Grid */}
             {filteredShelf.length > 0 ? (
@@ -417,17 +434,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
                 <h3 className="font-serif text-base font-semibold text-slate-800">No books found</h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  {selectedGenre !== 'All'
-                    ? `No books under "${selectedGenre}" category yet.`
+                  {searchQuery.trim()
+                    ? `No books found matching "${searchQuery.trim()}".`
                     : 'Your personal library is empty. Add copies to start lending and donating!'}
                 </p>
-                {selectedGenre !== 'All' ? (
+                {searchQuery.trim() ? (
                   <button
                     type="button"
-                    onClick={() => setSelectedGenre('All')}
+                    onClick={() => setSearchQuery('')}
                     className="text-xs font-semibold text-brand hover:underline"
                   >
-                    Show all books
+                    Clear search
                   </button>
                 ) : (
                   <button

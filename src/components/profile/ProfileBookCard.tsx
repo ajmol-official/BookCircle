@@ -64,7 +64,7 @@ export const ProfileBookCard: React.FC<ProfileBookCardProps> = ({
     const renderPurposeIndicator = () => {
       if (isPersonal) {
         return (
-          <span className="text-xs font-semibold text-slate-600 truncate">
+          <span className="text-xs font-semibold text-slate-500 truncate">
             Personal Bookshelf
           </span>
         );
