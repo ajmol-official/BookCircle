@@ -28,6 +28,8 @@ interface AuthorProfilePageProps {
   onQuickBorrow?: (book: Book) => void;
   onOpenAddBook?: () => void;
   onBack?: () => void;
+  onSelectCatalogue?: () => void;
+  onSelectAuthors?: () => void;
   isUserProfileView?: boolean;
 }
 
@@ -42,6 +44,8 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
   onQuickBorrow: _onQuickBorrow,
   onOpenAddBook,
   onBack,
+  onSelectCatalogue,
+  onSelectAuthors,
   isUserProfileView = false,
 }) => {
   const { openWriterDashboard, activeWriterProfile } = useWriter();
@@ -215,36 +219,43 @@ export const AuthorProfilePage: React.FC<AuthorProfilePageProps> = ({
           isUserProfileView ? 'pt-6 sm:pt-8' : 'pt-4 sm:pt-8'
         } pb-20 animate-in fade-in duration-200 space-y-8`}
       >
-        {/* Contextual Breadcrumb & Back Navigation */}
+        {/* Contextual Back & Breadcrumb Navigation */}
         {!isUserProfileView && (
-          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 mb-2">
+          <div className="flex items-center gap-2.5 sm:gap-3 mb-2 min-w-0">
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Go back"
+              title="Go back"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-slate-200/80 shadow-2xs text-slate-600 hover:text-brand hover:border-brand/30 transition-all active:scale-95 flex items-center justify-center flex-shrink-0 cursor-pointer"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
+            </button>
+
             <nav
               aria-label="Breadcrumb"
               className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-500 min-w-0"
             >
               <button
                 type="button"
-                onClick={onBack}
+                onClick={onSelectCatalogue || onBack}
                 className="hover:text-brand font-medium transition-colors flex-shrink-0 cursor-pointer"
               >
                 Catalogue
               </button>
               <span className="text-slate-300 flex-shrink-0">/</span>
-              <span className="text-slate-400 font-medium flex-shrink-0">Authors</span>
+              <button
+                type="button"
+                onClick={onSelectAuthors || onBack}
+                className="hover:text-brand font-medium transition-colors flex-shrink-0 cursor-pointer"
+              >
+                Authors
+              </button>
               <span className="text-slate-300 flex-shrink-0">/</span>
-              <span className="text-slate-800 font-semibold truncate max-w-[130px] xs:max-w-[180px] sm:max-w-none">
+              <span className="text-slate-800 font-semibold truncate">
                 {author.name}
               </span>
             </nav>
-
-            <button
-              type="button"
-              onClick={onBack}
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-brand transition-colors bg-white px-3 sm:px-4 py-1.5 rounded-full border border-slate-200/80 shadow-xs hover:border-brand/30 flex-shrink-0 cursor-pointer"
-            >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-              <span>Back to Books</span>
-            </button>
           </div>
         )}
 

@@ -435,7 +435,15 @@ const AuthorProfileRoute: React.FC<{
       onSelectOwner={onSelectOwner}
       onQuickBorrow={onQuickBorrow}
       onOpenAddBook={() => onOpenAddBook?.({ author: author?.name })}
-      onBack={() => navigate('/books')}
+      onSelectCatalogue={() => navigate('/books')}
+      onSelectAuthors={() => navigate('/authors')}
+      onBack={() => {
+        if (window.history.state && window.history.state.idx > 0) {
+          navigate(-1);
+        } else {
+          navigate('/authors');
+        }
+      }}
     />
   );
 };
